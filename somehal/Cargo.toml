@@ -1,0 +1,18 @@
+[package]
+name = "somehal"
+version.workspace = true
+edition.workspace = true
+
+[features]
+vm = []
+
+
+[dependencies]
+
+
+[target.'cfg(target_arch = "aarch64")'.dependencies]
+aarch64-cpu = "10.0"
+page-table-arm = "0.1"
+smccc = "0.2"
+arm-gic-driver = "0.7"
+any-uart = "0.2"

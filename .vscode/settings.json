@@ -1,0 +1,10 @@
+{
+    "rust-analyzer.check.allTargets": false,
+    "rust-analyzer.check.command": "clippy",
+    "rust-targets.targets": [
+        "aarch64-unknown-none",
+        "aarch64-unknown-none-softfloat",
+        // for xtask
+        "system"
+    ],
+}

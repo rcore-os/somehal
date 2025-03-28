@@ -1,0 +1,33 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "qemu debug",
+            "command": "ostool",
+            "args": [
+                "run",
+                "qemu",
+                "-d"
+            ],
+            
+            "options": {
+                "cwd": "${workspaceFolder}",
+            },
+            "problemMatcher": {
+                "base": "$rustc",
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^.*",
+                    "endsPattern": "^qemu-system.*"
+                }
+            },
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "detail": "断点调试 test 测试用例",
+            "isBackground": true,
+        }
+    ]
+}
