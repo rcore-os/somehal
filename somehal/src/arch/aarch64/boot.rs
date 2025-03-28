@@ -1,7 +1,4 @@
-use core::{
-    arch::{asm, naked_asm},
-    ptr::NonNull,
-};
+use core::arch::{asm, naked_asm};
 
 use aarch64_cpu::{asm::barrier, registers::*};
 
