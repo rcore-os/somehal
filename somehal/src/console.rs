@@ -7,27 +7,39 @@ const HEX_BUF_SIZE: usize = 20; // 最大长度，包括前缀"0x"和数字
 
 pub type ConstStrList = ArrayVec<&'static str, HEX_BUF_SIZE>;
 
+macro_rules! new_const_str_list_one {
+    ($b: expr) => {{
+        let mut out = ArrayVec::new();
+        out.push($b);
+        out
+    }};
+}
+
 pub trait AsConstStr {
     fn to_const_str(self) -> ConstStrList;
 }
 
 impl AsConstStr for usize {
     fn to_const_str(self) -> ConstStrList {
-        __hex_to_str(self)
+        hex_to_str(self)
     }
 }
 
 impl AsConstStr for u64 {
     fn to_const_str(self) -> ConstStrList {
-        __hex_to_str(self as _)
+        hex_to_str(self as _)
     }
 }
 
 impl AsConstStr for &'static str {
     fn to_const_str(self) -> ConstStrList {
-        let mut out = ArrayVec::new();
-        out.push(self);
-        out
+        new_const_str_list_one!(self)
+    }
+}
+
+impl AsConstStr for bool {
+    fn to_const_str(self) -> ConstStrList {
+        new_const_str_list_one!(if self { "true" } else { "false" })
     }
 }
 
@@ -35,7 +47,7 @@ pub fn __print_str_list(list: impl IntoIterator<Item = &'static str>) {
     arch::debug::write_str_list(list.into_iter());
 }
 
-pub fn __hex_to_str(mut n: usize) -> ConstStrList {
+pub fn hex_to_str(mut n: usize) -> ConstStrList {
     let mut hex_buf: [&'static str; HEX_BUF_SIZE] = ["0"; HEX_BUF_SIZE];
     let mut buff = ArrayVec::<_, HEX_BUF_SIZE>::new();
     buff.push("0x");
