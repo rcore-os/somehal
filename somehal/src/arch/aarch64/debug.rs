@@ -11,16 +11,7 @@ pub fn init_by_dtb(dtb: *mut u8) -> Option<()> {
     Some(())
 }
 
-pub fn write_bytes(bytes: &[u8]) {
-    let mut g = TX.lock();
-    if let Some(tx) = g.as_mut() {
-        for &b in bytes {
-            let _ = any_uart::block!(tx.write(b));
-        }
-    }
-}
-
-pub fn write_bytes_parts(str_list: impl Iterator<Item = &'static str>) {
+pub fn write_str_list(str_list: impl Iterator<Item = &'static str>) {
     let mut g = TX.lock();
     if let Some(tx) = g.as_mut() {
         for s in str_list {

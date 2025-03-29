@@ -41,62 +41,42 @@ pub fn println(input: TokenStream) -> Result<TokenStream, Error> {
 
     let mut items = Vec::new();
 
-    while let Some(pat) = find_patterns(&right) {
-        println!("{:?}", pat);
-        let left = pat.left;
-
+    if arg_count == 0 {
         items.push(quote! {
-            let _ = vec.try_push(#left);
+            let _ = vec.try_push(#right);
         });
+    } else {
+        while let Some(pat) = find_patterns(&right) {
+            println!("{:?}", pat);
+            let left = pat.left;
 
-        let arg = args_iter
-            .next()
-            .ok_or(Error::new(args.span(), "args not match fmt"))?;
+            items.push(quote! {
+                let _ = vec.try_push(#left);
+            });
 
-        match pat.pattern.as_str() {
-            "{}" => {
-                if let Expr::Lit(expr_lit) = arg {
-                    match expr_lit.lit {
-                        Lit::Str(lit_str) => {
-                            items.push(quote! {
-                               let _ = vec.try_push(#lit_str);
-                            });
-                        }
-                        Lit::Int(lit_int) => {
-                            items.push(quote! {
-                                let nums = crate::console::__hex_to_str(#lit_int as _);
-                                for num in nums{
-                                    let _ = vec.try_push(num);
-                                }
-                            });
-                        }
-                        Lit::Bool(lit_bool) => {
-                            let v = if lit_bool.value() { "true" } else { "false" };
-                            items.push(quote! {
-                                let _ = vec.try_push(#v);
-                            });
-                        }
-                        lit => return Err(Error::new_spanned(lit, "not support")),
+            let arg = args_iter
+                .next()
+                .ok_or(Error::new(args.span(), "args not match fmt"))?;
+
+            items.push(quote! {
+                {
+                    let list = crate::console::AsConstStr::to_const_str(#arg);
+                    for one in list{
+                        let _ = vec.try_push(one);
                     }
-                } else {
-                    return Err(Error::new(
-                        arg.span(),
-                        "println! macro only accept string as fmt",
-                    ));
                 }
-            }
-            "{:#x}" => {}
-            _ => panic!("parttern not match"),
-        }
+            });
 
-        right = pat.right;
+            right = pat.right;
+        }
     }
 
     Ok(quote! {
         {
             let mut vec = crate::vec::ArrayVec::<_, 40>::new();
             #(#items);*
-            crate::console::__
+            let _ = vec.try_push("\r\n");
+            crate::console::__print_str_list(vec);
         }
     }
     .into())
@@ -109,7 +89,7 @@ struct Pattern {
 }
 
 fn find_patterns(format_str: &str) -> Option<Pattern> {
-    let patterns = ["{}", "{:#x}"];
+    let patterns = ["{}"];
     let mut i: Option<usize> = None;
     let mut out = None;
 

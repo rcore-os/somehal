@@ -1,23 +1,41 @@
-use arrayvec::ArrayVec;
+#![allow(unused)]
 
 use crate::arch;
+use arrayvec::ArrayVec;
 
-pub fn __print_str(s: &str) {
-    arch::debug::write_bytes(s.as_bytes());
+const HEX_BUF_SIZE: usize = 20; // 最大长度，包括前缀"0x"和数字
+
+pub type ConstStrList = ArrayVec<&'static str, HEX_BUF_SIZE>;
+
+pub trait AsConstStr {
+    fn to_const_str(self) -> ConstStrList;
+}
+
+impl AsConstStr for usize {
+    fn to_const_str(self) -> ConstStrList {
+        __hex_to_str(self)
+    }
+}
+
+impl AsConstStr for u64 {
+    fn to_const_str(self) -> ConstStrList {
+        __hex_to_str(self as _)
+    }
+}
+
+impl AsConstStr for &'static str {
+    fn to_const_str(self) -> ConstStrList {
+        let mut out = ArrayVec::new();
+        out.push(self);
+        out
+    }
 }
 
 pub fn __print_str_list(list: impl IntoIterator<Item = &'static str>) {
-    arch::debug::write_bytes_parts(list.into_iter());
+    arch::debug::write_str_list(list.into_iter());
 }
 
-const HEX_BUF_SIZE: usize = 20; // 最大长度，包括前缀"0x"和数字
-pub fn __print_hex(n: usize) {
-    let buff = __hex_to_str(n);
-
-    arch::debug::write_bytes_parts(buff.into_iter());
-}
-
-pub fn __hex_to_str(mut n: usize) -> ArrayVec<&'static str, 20> {
+pub fn __hex_to_str(mut n: usize) -> ConstStrList {
     let mut hex_buf: [&'static str; HEX_BUF_SIZE] = ["0"; HEX_BUF_SIZE];
     let mut buff = ArrayVec::<_, HEX_BUF_SIZE>::new();
     buff.push("0x");

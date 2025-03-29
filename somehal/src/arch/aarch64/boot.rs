@@ -1,9 +1,10 @@
 use core::arch::{asm, naked_asm};
 
 use aarch64_cpu::{asm::barrier, registers::*};
-use arrayvec::ArrayVec;
 use kmem::space::clean_bss;
 use somehal_macros::println;
+
+use crate::console::ConstStrList;
 
 use super::debug::init_by_dtb;
 
@@ -74,11 +75,11 @@ fn rust_entry(text_va: usize, fdt: *mut u8) -> ! {
 
     init_by_dtb(fdt);
 
-    super::debug::write_bytes("Booting up...\r\n".as_bytes());
 
-    println!("Hello, {} {}", "World", 123);
+    println!("Booting up");
 
-    super::debug::write_bytes("2...\r\n".as_bytes());
+    println!("kcode va: {}", text_va);
+
     unreachable!()
 }
 
