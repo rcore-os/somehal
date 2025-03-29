@@ -8,6 +8,7 @@ pub mod arch;
 mod archif;
 pub(crate) mod console;
 mod consts;
+pub mod mem;
 pub(crate) mod vec;
 
 pub(crate) use archif::ArchIf;

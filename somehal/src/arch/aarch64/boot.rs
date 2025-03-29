@@ -1,10 +1,11 @@
 use core::arch::{asm, naked_asm};
 
-use crate::println;
 use aarch64_cpu::{asm::barrier, registers::*};
-use kmem::space::clean_bss;
+use kmem::ifhal::set_kcode_va_offset;
 
 use super::debug::init_by_dtb;
+use crate::mem::clean_bss;
+use crate::println;
 
 const FLAG_LE: usize = 0b0;
 const FLAG_PAGE_SIZE_4K: usize = 0b10;
@@ -69,12 +70,12 @@ unsafe extern "C" fn primary_entry() -> ! {
 
 fn rust_entry(text_va: usize, fdt: *mut u8) -> ! {
     unsafe { clean_bss() };
+    unsafe { set_kcode_va_offset(text_va) };
     enable_fp();
 
     init_by_dtb(fdt);
 
     println!("Booting up");
-
     println!("kcode va: {}", text_va);
 
     unreachable!()
