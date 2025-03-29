@@ -1,5 +1,4 @@
-#![allow(unused)]
-pub use _boot::*;
+
 
 #[link_boot::link_boot]
 mod _boot {

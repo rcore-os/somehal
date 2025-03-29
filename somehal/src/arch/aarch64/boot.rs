@@ -1,6 +1,4 @@
 #[allow(unused)]
-pub use _m::*;
-
 #[link_boot::link_boot]
 mod _m {
     use core::arch::{asm, naked_asm};
@@ -8,7 +6,7 @@ mod _m {
     use aarch64_cpu::{asm::barrier, registers::*};
     use kmem::ifhal::set_kcode_va_offset;
 
-    use super::super::debug::init_by_dtb;
+    use super::debug::init_by_dtb;
     use crate::mem::{clean_bss, entry_addr};
     use crate::println;
 

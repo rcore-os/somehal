@@ -32,8 +32,7 @@ SECTIONS
         *(.tdata*)
     } 
 
-    _ekernel = .;
-    _kernel_size = _ekernel - __start_BootText;
+    _kernel_size = . - __start_BootText;
 
     tbss (NOLOAD) : ALIGN(0x10) {
         *(.tbss .tbss.*)
