@@ -1,5 +1,4 @@
 use crate::ArchIf;
-
 mod boot;
 pub mod debug;
 
