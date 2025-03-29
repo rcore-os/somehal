@@ -1,12 +1,31 @@
-use core::ptr::slice_from_raw_parts_mut;
-
+pub(crate) use _m::*;
 pub use kmem::*;
 
-unsafe extern "C" {
-    static _sbss: *mut u8;
-    static _ebss: *mut u8;
-}
+mod _m {
+    use core::ptr::slice_from_raw_parts_mut;
 
-pub(crate) unsafe fn clean_bss() {
-    unsafe { &mut *slice_from_raw_parts_mut(_sbss, _ebss as usize - _sbss as usize) }.fill(0);
+    fn bss() -> &'static mut [u8] {
+        unsafe extern "C" {
+            fn __start_bss();
+            fn __stop_bss();
+        }
+        unsafe {
+            &mut *slice_from_raw_parts_mut(
+                __start_bss as _,
+                __stop_bss as usize - __start_bss as usize,
+            )
+        }
+    }
+
+    pub(crate) unsafe fn clean_bss() {
+        bss().fill(0);
+    }
+
+    pub(crate) fn entry_addr() -> usize {
+        unsafe extern "C" {
+            fn __start_BootText();
+        }
+
+        __start_BootText as usize
+    }
 }

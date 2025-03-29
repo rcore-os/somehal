@@ -5,44 +5,46 @@ ENTRY(_start)
 SECTIONS
 {
     . = %KERNEL_VADDR% ;
-    _skernel = .;
+    BootText : {
+        KEEP(*(.text.boot*))
+    }
+    BootData : ALIGN(4K) {
+        KEEP(*(.data.boot*))
+    }
 
-    .text :  {
-        KEEP(*(.text.init*))
+    text : ALIGN(4K) {
         *(.text*);
     } 
 
-    .rodata : ALIGN(4K) {
+    rodata : ALIGN(4K) {
         *(.rodata*)
         *(.srodata*)
         *(.sdata2*)
     } 
    
-    .data : ALIGN(4K) {
+    data : ALIGN(4K) {
         *(.data*)
         *(.sdata*)
         *(.got*)
     }
 
-    .tdata : ALIGN(0x10) {
+    tdata : ALIGN(0x10) {
         *(.tdata*)
     } 
 
     _ekernel = .;
-    _kernel_size = _ekernel - _skernel;
+    _kernel_size = _ekernel - __start_BootText;
 
-    .tbss (NOLOAD) : ALIGN(0x10) {
+    tbss (NOLOAD) : ALIGN(0x10) {
         *(.tbss .tbss.*)
         *(.tcommon)
     }
 
-    .bss (NOLOAD) : ALIGN(4K)  {
-        _sbss = .;
+    bss (NOLOAD) : ALIGN(4K)  {
         *(.bss*)
         *(.sbss*)
         *(COMMON)
         . = ALIGN(4K);
-        _ebss = .;
     }
 
     _stack_bottom = .;

@@ -151,6 +151,16 @@ name = "kmem"
 version = "0.1.0"
 
 [[package]]
+name = "link-boot"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77af9f5ad3afc2eacbc65494341ffb5cfe2347ff0cc944dd130b4148358c036b"
+dependencies = [
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "lock_api"
 version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -253,6 +263,7 @@ dependencies = [
  "arm-gic-driver",
  "arrayvec",
  "kmem",
+ "link-boot",
  "page-table-arm",
  "smccc",
  "somehal-macros",
