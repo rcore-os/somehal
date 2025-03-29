@@ -1,10 +1,8 @@
 use core::arch::{asm, naked_asm};
 
+use crate::println;
 use aarch64_cpu::{asm::barrier, registers::*};
 use kmem::space::clean_bss;
-use somehal_macros::println;
-
-use crate::console::ConstStrList;
 
 use super::debug::init_by_dtb;
 
@@ -74,7 +72,6 @@ fn rust_entry(text_va: usize, fdt: *mut u8) -> ! {
     enable_fp();
 
     init_by_dtb(fdt);
-
 
     println!("Booting up");
 

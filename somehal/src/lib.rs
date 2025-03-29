@@ -5,6 +5,10 @@
 
 #[cfg_attr(target_arch = "aarch64", path = "arch/aarch64/mod.rs")]
 pub mod arch;
+mod archif;
 pub(crate) mod console;
 mod consts;
 pub(crate) mod vec;
+
+pub(crate) use archif::ArchIf;
+pub(crate) use somehal_macros::println;

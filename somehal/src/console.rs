@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use crate::arch;
+use crate::{ArchIf, arch::Arch};
 use arrayvec::ArrayVec;
 
 const HEX_BUF_SIZE: usize = 20; // 最大长度，包括前缀"0x"和数字
@@ -44,7 +44,7 @@ impl AsConstStr for bool {
 }
 
 pub fn __print_str_list(list: impl IntoIterator<Item = &'static str>) {
-    arch::debug::write_str_list(list.into_iter());
+    Arch::early_write_str_list(list.into_iter());
 }
 
 pub fn hex_to_str(mut n: usize) -> ConstStrList {
