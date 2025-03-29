@@ -40,7 +40,12 @@ pub fn println(input: TokenStream) -> Result<TokenStream, Error> {
     let mut right = format_str;
 
     while let Some(pat) = find_patterns(&right) {
+        
         println!("{:?}", pat);
+
+        
+
+        right = pat.right;
     }
 
     Ok(quote! {}.into())
@@ -60,7 +65,7 @@ fn find_patterns(format_str: &str) -> Option<Pattern> {
     for pat in patterns {
         if let Some(n) = format_str.find(pat) {
             if let Some(l) = i {
-                if n < l {
+                if n > l {
                     continue;
                 }
             }
@@ -72,6 +77,7 @@ fn find_patterns(format_str: &str) -> Option<Pattern> {
                 pattern: pat.to_string(),
                 right,
             });
+            
         }
     }
 
