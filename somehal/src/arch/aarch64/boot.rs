@@ -76,11 +76,7 @@ fn rust_entry(text_va: usize, fdt: *mut u8) -> ! {
 
     super::debug::write_bytes("Booting up...\r\n".as_bytes());
 
-    crate::console::__print_hex(0xffaa);
-
-    println!("Hello, {} {:#x}", "World", 123);
-
-    super::debug::write_bytes_parts(["123", "456", "\r\n"].into_iter());
+    println!("Hello, {} {}", "World", 123);
 
     super::debug::write_bytes("2...\r\n".as_bytes());
     unreachable!()

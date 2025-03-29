@@ -5,13 +5,13 @@ pub fn println(input: TokenStream) -> Result<TokenStream, Error> {
     let tokens = input.clone();
     let parser = Punctuated::<Expr, Token![,]>::parse_terminated;
     let args = parser.parse(tokens)?;
-    // let mut items = Vec::new();
+    let arg_count = args.len() - 1;
 
     let format_str;
 
-    let mut args = args.into_iter();
+    let mut args_iter = args.clone().into_iter();
 
-    if let Some(fmt) = args.next() {
+    if let Some(fmt) = args_iter.next() {
         if let Expr::Lit(expr_lit) = fmt {
             if let Lit::Str(lit_str) = expr_lit.lit {
                 // 第一个参数是字符串字面量
@@ -39,16 +39,67 @@ pub fn println(input: TokenStream) -> Result<TokenStream, Error> {
 
     let mut right = format_str;
 
-    while let Some(pat) = find_patterns(&right) {
-        
-        println!("{:?}", pat);
+    let mut items = Vec::new();
 
-        
+    while let Some(pat) = find_patterns(&right) {
+        println!("{:?}", pat);
+        let left = pat.left;
+
+        items.push(quote! {
+            let _ = vec.try_push(#left);
+        });
+
+        let arg = args_iter
+            .next()
+            .ok_or(Error::new(args.span(), "args not match fmt"))?;
+
+        match pat.pattern.as_str() {
+            "{}" => {
+                if let Expr::Lit(expr_lit) = arg {
+                    match expr_lit.lit {
+                        Lit::Str(lit_str) => {
+                            items.push(quote! {
+                               let _ = vec.try_push(#lit_str);
+                            });
+                        }
+                        Lit::Int(lit_int) => {
+                            items.push(quote! {
+                                let nums = crate::console::__hex_to_str(#lit_int as _);
+                                for num in nums{
+                                    let _ = vec.try_push(num);
+                                }
+                            });
+                        }
+                        Lit::Bool(lit_bool) => {
+                            let v = if lit_bool.value() { "true" } else { "false" };
+                            items.push(quote! {
+                                let _ = vec.try_push(#v);
+                            });
+                        }
+                        lit => return Err(Error::new_spanned(lit, "not support")),
+                    }
+                } else {
+                    return Err(Error::new(
+                        arg.span(),
+                        "println! macro only accept string as fmt",
+                    ));
+                }
+            }
+            "{:#x}" => {}
+            _ => panic!("parttern not match"),
+        }
 
         right = pat.right;
     }
 
-    Ok(quote! {}.into())
+    Ok(quote! {
+        {
+            let mut vec = crate::vec::ArrayVec::<_, 40>::new();
+            #(#items);*
+            crate::console::__
+        }
+    }
+    .into())
 }
 #[derive(Debug)]
 struct Pattern {
@@ -77,7 +128,6 @@ fn find_patterns(format_str: &str) -> Option<Pattern> {
                 pattern: pat.to_string(),
                 right,
             });
-            
         }
     }
 

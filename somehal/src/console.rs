@@ -6,8 +6,18 @@ pub fn __print_str(s: &str) {
     arch::debug::write_bytes(s.as_bytes());
 }
 
-pub fn __print_hex(mut n: usize) {
-    const HEX_BUF_SIZE: usize = 20; // 最大长度，包括前缀"0x"和数字
+pub fn __print_str_list(list: impl IntoIterator<Item = &'static str>) {
+    arch::debug::write_bytes_parts(list.into_iter());
+}
+
+const HEX_BUF_SIZE: usize = 20; // 最大长度，包括前缀"0x"和数字
+pub fn __print_hex(n: usize) {
+    let buff = __hex_to_str(n);
+
+    arch::debug::write_bytes_parts(buff.into_iter());
+}
+
+pub fn __hex_to_str(mut n: usize) -> ArrayVec<&'static str, 20> {
     let mut hex_buf: [&'static str; HEX_BUF_SIZE] = ["0"; HEX_BUF_SIZE];
     let mut buff = ArrayVec::<_, HEX_BUF_SIZE>::new();
     buff.push("0x");
@@ -29,7 +39,7 @@ pub fn __print_hex(mut n: usize) {
         }
     }
 
-    arch::debug::write_bytes_parts(buff.into_iter());
+    buff
 }
 
 fn n_to_str(n: usize) -> &'static str {
