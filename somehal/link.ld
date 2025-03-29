@@ -7,8 +7,7 @@ SECTIONS
     . = %KERNEL_VADDR% ;
     _skernel = .;
 
-    .text : ALIGN(4K) {
-        
+    .text :  {
         KEEP(*(.text.init*))
         *(.text*);
     } 
@@ -37,11 +36,13 @@ SECTIONS
         *(.tcommon)
     }
 
-    .bss (NOLOAD) : ALIGN(4K) {
+    .bss (NOLOAD) : ALIGN(4K)  {
+        _sbss = .;
         *(.bss*)
         *(.sbss*)
         *(COMMON)
         . = ALIGN(4K);
+        _ebss = .;
     }
 
     _stack_bottom = .;

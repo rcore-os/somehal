@@ -3,5 +3,5 @@
 ## Test
 
 ```bash
-cargo test 
+cargo test --target aarch64-unknown-none --test test -- --show-output
 ```

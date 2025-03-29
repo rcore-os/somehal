@@ -6,3 +6,4 @@
 #[cfg_attr(target_arch = "aarch64", path = "arch/aarch64/mod.rs")]
 pub mod arch;
 mod consts;
+pub(crate) mod console;

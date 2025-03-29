@@ -1,6 +1,11 @@
 use core::arch::{asm, naked_asm};
 
 use aarch64_cpu::{asm::barrier, registers::*};
+use arrayvec::ArrayVec;
+use kmem::space::clean_bss;
+use somehal_macros::println;
+
+use super::debug::init_by_dtb;
 
 const FLAG_LE: usize = 0b0;
 const FLAG_PAGE_SIZE_4K: usize = 0b10;
@@ -64,9 +69,20 @@ unsafe extern "C" fn primary_entry() -> ! {
 }
 
 fn rust_entry(text_va: usize, fdt: *mut u8) -> ! {
-    // clean_bss();
+    unsafe { clean_bss() };
     enable_fp();
 
+    init_by_dtb(fdt);
+
+    super::debug::write_bytes("Booting up...\r\n".as_bytes());
+
+    crate::console::__print_hex(0xffaa);
+
+    println!("Hello, {} {:#x}", "World", 123);
+
+    super::debug::write_bytes_parts(["123", "456", "\r\n"].into_iter());
+
+    super::debug::write_bytes("2...\r\n".as_bytes());
     unreachable!()
 }
 
