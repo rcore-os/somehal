@@ -35,10 +35,7 @@ pub fn println(input: TokenStream) -> Result<TokenStream, Error> {
         .into());
     }
 
-    println!("fmt: {}", format_str);
-
     let mut right = format_str;
-
     let mut items = Vec::new();
 
     if arg_count == 0 {
@@ -47,7 +44,6 @@ pub fn println(input: TokenStream) -> Result<TokenStream, Error> {
         });
     } else {
         while let Some(pat) = find_patterns(&right) {
-            println!("{:?}", pat);
             let left = pat.left;
 
             items.push(quote! {
@@ -73,7 +69,7 @@ pub fn println(input: TokenStream) -> Result<TokenStream, Error> {
 
     Ok(quote! {
         {
-            let mut vec = crate::vec::ArrayVec::<_, 40>::new();
+            let mut vec = crate::vec::ArrayVec::<_, 128>::new();
             #(#items);*
             let _ = vec.try_push("\r\n");
             crate::console::__print_str_list(vec);
@@ -81,10 +77,11 @@ pub fn println(input: TokenStream) -> Result<TokenStream, Error> {
     }
     .into())
 }
+
 #[derive(Debug)]
 struct Pattern {
     left: String,
-    pattern: String,
+    _pattern: String,
     right: String,
 }
 
@@ -105,7 +102,7 @@ fn find_patterns(format_str: &str) -> Option<Pattern> {
             let right = format_str[n..].trim_start_matches(pat).to_string();
             out = Some(Pattern {
                 left,
-                pattern: pat.to_string(),
+                _pattern: pat.to_string(),
                 right,
             });
         }
