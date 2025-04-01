@@ -4,7 +4,6 @@ mod _m {
     use core::arch::{asm, naked_asm};
 
     use aarch64_cpu::{asm::barrier, registers::*};
-    use kmem::ifhal::set_kcode_va_offset;
 
     use super::debug::init_by_dtb;
     use crate::mem::{clean_bss, entry_addr};
@@ -70,16 +69,14 @@ mod _m {
         }
     }
 
-    fn rust_entry(text_va: usize, fdt: *mut u8) -> ! {
+    fn rust_entry(kcode_va: usize, fdt: *mut u8) -> ! {
         unsafe { clean_bss() };
-        unsafe { set_kcode_va_offset(text_va) };
         enable_fp();
-
         init_by_dtb(fdt);
 
         println!("Booting up");
         println!("Entry     : {}", entry_addr());
-        println!("kcode va  : {}", text_va);
+        println!("kcode va  : {}", kcode_va);
 
         unreachable!()
     }

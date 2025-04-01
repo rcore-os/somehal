@@ -9,3 +9,8 @@ impl ArchIf for Arch {
         debug::write_str_list(str_list);
     }
 }
+
+
+fn rust_main(kcode_va: usize, dtb: *mut u8) {
+    
+}

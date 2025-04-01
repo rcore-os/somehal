@@ -1,6 +1,6 @@
-pub(crate) use _m::*;
 pub use kmem::*;
 
+#[link_boot::link_boot]
 mod _m {
     use core::ptr::slice_from_raw_parts_mut;
 

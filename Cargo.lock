@@ -153,6 +153,8 @@ version = "0.1.0"
 [[package]]
 name = "link-boot"
 version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1c54ef43b013b17dbd852dc6ba543bb11d4eb9072511e6056099870f170f654"
 dependencies = [
  "quote",
  "syn",
