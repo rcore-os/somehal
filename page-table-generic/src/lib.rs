@@ -7,7 +7,7 @@ mod table;
 use core::{alloc::Layout, fmt::Debug};
 
 pub use addr::*;
-pub use table::PageTableRef;
+pub use table::{MapConfig, PageTableRef};
 
 pub trait TableGeneric: Sync + Send + Clone + Copy + 'static {
     type PTE: PTEGeneric;
@@ -20,6 +20,8 @@ pub trait TableGeneric: Sync + Send + Clone + Copy + 'static {
 
 pub trait PTEGeneric: Debug + Sync + Send + Clone + Copy + Sized + 'static {
     fn valid(&self) -> bool;
+    fn paddr(&self) -> PhysAddr;
+    fn set_paddr(&mut self, paddr: PhysAddr);
     fn set_valid(&mut self, valid: bool);
     fn is_block(&self) -> bool;
     fn set_is_block(&mut self, is_block: bool);
