@@ -267,6 +267,9 @@ dependencies = [
 [[package]]
 name = "kmem"
 version = "0.1.0"
+dependencies = [
+ "bitflags",
+]
 
 [[package]]
 name = "link-boot"
@@ -327,7 +330,6 @@ dependencies = [
 name = "page-table-generic"
 version = "0.6.0"
 dependencies = [
- "bitflags",
  "env_logger",
  "link-boot",
  "log",

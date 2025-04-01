@@ -11,7 +11,6 @@ keywords = ["pagetable", "mmu"]
 categories = ["no-std"]
 
 [dependencies]
-bitflags = "2"
 log = "0.4"
 thiserror = { version = "2", default-features = false }
 link-boot = { version = "0.2" }
