@@ -1,4 +1,61 @@
 #![cfg_attr(not(test), no_std)]
 #![feature(pointer_is_aligned_to)]
 
+mod addr;
 mod align;
+mod table;
+use core::{alloc::Layout, fmt::Debug};
+
+pub use addr::*;
+pub use table::PageTableRef;
+
+pub trait TableGeneric: Sync + Send + Clone + Copy + 'static {
+    type PTE: PTEGeneric;
+
+    const PAGE_SIZE: usize = 0x1000;
+    const LEVEL: usize = 4;
+    const TABLE_LEN: usize = Self::PAGE_SIZE / core::mem::size_of::<Self::PTE>();
+    fn flush(vaddr: Option<VirtAddr>);
+}
+
+pub trait PTEGeneric: Debug + Sync + Send + Clone + Copy + Sized + 'static {
+    fn valid(&self) -> bool;
+    fn set_valid(&mut self, valid: bool);
+    fn is_block(&self) -> bool;
+    fn set_is_block(&mut self, is_block: bool);
+}
+
+pub trait Access {
+    /// Alloc memory for a page table entry.
+    ///
+    /// # Safety
+    ///
+    /// should be deallocated by [`dealloc`].
+    unsafe fn alloc(&mut self, layout: Layout) -> Option<PhysAddr>;
+    /// dealloc memory for a page table entry.
+    ///
+    /// # Safety
+    ///
+    /// ptr must be allocated by [`alloc`].
+    unsafe fn dealloc(&mut self, ptr: PhysAddr, layout: Layout);
+
+    fn phys_to_mut(&self, phys: PhysAddr) -> *mut u8;
+}
+
+use thiserror::Error;
+
+/// The error type for page table operation failures.
+#[derive(Error, Debug, PartialEq, Eq)]
+pub enum PagingError {
+    #[error("can't allocate memory")]
+    NoMemory,
+    #[error("{0} is not aligned")]
+    NotAligned(&'static str),
+    #[error("not mapped")]
+    NotMapped,
+    #[error("already mapped")]
+    AlreadyMapped,
+}
+
+/// The specialized `Result` type for page table operations.
+pub type PagingResult<T = ()> = Result<T, PagingError>;

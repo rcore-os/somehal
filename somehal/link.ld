@@ -18,21 +18,13 @@ SECTIONS
 
     rodata : ALIGN(4K) {
         *(.rodata*)
-        *(.srodata*)
-        *(.sdata2*)
+        *(.got*)
     } 
    
     data : ALIGN(4K) {
         *(.data*)
-        *(.sdata*)
-        *(.got*)
     }
-
-    tdata : ALIGN(0x10) {
-        *(.tdata*)
-    } 
-
-    _kernel_size = . - __start_BootText;
+    __kernel_size = . - __start_BootText;
 
     tbss (NOLOAD) : ALIGN(0x10) {
         *(.tbss .tbss.*)

@@ -28,7 +28,7 @@ mod _m {
                 // text_offset
                 ".quad 0",
                 // image_size
-                ".quad _kernel_size",
+                ".quad __kernel_size",
                 // flags
                 ".quad {flags}",
                 // Reserved fields

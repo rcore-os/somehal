@@ -6,9 +6,13 @@ use aarch64_cpu::{asm::barrier::*, registers::*};
 mod _m {
     use somehal_macros::println;
 
+    /// 参数为目标虚拟地址
     #[inline(always)]
     pub fn enable_mmu(stack_top: *mut u8, jump_to: *mut u8) -> ! {
-        println!("relocate to pc: {} stack: {}", jump_to as usize, stack_top as usize);
+        println!(
+            "relocate to pc: {} stack: {}",
+            jump_to as usize, stack_top as usize
+        );
         unsafe {
             // Enable the MMU and turn on I-cache and D-cache
             SCTLR_EL1
@@ -20,8 +24,8 @@ mod _m {
                 "MOV      x8,  {entry}",
                 "BLR      x8",
                 "B       .",
-                stack = in(reg) stack_top,
-                entry = in(reg) jump_to,
+                stack = in(reg) stack_top as usize,
+                entry = in(reg) jump_to as usize,
                 options(nomem, nostack,noreturn)
             )
         }
