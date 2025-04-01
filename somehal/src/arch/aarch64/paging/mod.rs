@@ -2,6 +2,15 @@ use core::arch::asm;
 
 use aarch64_cpu::{asm::barrier::*, registers::*};
 
+cfg_match! {
+    feature = "vm" =>{
+
+    }
+    _ =>{
+        mod table_el1;
+    }
+}
+
 #[link_boot::link_boot]
 mod _m {
     use somehal_macros::println;

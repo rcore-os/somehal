@@ -6,7 +6,7 @@ mod _m {
     use aarch64_cpu::{asm::barrier, registers::*};
 
     use super::debug::init_by_dtb;
-    use crate::arch::mmu::enable_mmu;
+    use crate::arch::paging::enable_mmu;
     use crate::arch::rust_main;
     use crate::consts::STACK_SIZE;
     use crate::mem::{clean_bss, entry_addr, set_kcode_va_offset, stack_top};

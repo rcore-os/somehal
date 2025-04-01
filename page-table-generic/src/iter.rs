@@ -71,8 +71,6 @@ impl<'a, 'b: 'a, P: TableGeneric, A: Access> TableIter<'a, 'b, P, A> {
                 }
             }
 
-            // self.start_vaddr.add(self.idx() * self.table().entry_size())
-
             self.start_vaddr.add(offset)
         }
     }
@@ -90,7 +88,7 @@ impl<'a, 'b: 'a, P: TableGeneric, A: Access> Iterator for TableIter<'a, 'b, P, A
                         Some(PTEInfo {
                             level: self.level,
                             vaddr: (vaddr as usize).into(),
-                            pte: pte.clone(),
+                            pte,
                         })
                     } else {
                         None

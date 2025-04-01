@@ -314,9 +314,9 @@ checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
 
 [[package]]
 name = "page-table-arm"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "acf197095e2be67e34ecec01c1bc645e8e1c4eb8736ecb9eaf47419fe00cbfcf"
+checksum = "2ce2c42338660c47a35e7b2940dcccbe6612a4a0aa0485ecdf4e23aa8a2a1158"
 dependencies = [
  "aarch64-cpu",
  "bitflags",
@@ -465,9 +465,11 @@ dependencies = [
  "kmem",
  "link-boot",
  "page-table-arm",
+ "page-table-generic",
  "smccc",
  "somehal-macros",
  "spin",
+ "tock-registers",
 ]
 
 [[package]]
