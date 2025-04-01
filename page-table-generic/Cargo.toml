@@ -1,0 +1,20 @@
+[package]
+name = "page-table-generic"
+version = "0.6.0"
+authors = ["周睿 <zrufo747@outlook.com>"]
+repository = "https://github.com/rcore-os/somehal/page-table-generic"
+documentation = "https://docs.rs/page-table-generic"
+edition.workspace = true
+description.workspace = true
+license.workspace = true
+keywords = ["pagetable", "mmu"]
+categories = ["no-std"]
+
+[dependencies]
+bitflags = "2"
+log = "0.4"
+thiserror = { version = "2", default-features = false }
+
+[dev-dependencies]
+env_logger = "0.11"
+tock-registers = "0.9"

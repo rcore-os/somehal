@@ -6,7 +6,10 @@ mod _m {
     use aarch64_cpu::{asm::barrier, registers::*};
 
     use super::debug::init_by_dtb;
-    use crate::mem::{clean_bss, entry_addr};
+    use crate::arch::mmu::enable_mmu;
+    use crate::arch::rust_main;
+    use crate::consts::STACK_SIZE;
+    use crate::mem::{clean_bss, entry_addr, set_kcode_va_offset, stack_top};
     use crate::println;
 
     const FLAG_LE: usize = 0b0;
@@ -53,7 +56,8 @@ mod _m {
                 "MOV      x19, x0",        // x19 = dtb_addr
 
                 // setup stack
-                "LDR      x1,  =_stack_top",
+                "LDR      x1,  =__stack_bottom",
+                "ADD      x1,  x1, {stack_size}",
                 "SUB      x1,  x1, x18", // X1 == STACK_TOP
                 "MOV      sp,  x1",
 
@@ -63,22 +67,34 @@ mod _m {
                 "MOV      x1,  x19",
                 "BL       {entry}",
                 this_func = sym primary_entry,
+                stack_size = const STACK_SIZE,
                 switch_to_elx = sym switch_to_elx,
-                entry = sym rust_entry,
+                entry = sym rust_boot,
             )
         }
     }
 
-    fn rust_entry(kcode_va: usize, fdt: *mut u8) -> ! {
+    fn rust_boot(kcode_va: usize, fdt: *mut u8) -> ! {
         unsafe { clean_bss() };
         enable_fp();
+        unsafe { set_kcode_va_offset(kcode_va) };
         init_by_dtb(fdt);
 
         println!("Booting up");
         println!("Entry     : {}", entry_addr());
         println!("kcode va  : {}", kcode_va);
+        println!("stack top : {}", stack_top());
+        println!("fdt       : {}", fdt as usize);
 
-        unreachable!()
+        let rust_main_addr: *mut u8;
+        unsafe {
+            asm!("LDR {0}, ={fn_name}",
+                out(reg) rust_main_addr,
+                fn_name = sym rust_main,
+            );
+        }
+        let stack_top_virt = 0xffff_f000_0000_0000usize;
+        enable_mmu(stack_top_virt as _, rust_main_addr)
     }
 
     fn switch_to_elx() {

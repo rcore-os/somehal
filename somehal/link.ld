@@ -46,8 +46,7 @@ SECTIONS
         . = ALIGN(4K);
     }
 
-    _stack_bottom = .;
-    _stack_top = . + %STACK_SIZE%;
+    __stack_bottom = .;
 	/DISCARD/ : {
         *(.comment) *(.gnu*) *(.note*) *(.eh_frame*)
     }

@@ -61,8 +61,6 @@ impl Arch {
         let ld_content = ld_content.replace("%ARCH%", &output_arch);
         let ld_content = ld_content.replace("%KERNEL_VADDR%", &format!("{:#x}", ENTRY_VADDR));
 
-        let ld_content =
-            ld_content.replace("%STACK_SIZE%", &format!("{:#x}", DEFAULT_KERNEL_STACK_SIZE));
         std::fs::write(out_dir().join("link.x"), ld_content).expect("link.x write failed");
     }
 }
