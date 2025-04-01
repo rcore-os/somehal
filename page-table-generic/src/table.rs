@@ -4,7 +4,9 @@ use core::{
     ptr::{slice_from_raw_parts, slice_from_raw_parts_mut},
 };
 
-use crate::{Access, PTEGeneric, PagingError, PagingResult, PhysAddr, align::AlignTo};
+use crate::{
+    Access, PTEGeneric, PagingError, PagingResult, PhysAddr, align::AlignTo, iter::TableIter,
+};
 use crate::{TableGeneric, VirtAddr};
 use log::trace;
 
@@ -49,7 +51,9 @@ struct _MapConfig<P: PTEGeneric> {
 
 #[link_boot::link_boot]
 mod _m {
+    use crate::PTEInfo;
 
+    #[derive(Clone, Copy)]
     pub struct PageTableRef<'a, T: TableGeneric> {
         addr: PhysAddr,
         walk: PageWalk<T>,
@@ -98,8 +102,8 @@ mod _m {
             config: MapConfig<T::PTE>,
             access: &mut impl Access,
         ) -> PagingResult {
-            let mut vaddr = config.vaddr;
-            let mut paddr = config.paddr;
+            let vaddr = config.vaddr;
+            let paddr = config.paddr;
 
             if !vaddr.raw().is_aligned_to(T::PAGE_SIZE) {
                 return Err(PagingError::NotAligned("vaddr"));
@@ -148,6 +152,13 @@ mod _m {
             Ok(())
         }
 
+        pub fn iter_all<A: Access>(
+            &self,
+            access: &'a A,
+        ) -> impl Iterator<Item = PTEInfo<T::PTE>> + 'a {
+            TableIter::new(0 as _, *self, access)
+        }
+
         pub fn release(&mut self, access: &mut impl Access) {
             self._release(0.into(), access);
             unsafe {
@@ -193,7 +204,7 @@ mod _m {
             level: usize,
             access: &mut impl Access,
         ) -> PagingResult<()> {
-            let table = self;
+            let mut table = *self;
             while table.level() > 0 {
                 let idx = table.index_of_table(map_cfg.vaddr);
                 if table.level() == level {
@@ -205,7 +216,7 @@ mod _m {
                     table.as_slice_mut(access)[idx] = pte;
                     return Ok(());
                 }
-                *table = unsafe { table.sub_table_or_create(idx, map_cfg, access)? };
+                table = unsafe { table.sub_table_or_create(idx, map_cfg, access)? };
             }
             Err(PagingError::NotAligned("vaddr"))
         }

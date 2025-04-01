@@ -1,5 +1,6 @@
 use std::{
     alloc::{self, Layout},
+    fmt::{Debug, Pointer},
     mem,
     ptr::NonNull,
 };
@@ -8,7 +9,7 @@ use log::trace;
 use page_table_generic::*;
 
 use PTE::Register;
-use tock_registers::{fields::FieldValue, interfaces::*, register_bitfields, registers::*};
+use tock_registers::{interfaces::*, register_bitfields, registers::*};
 
 const MB: usize = 1024 * 1024;
 const GB: usize = 1024 * MB;
@@ -42,12 +43,22 @@ register_bitfields! [
 ];
 
 #[repr(transparent)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 struct PteImpl(u64);
 
 impl PteImpl {
     fn reg(&self) -> &ReadWrite<u64, PTE::Register> {
         unsafe { mem::transmute(self) }
+    }
+}
+
+impl Debug for PteImpl {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if !self.valid() {
+            return write!(f, "invalid");
+        }
+
+        write!(f, "PTE PA: {:?} Block: {:?}", self.paddr(), self.is_block())
     }
 }
 
@@ -119,142 +130,141 @@ impl Access for AccessImpl {
 fn test_pte() {
     let mut want = PteImpl(0);
     want.set_valid(true);
-    assert_eq!(want.valid(), true);
+    assert!(want.valid());
 
     let addr = PhysAddr::from(0xff123456000);
     want.set_paddr(addr);
     assert_eq!(want.paddr(), addr);
 }
 
-// #[test]
-// fn test_new() {
-//     let _ = env_logger::builder()
-//         .is_test(true)
-//         .filter_level(log::LevelFilter::Trace)
-//         .try_init();
+#[test]
+fn test_new() {
+    let _ = env_logger::builder()
+        .is_test(true)
+        .filter_level(log::LevelFilter::Trace)
+        .try_init();
 
-//     let mut access = AccessImpl;
+    let mut access = AccessImpl;
 
-//     let mut pg = PageTableRef::<Table>::create_empty(&mut access).unwrap();
-//     unsafe {
-//         pg.map(
-//             MapConfig::new(
-//                 0xffff000000000000usize.into(),
-//                 0x0000,
-//                 0x2000,
-//                 PTE::new_empty(),
-//                 false,
-//                 false,
-//             ),
-//             &mut access,
-//         )
-//         .unwrap();
-//     }
-//     let msg = pg
-//         .as_slice(&access)
-//         .iter()
-//         .filter_map(|o| {
-//             let v = o.as_usize();
-//             if v > 0 {
-//                 Some(format!("{:#x}", v))
-//             } else {
-//                 None
-//             }
-//         })
-//         .collect::<Vec<_>>()
-//         .join(", ");
+    let mut pg = PageTableRef::<Table>::create_empty(&mut access).unwrap();
+    unsafe {
+        pg.map(
+            MapConfig::new(
+                0xfffff00000000000usize.into(),
+                0x0000.into(),
+                0x2000,
+                PteImpl(0),
+                false,
+                false,
+            ),
+            &mut access,
+        )
+        .unwrap();
+    }
+    let msg = pg
+        .as_slice(&access)
+        .iter()
+        .filter_map(|o| {
+            if o.valid() {
+                Some(format!("{:#x}", o.0))
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
 
-//     println!("vec: {}", msg);
+    println!("vec: {}", msg);
 
-//     let list = pg.iter_all(&access).collect::<Vec<_>>();
+    let list = pg.iter_all(&access).collect::<Vec<_>>();
 
-//     for i in &list {
-//         println!("l: {:x}, va: {:#p} c: {:?}", i.level, i.vaddr, i.pte);
-//     }
+    for i in &list {
+        println!("l: {:x}, va: {:?} c: {:?}", i.level, i.vaddr, i.pte);
+    }
 
-//     assert_eq!(list.len(), 5);
-// }
+    assert_eq!(list.len(), 5);
+}
 
-// #[test]
-// fn test_block() {
-//     let _ = env_logger::builder()
-//         .is_test(true)
-//         .filter_level(log::LevelFilter::Trace)
-//         .try_init();
+#[test]
+fn test_block() {
+    let _ = env_logger::builder()
+        .is_test(true)
+        .filter_level(log::LevelFilter::Trace)
+        .try_init();
 
-//     let mut access = AccessImpl;
+    let mut access = AccessImpl;
 
-//     let mut pg = PageTableRef::<PteImpl>::create_empty(&mut access).unwrap();
-//     unsafe {
-//         pg.map_region(
-//             MapConfig::new(
-//                 0xff0000000000usize as _,
-//                 0x80000000,
-//                 AccessSetting::Read | AccessSetting::Write,
-//                 CacheSetting::Device,
-//             ),
-//             2 * GB,
-//             true,
-//             &mut access,
-//         )
-//         .unwrap();
-//     }
-//     let msg = pg
-//         .as_slice(&access)
-//         .iter()
-//         .filter_map(|o| {
-//             let v = o.as_usize();
-//             if v > 0 {
-//                 Some(format!("{:#x}", v))
-//             } else {
-//                 None
-//             }
-//         })
-//         .collect::<Vec<_>>()
-//         .join(", ");
+    let mut pg = PageTableRef::<Table>::create_empty(&mut access).unwrap();
 
-//     println!("vec: {}", msg);
+    unsafe {
+        pg.map(
+            MapConfig::new(
+                0xff0000000000usize.into(),
+                0x80000000.into(),
+                2 * GB,
+                PteImpl(0),
+                true,
+                false,
+            ),
+            &mut access,
+        )
+        .unwrap();
+    }
+    let msg = pg
+        .as_slice(&access)
+        .iter()
+        .filter_map(|o| {
+            if o.valid() {
+                Some(format!("{:#x}", o.0))
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
 
-//     let list = pg.iter_all(&access).collect::<Vec<_>>();
+    println!("vec: {}", msg);
 
-//     for i in &list {
-//         println!("l: {:x}, va: {:#p} c: {:?}", i.level, i.vaddr, i.pte);
-//     }
+    let list = pg.iter_all(&access).collect::<Vec<_>>();
 
-//     // assert_eq!(list.len(), 2);
-//     assert!(list.last().unwrap().pte.is_block);
-// }
+    for i in &list {
+        println!("l: {:x}, va: {:?} c: {:?}", i.level, i.vaddr, i.pte);
+    }
 
-// #[test]
-// fn test_release() {
-//     let _ = env_logger::builder()
-//         .is_test(true)
-//         .filter_level(log::LevelFilter::Trace)
-//         .try_init();
+    assert_eq!(list.len(), 3);
+    assert!(list.last().unwrap().pte.is_block());
+}
 
-//     let mut access = AccessImpl;
+#[test]
+fn test_release() {
+    let _ = env_logger::builder()
+        .is_test(true)
+        .filter_level(log::LevelFilter::Trace)
+        .try_init();
 
-//     let mut pg = PageTableRef::<PteImpl>::create_empty(&mut access).unwrap();
-//     unsafe {
-//         pg.map_region(
-//             MapConfig::new(
-//                 0xffff000000000000usize as _,
-//                 0x0000,
-//                 AccessSetting::Read | AccessSetting::Write,
-//                 CacheSetting::Device,
-//             )
-//             .set_user_access(AccessSetting::Read),
-//             0x2000,
-//             false,
-//             &mut access,
-//         )
-//         .unwrap();
-//     }
-//     for i in pg.iter_all(&access) {
-//         println!("l: {:x}, va: {:#p} c: {:?}", i.level, i.vaddr, i.pte);
-//     }
-//     pg.release(&mut access);
-// }
+    let mut access = AccessImpl;
+
+    let mut pg = PageTableRef::<Table>::create_empty(&mut access).unwrap();
+
+    unsafe {
+        pg.map(
+            MapConfig::new(
+                0xffff000000000000usize.into(),
+                0x0000.into(),
+                0x2000,
+                PteImpl(0),
+                false,
+                false,
+            ),
+            &mut access,
+        )
+        .unwrap();
+    }
+    for i in pg.iter_all(&access) {
+        println!("l: {:x}, va: {:?} c: {:?}", i.level, i.vaddr, i.pte);
+    }
+    pg.release(&mut access);
+}
 
 // #[test]
 // fn test_2() {

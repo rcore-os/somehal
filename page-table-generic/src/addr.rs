@@ -36,7 +36,7 @@ macro_rules! def_addr {
 
         impl core::fmt::Debug for $name {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, "{:#x}", self.0)
+                write!(f, "0x{:0>16x}", self.0)
             }
         }
     };

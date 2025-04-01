@@ -3,11 +3,19 @@
 
 mod addr;
 mod align;
+mod iter;
 mod table;
 use core::{alloc::Layout, fmt::Debug};
 
 pub use addr::*;
 pub use table::{MapConfig, PageTableRef};
+
+#[derive(Debug, Clone, Copy)]
+pub struct PTEInfo<P: PTEGeneric> {
+    pub level: usize,
+    pub vaddr: VirtAddr,
+    pub pte: P,
+}
 
 pub trait TableGeneric: Sync + Send + Clone + Copy + 'static {
     type PTE: PTEGeneric;
