@@ -2,6 +2,7 @@
 
 #[link_boot::link_boot]
 mod _m {
+    use core::ops::Index;
 
     pub enum Error {
         Full,
@@ -34,6 +35,22 @@ mod _m {
                 Ok(())
             } else {
                 Err(Error::Full)
+            }
+        }
+    }
+
+    impl<T, const CAP: usize> Index<usize> for ArrayVec<T, CAP> {
+        type Output = T;
+
+        fn index(&self, idx: usize) -> &Self::Output {
+            self.xs[idx].as_ref().unwrap()
+        }
+    }
+
+    impl<T: Clone, const CAP: usize> Clone for ArrayVec<T, CAP> {
+        fn clone(&self) -> Self {
+            Self {
+                xs: self.xs.clone(),
             }
         }
     }

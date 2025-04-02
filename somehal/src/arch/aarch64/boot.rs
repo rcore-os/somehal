@@ -4,12 +4,15 @@ mod _m {
     use core::arch::{asm, naked_asm};
 
     use aarch64_cpu::{asm::barrier, registers::*};
+    use kmem::space::STACK_TOP;
 
     use super::debug::init_by_dtb;
     use crate::arch::paging::enable_mmu;
     use crate::arch::rust_main;
     use crate::consts::STACK_SIZE;
-    use crate::mem::{clean_bss, detect_space_by_dtb, entry_addr, set_kcode_va_offset, stack_top};
+    use crate::mem::{
+        boot_stack_top, clean_bss, entry_addr, set_kcode_va_offset, setup_mem_regions,
+    };
     use crate::println;
 
     const FLAG_LE: usize = 0b0;
@@ -83,10 +86,27 @@ mod _m {
         println!("Booting up");
         println!("Entry     : {}", entry_addr());
         println!("kcode va  : {}", kcode_va);
-        println!("stack top : {}", stack_top());
+        println!("stack top : {}", boot_stack_top());
         println!("fdt       : {}", fdt as usize);
 
-        unsafe { detect_space_by_dtb(fdt) };
+        let phys_memories = match crate::fdt::find_memory(fdt) {
+            Ok(v) => v,
+            Err(_) => {
+                println!("fdt parse error");
+                panic!();
+            }
+        };
+        let cpu_count = match crate::fdt::cpu_count(fdt) {
+            Ok(v) => v,
+            Err(_) => {
+                println!("fdt parse cpu count error");
+                panic!();
+            }
+        };
+
+        println!("cpu count  : {}", cpu_count);
+
+        unsafe { setup_mem_regions(phys_memories, cpu_count) };
 
         let rust_main_addr: *mut u8;
         unsafe {
@@ -95,8 +115,8 @@ mod _m {
                 fn_name = sym rust_main,
             );
         }
-        let stack_top_virt = 0xffff_f000_0000_0000usize;
-        enable_mmu(stack_top_virt as _, rust_main_addr)
+
+        enable_mmu(STACK_TOP as _, rust_main_addr)
     }
 
     fn switch_to_elx() {

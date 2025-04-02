@@ -24,6 +24,11 @@ SECTIONS
     data : ALIGN(4K) {
         *(.data*)
     }
+
+    percpu : ALIGN(4K) {
+        *(.percpu*)
+    }
+
     __kernel_size = . - __start_BootText;
 
     bss (NOLOAD) : ALIGN(4K)  {

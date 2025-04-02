@@ -26,4 +26,10 @@ mod _m {
             unsafe { (*self.0.get()).as_ref().unwrap() }
         }
     }
+
+    impl<T> AsRef<T> for OnceStatic<T> {
+        fn as_ref(&self) -> &T {
+            unsafe { (*self.0.get()).as_ref().unwrap() }
+        }
+    }
 }

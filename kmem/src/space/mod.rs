@@ -1,5 +1,8 @@
 use core::fmt::Debug;
 
+pub const OFFSET_LINER: usize = 0xffff_c000_0000_0000;
+pub const STACK_TOP: usize = 0xffff_f000_0000_0000;
+
 bitflags::bitflags! {
     #[repr(transparent)]
     #[derive(Clone, Copy, PartialEq, Eq)]

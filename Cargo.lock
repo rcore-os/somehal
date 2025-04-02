@@ -269,6 +269,7 @@ name = "kmem"
 version = "0.1.0"
 dependencies = [
  "bitflags",
+ "link-boot",
 ]
 
 [[package]]
@@ -464,6 +465,7 @@ dependencies = [
  "any-uart",
  "arm-gic-driver",
  "arrayvec",
+ "fdt-parser",
  "kmem",
  "link-boot",
  "page-table-arm",

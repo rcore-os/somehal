@@ -13,5 +13,8 @@ pub mod mem;
 pub(crate) mod once_static;
 pub(crate) mod vec;
 
+#[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
+pub(crate) mod fdt;
+
 pub(crate) use archif::ArchIf;
 pub(crate) use somehal_macros::println;

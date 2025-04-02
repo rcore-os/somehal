@@ -34,6 +34,15 @@ macro_rules! def_addr {
             }
         }
 
+        impl core::ops::Sub<$t> for $name {
+            type Output = Self;
+
+            #[inline(always)]
+            fn sub(self, rhs: $t) -> Self::Output {
+                Self(self.0 - rhs)
+            }
+        }
+
         impl core::fmt::Debug for $name {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 write!(f, "0x{:0>16x}", self.0)

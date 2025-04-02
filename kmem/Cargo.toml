@@ -11,3 +11,4 @@ repository.workspace = true
 
 [dependencies]
 bitflags = "2"
+link-boot = { version = "0.2" }

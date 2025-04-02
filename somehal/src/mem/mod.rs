@@ -1,22 +1,32 @@
 use kmem::space::CacheConfig;
 pub use kmem::*;
-use somehal_macros::fn_link_section;
 
 use crate::consts::STACK_SIZE;
+use somehal_macros::fn_link_section;
+
+#[derive(Debug, Clone)]
+pub struct PhysMemory {
+    pub addr: PhysAddr,
+    pub size: usize,
+}
 
 #[link_boot::link_boot]
 mod _m {
     use core::ptr::slice_from_raw_parts_mut;
 
-    use kmem::space::{AccessFlags, MemConfig};
+    use kmem::space::{AccessFlags, MemConfig, OFFSET_LINER, STACK_TOP};
     use somehal_macros::println;
 
     use crate::{ArchIf, arch::Arch, once_static::OnceStatic, vec::ArrayVec};
 
+    pub type PhysMemoryArray = ArrayVec<PhysMemory, 12>;
     static mut KCODE_VA_OFFSET: usize = 0;
-    static MEM_REGION_LINK: OnceStatic<ArrayVec<MemRegion, 16>> = OnceStatic::new();
+    static MEM_REGIONS: OnceStatic<ArrayVec<MemRegion, 32>> = OnceStatic::new();
+    static STACK_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
+    static PERCPU_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
 
     #[repr(C)]
+    #[derive(Clone)]
     pub struct MemRegion {
         pub virt_start: VirtAddr,
         pub size: usize,
@@ -47,14 +57,10 @@ mod _m {
     }
 
     pub(crate) fn entry_addr() -> usize {
-        unsafe extern "C" {
-            fn __start_BootText();
-        }
-
-        __start_BootText as usize
+        BootText().as_ptr() as usize
     }
 
-    pub(crate) fn stack_top() -> usize {
+    pub(crate) fn boot_stack_top() -> usize {
         unsafe extern "C" {
             fn __stack_bottom();
         }
@@ -71,13 +77,76 @@ mod _m {
         unsafe { KCODE_VA_OFFSET }
     }
 
+    fn link_section_end() -> PhysAddr {
+        unsafe extern "C" {
+            fn __stack_bottom();
+        }
+        (__stack_bottom as *mut u8 as usize).into()
+    }
+
+    ///
     /// # Safety
     /// 只能在`mmu`开启前调用
-    pub(crate) unsafe fn detect_space_by_dtb(dtb: *mut u8) {
+    pub(crate) unsafe fn setup_mem_regions(memories: PhysMemoryArray, cpu_count: usize) {
         detect_link_space();
-        println!("detect link space");
+        for m in memories {
+            let mut phys_start = m.addr;
+            let phys_raw = phys_start.raw();
+            let mut name = "memory    ";
+            let mut size = m.size;
+            let mut phys_end = phys_start + size;
+
+            if phys_raw < link_section_end().raw() && link_section_end().raw() < phys_raw + m.size {
+                name = "mem main  ";
+                phys_start = link_section_end();
+
+                let stack_all_size = cpu_count * STACK_SIZE;
+
+                phys_end = phys_end - stack_all_size;
+
+                let stack_all = PhysMemory {
+                    addr: phys_end,
+                    size: stack_all_size,
+                };
+
+                unsafe {
+                    (*STACK_ALL.get()).replace(stack_all);
+                }
+            }
+
+            size = phys_end.raw() - phys_start.raw();
+            let virt = phys_start.raw() + OFFSET_LINER;
+
+            mem_region_add(MemRegion {
+                virt_start: virt.into(),
+                size,
+                phys_start,
+                name,
+                config: MemConfig {
+                    access: AccessFlags::Read | AccessFlags::Write,
+                    cache: CacheConfig::Normal,
+                },
+            });
+        }
+
+        let stack_start = STACK_ALL.addr + STACK_ALL.size - STACK_SIZE;
+
+        mem_region_add(MemRegion {
+            virt_start: (STACK_TOP - STACK_SIZE).into(),
+            size: STACK_SIZE,
+            phys_start: stack_start,
+            name: "stack     ",
+            config: MemConfig {
+                access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
+                cache: CacheConfig::Normal,
+            },
+        });
     }
-    fn mem_region_add(region: MemRegion) {
+
+    fn mem_region_add(mut region: MemRegion) {
+        let size = region.size.align_up(Arch::page_size());
+        region.size = size;
+
         println!(
             "region {} : [{}, {}) -> [{}, {}) {}",
             region.name,
@@ -85,14 +154,14 @@ mod _m {
             region.virt_start.raw() + region.size,
             region.phys_start.raw(),
             region.phys_start.raw() + region.size,
-            if region.size == 0 { "skip empty" } else { "" }
+            if size == 0 { "skip empty" } else { "" }
         );
 
-        if region.size == 0 {
+        if size == 0 {
             return;
         }
 
-        if unsafe { (*MEM_REGION_LINK.get()).as_mut().unwrap() }
+        if unsafe { (*MEM_REGIONS.get()).as_mut().unwrap() }
             .try_push(region)
             .is_err()
         {
@@ -104,7 +173,7 @@ mod _m {
     fn detect_link_space() {
         let regions = ArrayVec::new();
         unsafe {
-            (*MEM_REGION_LINK.get()).replace(regions);
+            (*MEM_REGIONS.get()).replace(regions);
         }
 
         mem_region_add(link_section_to_kspace(
@@ -179,3 +248,4 @@ fn_link_section!(text);
 fn_link_section!(data);
 fn_link_section!(rodata);
 fn_link_section!(bss);
+fn_link_section!(percpu);
