@@ -7,7 +7,6 @@ mod _m {
 
     struct Alloc {
         start: usize,
-        iter: usize,
         end: usize,
     }
 
@@ -16,12 +15,12 @@ mod _m {
             &mut self,
             layout: core::alloc::Layout,
         ) -> Option<page_table_generic::PhysAddr> {
-            let start = self.iter.align_up(layout.align());
+            let start = self.start.align_up(layout.align());
             if start + layout.size() > self.end {
                 return None;
             }
 
-            self.iter = start + layout.size();
+            self.start += layout.size().align_up(layout.align());
 
             Some(start.into())
         }
@@ -39,7 +38,6 @@ mod _m {
     }
 
     pub fn new_boot_table() {
-        
 
         // let table = Table::create_empty(access);
     }
