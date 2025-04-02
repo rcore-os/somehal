@@ -2,7 +2,7 @@ use core::ptr::NonNull;
 
 use fdt_parser::{Fdt, FdtError};
 
-use crate::mem::{PhysMemory, PhysMemoryArray};
+use crate::mem::{PhysMemory, PhysMemoryArray, page::page_size};
 
 #[link_boot::link_boot]
 mod _m {
@@ -65,7 +65,7 @@ mod _m {
             uart,
             MemRegion {
                 virt_start: (phys_start + OFFSET_LINER).into(),
-                size: Arch::page_size(),
+                size: page_size(),
                 phys_start: phys_start.into(),
                 name: "debug uart",
                 config: MemConfig {

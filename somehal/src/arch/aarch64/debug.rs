@@ -1,8 +1,5 @@
 #[link_boot::link_boot]
 mod _m {
-
-    use core::ptr::NonNull;
-
     use any_uart::Sender;
     use spin::Mutex;
 

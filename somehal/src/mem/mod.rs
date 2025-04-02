@@ -1,8 +1,11 @@
 use kmem::space::CacheConfig;
 pub use kmem::*;
+use page::page_size;
 
 use crate::consts::STACK_SIZE;
 use somehal_macros::fn_link_section;
+
+pub mod page;
 
 #[derive(Debug, Clone)]
 pub struct PhysMemory {
@@ -12,7 +15,7 @@ pub struct PhysMemory {
 
 #[link_boot::link_boot]
 mod _m {
-    use core::{alloc::Layout, ptr::slice_from_raw_parts_mut};
+    use core::ptr::slice_from_raw_parts_mut;
 
     use kmem::space::{AccessFlags, MemConfig, OFFSET_LINER, STACK_TOP};
     use somehal_macros::println;
@@ -117,7 +120,7 @@ mod _m {
                     (*STACK_ALL.get()).replace(stack_all);
                 }
 
-                let percpu_size = percpu().len().align_up(Arch::page_size()) * cpu_count;
+                let percpu_size = percpu().len().align_up(page_size()) * cpu_count;
 
                 let percpu_start = phys_start;
 
@@ -177,7 +180,7 @@ mod _m {
     }
 
     fn mem_region_add(mut region: MemRegion) {
-        let size = region.size.align_up(Arch::page_size());
+        let size = region.size.align_up(page_size());
         region.size = size;
 
         println!(

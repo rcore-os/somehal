@@ -8,6 +8,7 @@ cfg_match! {
     }
     _ =>{
         mod table_el1;
+        pub use table_el1::*;
     }
 }
 

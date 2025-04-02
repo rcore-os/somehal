@@ -13,6 +13,14 @@ impl ArchIf for Arch {
     fn is_mmu_enabled() -> bool {
         paging::is_mmu_enabled()
     }
+
+    type PageTable = paging::Table;
+
+    fn new_pte_with_config(
+        config: kmem::space::MemConfig,
+    ) -> <Self::PageTable as page_table_generic::TableGeneric>::PTE {
+        paging::new_pte_with_config(config)
+    }
 }
 
 fn rust_main() {}

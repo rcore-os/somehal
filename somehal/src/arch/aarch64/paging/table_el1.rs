@@ -5,9 +5,7 @@ mod _m {
     use core::fmt::Debug;
 
     use page_table_arm::{PTE, PTEFlags};
-    use page_table_generic::{PTEGeneric, PageTableRef, TableGeneric};
-
-    pub type TableRef<'a> = PageTableRef<'a, Table>;
+    use page_table_generic::{PTEGeneric, TableGeneric};
 
     #[repr(transparent)]
     #[derive(Clone, Copy)]
@@ -73,5 +71,12 @@ mod _m {
                 }
             }
         }
+    }
+
+    pub  fn new_pte_with_config(config: kmem::space::MemConfig) -> Pte {
+        let mut pte = Pte(PTE::empty());        
+
+
+        pte
     }
 }
