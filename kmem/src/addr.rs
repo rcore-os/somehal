@@ -16,6 +16,11 @@ macro_rules! def_addr {
             pub fn raw(&self) -> $t {
                 self.0
             }
+
+            #[inline(always)]
+            pub const fn new(value: $t) -> Self {
+                Self(value)
+            }
         }
 
         impl core::ops::Add<$t> for $name {
@@ -29,7 +34,7 @@ macro_rules! def_addr {
 
         impl core::ops::AddAssign<$t> for $name {
             #[inline(always)]
-            fn add_assign(&mut self, rhs:$t) {
+            fn add_assign(&mut self, rhs: $t) {
                 self.0 += rhs;
             }
         }

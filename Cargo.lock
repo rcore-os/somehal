@@ -205,9 +205,9 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.11.7"
+version = "0.11.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3716d7a920fb4fac5d84e9d4bce8ceb321e9414b4409da61b07b75c1e3d0697"
+checksum = "13c863f0904021b108aa8b2f55046443e6b1ebde8fd4a15c399893aae4fa069f"
 dependencies = [
  "anstream",
  "anstyle",
@@ -218,9 +218,9 @@ dependencies = [
 
 [[package]]
 name = "fdt-parser"
-version = "0.4.10"
+version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6ce5f2349481622d853a132241a102974317337ec643670a830e4194cb71181"
+checksum = "371a22bb791074c597c250202eb46293e301ee49a2bc3b1a4f47839ed74796e9"
 
 [[package]]
 name = "fnv"

@@ -1,12 +1,19 @@
 use core::ptr::NonNull;
 
-use fdt_parser::FdtError;
+use fdt_parser::{Fdt, FdtError};
 
 use crate::mem::{PhysMemory, PhysMemoryArray};
 
 #[link_boot::link_boot]
 mod _m {
+    use fdt_parser::Node;
+    use kmem::{
+        PhysAddr,
+        space::{AccessFlags, CacheConfig, MemConfig, OFFSET_LINER},
+    };
     use somehal_macros::println;
+
+    use crate::{ArchIf, arch::Arch, mem::MemRegion};
 
     pub fn find_memory(fdt: *mut u8) -> Result<PhysMemoryArray, FdtError<'static>> {
         let mut mems = PhysMemoryArray::new();
@@ -39,5 +46,25 @@ mod _m {
         let fdt = fdt_parser::Fdt::from_ptr(NonNull::new(fdt).ok_or(FdtError::BadPtr)?)?;
         let nodes = fdt.find_nodes("/cpus/cpu");
         Ok(nodes.count())
+    }
+
+    pub fn init_debugcon(fdt: *mut u8) -> Option<MemRegion> {
+        let fdt = Fdt::from_ptr(NonNull::new(fdt)?).ok()?;
+        let choson = fdt.chosen()?;
+        let node = choson.debugcon()?;
+
+        let reg = node.reg()?.next()?;
+        let phys_start = reg.address as usize;
+
+        Some(MemRegion {
+            virt_start: (phys_start + OFFSET_LINER).into(),
+            size: Arch::page_size(),
+            phys_start: phys_start.into(),
+            name: "debug uart",
+            config: MemConfig {
+                access: AccessFlags::Read | AccessFlags::Write,
+                cache: CacheConfig::NoCache,
+            },
+        })
     }
 }

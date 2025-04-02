@@ -12,7 +12,7 @@ pub struct PhysMemory {
 
 #[link_boot::link_boot]
 mod _m {
-    use core::ptr::slice_from_raw_parts_mut;
+    use core::{alloc::Layout, ptr::slice_from_raw_parts_mut};
 
     use kmem::space::{AccessFlags, MemConfig, OFFSET_LINER, STACK_TOP};
     use somehal_macros::println;
@@ -87,7 +87,11 @@ mod _m {
     ///
     /// # Safety
     /// 只能在`mmu`开启前调用
-    pub(crate) unsafe fn setup_mem_regions(memories: PhysMemoryArray, cpu_count: usize) {
+    pub(crate) unsafe fn setup_mem_regions(
+        memories: impl Iterator<Item = PhysMemory>,
+        cpu_count: usize,
+        arch_regions: impl Iterator<Item = MemRegion>,
+    ) {
         detect_link_space();
         for m in memories {
             let mut phys_start = m.addr;
@@ -167,6 +171,9 @@ mod _m {
                 cache: CacheConfig::Normal,
             },
         });
+        for r in arch_regions {
+            mem_region_add(r);
+        }
     }
 
     fn mem_region_add(mut region: MemRegion) {

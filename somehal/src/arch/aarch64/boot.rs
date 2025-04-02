@@ -13,7 +13,8 @@ mod _m {
     use crate::mem::{
         boot_stack_top, clean_bss, entry_addr, set_kcode_va_offset, setup_mem_regions,
     };
-    use crate::println;
+    use crate::vec::ArrayVec;
+    use crate::{fdt, println};
 
     const FLAG_LE: usize = 0b0;
     const FLAG_PAGE_SIZE_4K: usize = 0b10;
@@ -77,10 +78,26 @@ mod _m {
         }
     }
 
+    macro_rules! handle_err {
+        ($f:expr, $msg:literal) => {
+            match $f {
+                Ok(v) => v,
+                Err(_) => {
+                    println!("{}", $msg);
+                    panic!();
+                }
+            }
+        };
+    }
+
     fn rust_boot(kcode_va: usize, fdt: *mut u8) -> ! {
         unsafe { clean_bss() };
         enable_fp();
         unsafe { set_kcode_va_offset(kcode_va) };
+
+        let mut arch_regions = ArrayVec::<_, 4>::new();
+        let debug_region = fdt::init_debugcon(fdt).unwrap();
+
         init_by_dtb(fdt);
 
         println!("Booting up");
@@ -89,24 +106,13 @@ mod _m {
         println!("stack top : {}", boot_stack_top());
         println!("fdt       : {}", fdt as usize);
 
-        let phys_memories = match crate::fdt::find_memory(fdt) {
-            Ok(v) => v,
-            Err(_) => {
-                println!("fdt parse error");
-                panic!();
-            }
-        };
-        let cpu_count = match crate::fdt::cpu_count(fdt) {
-            Ok(v) => v,
-            Err(_) => {
-                println!("fdt parse cpu count error");
-                panic!();
-            }
-        };
+        handle_err!(arch_regions.try_push(debug_region), "arch_regions full");
+        let phys_memories = handle_err!(crate::fdt::find_memory(fdt), "fdt can not found memory");
+        let cpu_count = handle_err!(crate::fdt::cpu_count(fdt), "fdt can not found cpu");
 
         println!("cpu count  : {}", cpu_count);
 
-        unsafe { setup_mem_regions(phys_memories, cpu_count) };
+        unsafe { setup_mem_regions(phys_memories, cpu_count, arch_regions) };
 
         let rust_main_addr: *mut u8;
         unsafe {
