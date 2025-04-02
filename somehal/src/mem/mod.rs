@@ -15,7 +15,7 @@ pub struct PhysMemory {
 
 #[link_boot::link_boot]
 mod _m {
-    use core::ptr::slice_from_raw_parts_mut;
+    use core::{alloc::Layout, ptr::slice_from_raw_parts_mut};
 
     use kmem::space::{AccessFlags, MemConfig, OFFSET_LINER, STACK_TOP};
     use somehal_macros::println;
@@ -24,9 +24,11 @@ mod _m {
 
     pub type PhysMemoryArray = ArrayVec<PhysMemory, 12>;
     static mut KCODE_VA_OFFSET: usize = 0;
+    static mut CPU_COUNT: usize = 1;
     static MEM_REGIONS: OnceStatic<ArrayVec<MemRegion, 32>> = OnceStatic::new();
     static STACK_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
     static PERCPU_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
+    static MEMORY_MAIN: OnceStatic<PhysMemory> = OnceStatic::new();
 
     #[repr(C)]
     #[derive(Clone)]
@@ -87,24 +89,28 @@ mod _m {
         (__stack_bottom as *mut u8 as usize).into()
     }
 
+    pub(crate) fn stack_top_cpu0() -> PhysAddr {
+        STACK_ALL.addr + STACK_SIZE
+    }
+
     ///
     /// # Safety
     /// 只能在`mmu`开启前调用
-    pub(crate) unsafe fn setup_mem_regions(
+    pub(crate) unsafe fn setup_memory_main(
         memories: impl Iterator<Item = PhysMemory>,
         cpu_count: usize,
-        arch_regions: impl Iterator<Item = MemRegion>,
     ) {
         detect_link_space();
+        unsafe { CPU_COUNT = cpu_count };
         for m in memories {
             let mut phys_start = m.addr;
             let phys_raw = phys_start.raw();
-            let mut name = "memory    ";
-            let mut size = m.size;
+            // let mut name = "memory    ";
+            let size = m.size;
             let mut phys_end = phys_start + size;
 
             if phys_raw < link_section_end().raw() && link_section_end().raw() < phys_raw + m.size {
-                name = "mem main  ";
+                // name = "mem main  ";
                 phys_start = link_section_end();
 
                 let stack_all_size = cpu_count * STACK_SIZE;
@@ -120,35 +126,13 @@ mod _m {
                     (*STACK_ALL.get()).replace(stack_all);
                 }
 
-                let percpu_size = percpu().len().align_up(page_size()) * cpu_count;
-
-                let percpu_start = phys_start;
-
-                phys_start += percpu_size;
-
-                let percpu_all = PhysMemory {
-                    addr: percpu_start,
-                    size: percpu_size,
-                };
-
                 unsafe {
-                    (*PERCPU_ALL.get()).replace(percpu_all);
+                    (*MEMORY_MAIN.get()).replace(PhysMemory {
+                        addr: phys_start,
+                        size: phys_end.raw() - phys_start.raw(),
+                    });
                 }
             }
-
-            size = phys_end.raw() - phys_start.raw();
-            let virt = phys_start.raw() + OFFSET_LINER;
-
-            mem_region_add(MemRegion {
-                virt_start: virt.into(),
-                size,
-                phys_start,
-                name,
-                config: MemConfig {
-                    access: AccessFlags::Read | AccessFlags::Write,
-                    cache: CacheConfig::Normal,
-                },
-            });
         }
 
         let stack_start = STACK_ALL.addr + STACK_ALL.size - STACK_SIZE;
@@ -163,19 +147,57 @@ mod _m {
                 cache: CacheConfig::Normal,
             },
         });
+    }
 
+    pub(crate) fn setup_memory_regions(rsv: impl Iterator<Item = MemRegion>) {
+        let percpu_size = percpu().len().align_up(page_size()) * unsafe { CPU_COUNT };
+
+        let percpu_start =
+            main_memory_alloc(Layout::from_size_align(percpu_size, page_size()).unwrap());
+
+        let percpu_all = PhysMemory {
+            addr: percpu_start,
+            size: percpu_size,
+        };
+
+        unsafe {
+            (*PERCPU_ALL.get()).replace(percpu_all);
+        }
         mem_region_add(MemRegion {
             virt_start: (percpu().as_ptr() as usize + kcode_offset()).into(),
-            size: percpu().len(),
-            phys_start: PERCPU_ALL.addr,
-            name: "percpu    ",
+            size: percpu_size,
+            phys_start: percpu_start,
+            name: ".percpu   ",
             config: MemConfig {
                 access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
                 cache: CacheConfig::Normal,
             },
         });
-        for r in arch_regions {
+
+        mem_region_add(MemRegion {
+            virt_start: (MEMORY_MAIN.addr.raw() + OFFSET_LINER).into(),
+            size: MEMORY_MAIN.size,
+            phys_start: MEMORY_MAIN.addr,
+            name: "mem main  ",
+            config: MemConfig {
+                access: AccessFlags::Read | AccessFlags::Write,
+                cache: CacheConfig::Normal,
+            },
+        });
+
+        for r in rsv {
             mem_region_add(r);
+        }
+    }
+
+    pub(crate) fn main_memory_alloc(layout: Layout) -> PhysAddr {
+        unsafe {
+            let end = MEMORY_MAIN.addr + MEMORY_MAIN.size;
+            let ptr = MEMORY_MAIN.addr.align_up(layout.align());
+            let start = ptr + layout.size();
+            let size = end.raw() - start.raw();
+            (*MEMORY_MAIN.get()).replace(PhysMemory { addr: start, size });
+            ptr
         }
     }
 
@@ -276,10 +298,6 @@ mod _m {
             config,
         }
     }
-
-    // pub(crate) fn main_memory()->PhysMemory{
-
-    // }
 }
 
 fn_link_section!(BootText);

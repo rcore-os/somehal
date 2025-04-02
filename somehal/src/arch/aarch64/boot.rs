@@ -1,3 +1,8 @@
+use crate::{
+    fdt::save_fdt,
+    mem::{setup_memory_main, setup_memory_regions},
+};
+
 #[allow(unused)]
 #[link_boot::link_boot]
 mod _m {
@@ -10,9 +15,11 @@ mod _m {
     use crate::arch::paging::{self, enable_mmu};
     use crate::arch::rust_main;
     use crate::consts::STACK_SIZE;
+    use crate::fdt::set_fdt_ptr;
     use crate::mem::{
-        boot_stack_top, clean_bss, entry_addr, set_kcode_va_offset, setup_mem_regions,
+        MemRegion, boot_stack_top, clean_bss, entry_addr, set_kcode_va_offset, stack_top_cpu0,
     };
+    use crate::once_static::OnceStatic;
     use crate::vec::ArrayVec;
     use crate::{fdt, println};
 
@@ -90,13 +97,19 @@ mod _m {
         };
     }
 
+    static DEBUG_CON: OnceStatic<MemRegion> = OnceStatic::new();
+
     fn rust_boot(kcode_va: usize, fdt: *mut u8) -> ! {
         unsafe { clean_bss() };
         enable_fp();
-        unsafe { set_kcode_va_offset(kcode_va) };
+        unsafe {
+            set_kcode_va_offset(kcode_va);
+            set_fdt_ptr(fdt);
+        }
 
-        let mut arch_regions = ArrayVec::<_, 4>::new();
-        let (uart, debug_region) = fdt::init_debugcon(fdt).unwrap();
+        let (uart, debug_region) = fdt::init_debugcon().unwrap();
+
+        unsafe { (*DEBUG_CON.get()).replace(debug_region) };
 
         set_uart(uart);
 
@@ -106,13 +119,33 @@ mod _m {
         println!("stack top : {}", boot_stack_top());
         println!("fdt       : {}", fdt as usize);
 
-        handle_err!(arch_regions.try_push(debug_region), "arch_regions full");
         let phys_memories = handle_err!(crate::fdt::find_memory(fdt), "fdt can not found memory");
-        let cpu_count = handle_err!(crate::fdt::cpu_count(fdt), "fdt can not found cpu");
+        let cpu_count = handle_err!(crate::fdt::cpu_count(), "fdt can not found cpu");
 
         println!("cpu count  : {}", cpu_count);
 
-        unsafe { setup_mem_regions(phys_memories, cpu_count, arch_regions) };
+        unsafe {
+            setup_memory_main(phys_memories, cpu_count);
+            let sp = stack_top_cpu0().raw();
+            asm!(
+                "mov sp, {sp}",
+                "bl {fn_name}",
+                sp = in(reg) sp,
+                fn_name = sym fix_sp,
+                options(nostack, noreturn)
+            )
+        }
+    }
+
+    fn fix_sp() -> ! {
+        let region_fdt = handle_err!(save_fdt(), "save fdt failed");
+
+        let mut rsv = ArrayVec::<_, 4>::new();
+
+        let _ = rsv.try_push(region_fdt);
+        let _ = rsv.try_push(DEBUG_CON.clone());
+
+        setup_memory_regions(rsv);
 
         let rust_main_addr: *mut u8;
         unsafe {

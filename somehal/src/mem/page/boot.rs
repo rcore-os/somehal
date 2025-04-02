@@ -41,6 +41,6 @@ mod _m {
     pub fn new_boot_table() {
         
 
-        let table = Table::create_empty(access);
+        // let table = Table::create_empty(access);
     }
 }

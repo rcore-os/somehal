@@ -58,3 +58,17 @@ macro_rules! def_addr {
 
 def_addr!(PhysAddr, usize);
 def_addr!(VirtAddr, usize);
+
+impl From<*mut u8> for VirtAddr {
+    #[inline(always)]
+    fn from(val: *mut u8) -> Self {
+        Self(val as _)
+    }
+}
+
+impl From<*const u8> for VirtAddr {
+    #[inline(always)]
+    fn from(val: *const u8) -> Self {
+        Self(val as _)
+    }
+}

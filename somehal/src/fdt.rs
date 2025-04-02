@@ -1,15 +1,25 @@
-use core::ptr::NonNull;
+use core::{
+    alloc::Layout,
+    ptr::{NonNull, slice_from_raw_parts_mut},
+};
 
 use fdt_parser::{Fdt, FdtError};
+use kmem::IntAlign;
 
-use crate::mem::{PhysMemory, PhysMemoryArray, page::page_size};
+use crate::mem::{PhysMemory, PhysMemoryArray, main_memory_alloc, page::page_size};
 
 #[link_boot::link_boot]
 mod _m {
     use kmem::space::{AccessFlags, CacheConfig, MemConfig, OFFSET_LINER};
     use somehal_macros::println;
 
-    use crate::{ArchIf, arch::Arch, mem::MemRegion};
+    use crate::{
+        ArchIf,
+        arch::Arch,
+        mem::{MemRegion, kcode_offset},
+    };
+
+    static mut FDT_ADDR: usize = 0;
 
     pub fn find_memory(fdt: *mut u8) -> Result<PhysMemoryArray, FdtError<'static>> {
         let mut mems = PhysMemoryArray::new();
@@ -38,8 +48,8 @@ mod _m {
         Ok(mems)
     }
 
-    pub fn cpu_count(fdt: *mut u8) -> Result<usize, FdtError<'static>> {
-        let fdt = fdt_parser::Fdt::from_ptr(NonNull::new(fdt).ok_or(FdtError::BadPtr)?)?;
+    pub fn cpu_count() -> Result<usize, FdtError<'static>> {
+        let fdt = get_fdt().ok_or(FdtError::BadPtr)?;
         let nodes = fdt.find_nodes("/cpus/cpu");
         Ok(nodes.count())
     }
@@ -51,8 +61,8 @@ mod _m {
         p as _
     }
 
-    pub fn init_debugcon(fdt: *mut u8) -> Option<(any_uart::Uart, MemRegion)> {
-        let fdt = Fdt::from_ptr(NonNull::new(fdt)?).ok()?;
+    pub fn init_debugcon() -> Option<(any_uart::Uart, MemRegion)> {
+        let fdt = get_fdt()?;
         let choson = fdt.chosen()?;
         let node = choson.debugcon()?;
 
@@ -74,5 +84,43 @@ mod _m {
                 },
             },
         ))
+    }
+    pub(crate) unsafe fn set_fdt_ptr(fdt: *mut u8) {
+        unsafe {
+            FDT_ADDR = fdt as _;
+        }
+    }
+
+    fn get_fdt<'a>() -> Option<Fdt<'a>> {
+        let ptr_src = unsafe { FDT_ADDR } as *mut u8;
+        Fdt::from_ptr(NonNull::new(ptr_src)?).ok()
+    }
+
+    pub(crate) fn save_fdt() -> Result<MemRegion, &'static str> {
+        let ptr_src = unsafe { FDT_ADDR } as *mut u8;
+        let fdt = Fdt::from_ptr(NonNull::new(ptr_src).ok_or("")?).map_err(|_| "")?;
+        let size = fdt.total_size().align_up(page_size());
+
+        let ptr_dst = main_memory_alloc(Layout::from_size_align(size, page_size()).map_err(|_| "")?)
+            .raw() as *mut u8;
+
+        unsafe {
+            let src = &mut *slice_from_raw_parts_mut(ptr_src, size);
+            let dst = &mut *slice_from_raw_parts_mut(ptr_dst, size);
+            dst.copy_from_slice(src);
+
+            FDT_ADDR = ptr_dst as _;
+        }
+
+        Ok(MemRegion {
+            virt_start: (ptr_dst as usize + kcode_offset()).into(),
+            size,
+            phys_start: (ptr_dst as usize).into(),
+            name: "fdt data  ",
+            config: MemConfig {
+                access: AccessFlags::Read,
+                cache: CacheConfig::Normal,
+            },
+        })
     }
 }
