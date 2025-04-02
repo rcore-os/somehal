@@ -132,6 +132,17 @@ mod _m {
                         size: phys_end.raw() - phys_start.raw(),
                     });
                 }
+            } else {
+                mem_region_add(MemRegion {
+                    virt_start: (phys_start.raw() + OFFSET_LINER).into(),
+                    size,
+                    phys_start,
+                    name: "memory   ",
+                    config: MemConfig {
+                        access: AccessFlags::Read | AccessFlags::Write,
+                        cache: CacheConfig::Normal,
+                    },
+                });
             }
         }
 
