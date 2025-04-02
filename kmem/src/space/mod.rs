@@ -10,7 +10,9 @@ bitflags::bitflags! {
         const Read = 1;
         const Write = 1 << 2;
         const Execute = 1 << 3;
-        const LowerPrivilege = 1 << 4;
+        const LowerRead = 1 << 4;
+        const LowerWrite = 1 << 5;
+        const LowerExecute = 1 << 6;
     }
 }
 
@@ -18,7 +20,7 @@ impl Debug for AccessFlags {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "{}{}{}{}",
+            "{}{}{} |L: {}{}{}",
             if self.contains(AccessFlags::Read) {
                 "R"
             } else {
@@ -34,11 +36,21 @@ impl Debug for AccessFlags {
             } else {
                 "-"
             },
-            if self.contains(AccessFlags::LowerPrivilege) {
-                "L"
+            if self.contains(AccessFlags::LowerRead) {
+                "R"
             } else {
                 "-"
-            }
+            },
+            if self.contains(AccessFlags::LowerWrite) {
+                "W"
+            } else {
+                "-"
+            },
+            if self.contains(AccessFlags::LowerExecute) {
+                "X"
+            } else {
+                "-"
+            },
         )
     }
 }

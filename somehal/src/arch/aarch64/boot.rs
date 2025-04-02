@@ -7,7 +7,7 @@ mod _m {
     use kmem::space::STACK_TOP;
 
     use crate::arch::debug::set_uart;
-    use crate::arch::paging::enable_mmu;
+    use crate::arch::paging::{self, enable_mmu};
     use crate::arch::rust_main;
     use crate::consts::STACK_SIZE;
     use crate::mem::{
@@ -121,6 +121,8 @@ mod _m {
                 fn_name = sym rust_main,
             );
         }
+
+        paging::setup_regs();
 
         enable_mmu(STACK_TOP as _, rust_main_addr)
     }

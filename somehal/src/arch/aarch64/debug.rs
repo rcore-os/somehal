@@ -1,6 +1,7 @@
 #[link_boot::link_boot]
 mod _m {
     use any_uart::Sender;
+    use kmem::space::OFFSET_LINER;
     use spin::Mutex;
 
     static TX: Mutex<Option<Sender>> = Mutex::new(None);
@@ -8,6 +9,10 @@ mod _m {
     pub(crate) fn set_uart(uart: any_uart::Uart) -> Option<()> {
         TX.lock().replace(uart.tx?);
         Some(())
+    }
+
+    pub(crate) fn reloacte() {
+        TX.lock().as_mut().unwrap().mmio_base_add(OFFSET_LINER);
     }
 
     pub fn write_str_list(str_list: impl Iterator<Item = &'static str>) {

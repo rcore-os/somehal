@@ -4,8 +4,43 @@ use core::arch::asm;
 mod _m {
     use core::fmt::Debug;
 
+    use aarch64_cpu::registers::*;
+    use kmem::space::AccessFlags;
     use page_table_arm::{PTE, PTEFlags};
     use page_table_generic::{PTEGeneric, TableGeneric};
+
+    pub fn setup_regs() {
+        // Device-nGnRnE
+        let attr0 = MAIR_EL1::Attr0_Device::nonGathering_nonReordering_noEarlyWriteAck;
+        // Normal
+        let attr1 = MAIR_EL1::Attr1_Normal_Inner::WriteBack_NonTransient_ReadWriteAlloc
+            + MAIR_EL1::Attr1_Normal_Outer::WriteBack_NonTransient_ReadWriteAlloc;
+        // WriteThrough
+        let attr2 = MAIR_EL1::Attr2_Normal_Inner::WriteThrough_NonTransient_ReadWriteAlloc
+            + MAIR_EL1::Attr2_Normal_Outer::WriteThrough_NonTransient_ReadWriteAlloc;
+
+        MAIR_EL1.write(attr0 + attr1 + attr2);
+
+        // Enable TTBR0 and TTBR1 walks, page size = 4K, vaddr size = 48 bits, paddr size = 40 bits.
+        const VADDR_SIZE: u64 = 48;
+        const T0SZ: u64 = 64 - VADDR_SIZE;
+
+        let tcr_flags0 = TCR_EL1::EPD0::EnableTTBR0Walks
+            + TCR_EL1::TG0::KiB_4
+            + TCR_EL1::SH0::Inner
+            + TCR_EL1::ORGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable
+            + TCR_EL1::IRGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable
+            + TCR_EL1::T0SZ.val(T0SZ);
+        let tcr_flags1 = TCR_EL1::EPD1::EnableTTBR1Walks
+            + TCR_EL1::TG1::KiB_4
+            + TCR_EL1::SH1::Inner
+            + TCR_EL1::ORGN1::WriteBack_ReadAlloc_WriteAlloc_Cacheable
+            + TCR_EL1::IRGN1::WriteBack_ReadAlloc_WriteAlloc_Cacheable
+            + TCR_EL1::T1SZ.val(T0SZ);
+        TCR_EL1.write(TCR_EL1::IPS::Bits_48 + tcr_flags0 + tcr_flags1);
+
+        Table::flush(None);
+    }
 
     #[repr(transparent)]
     #[derive(Clone, Copy)]
@@ -73,10 +108,33 @@ mod _m {
         }
     }
 
-    pub  fn new_pte_with_config(config: kmem::space::MemConfig) -> Pte {
-        let mut pte = Pte(PTE::empty());        
+    pub fn new_pte_with_config(config: kmem::space::MemConfig) -> Pte {
+        let mut pte = PTE::from_paddr(0);
+        let mut flags = PTEFlags::AF | PTEFlags::VALID;
 
+        if !config.access.contains(AccessFlags::Write) {
+            flags |= PTEFlags::AP_RO;
+        }
 
-        pte
+        if !config.access.contains(AccessFlags::Execute) {
+            flags |= PTEFlags::PXN;
+        }
+
+        if config.access.contains(AccessFlags::LowerRead) {
+            flags |= PTEFlags::AP_EL0;
+        }
+
+        if !config.access.contains(AccessFlags::LowerExecute) {
+            flags |= PTEFlags::UXN;
+        }
+
+        pte.set_flags(flags);
+        pte.set_mair_idx(match config.cache {
+            kmem::space::CacheConfig::Normal => 1,
+            kmem::space::CacheConfig::NoCache => 0,
+            kmem::space::CacheConfig::WriteThrough => 2,
+        });
+
+        Pte(pte)
     }
 }

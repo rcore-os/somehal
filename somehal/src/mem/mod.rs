@@ -276,6 +276,10 @@ mod _m {
             config,
         }
     }
+
+    // pub(crate) fn main_memory()->PhysMemory{
+
+    // }
 }
 
 fn_link_section!(BootText);

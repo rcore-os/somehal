@@ -1,3 +1,5 @@
+use somehal_macros::println;
+
 use crate::ArchIf;
 mod boot;
 pub mod debug;
@@ -23,4 +25,6 @@ impl ArchIf for Arch {
     }
 }
 
-fn rust_main() {}
+fn rust_main() {
+    println!("reloacte ok");
+}

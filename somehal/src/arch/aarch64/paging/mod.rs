@@ -16,6 +16,8 @@ cfg_match! {
 mod _m {
     use somehal_macros::println;
 
+    use crate::arch::debug;
+
     /// 参数为目标虚拟地址
     #[inline(always)]
     pub fn enable_mmu(stack_top: *mut u8, jump_to: *mut u8) -> ! {
@@ -25,9 +27,19 @@ mod _m {
         );
         unsafe {
             // Enable the MMU and turn on I-cache and D-cache
-            SCTLR_EL1
-                .modify(SCTLR_EL1::M::Enable + SCTLR_EL1::C::Cacheable + SCTLR_EL1::I::Cacheable);
+            cfg_match! {
+                feature = "vm" => {
+
+                }
+                _ =>{
+                    SCTLR_EL1
+                        .modify(SCTLR_EL1::M::Enable + SCTLR_EL1::C::Cacheable + SCTLR_EL1::I::Cacheable);
+                }
+            }
+
             isb(SY);
+
+            debug::reloacte();
 
             asm!(
                 "MOV      sp,  {stack}",
