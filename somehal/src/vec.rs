@@ -14,7 +14,7 @@ mod _m {
     }
 
     impl<T, const CAP: usize> ArrayVec<T, CAP> {
-        pub fn new() -> ArrayVec<T, CAP> {
+        pub const fn new() -> ArrayVec<T, CAP> {
             ArrayVec {
                 xs: [const { None }; CAP],
             }

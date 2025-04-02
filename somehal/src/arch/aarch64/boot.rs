@@ -9,7 +9,7 @@ mod _m {
     use crate::arch::paging::enable_mmu;
     use crate::arch::rust_main;
     use crate::consts::STACK_SIZE;
-    use crate::mem::{clean_bss, entry_addr, set_kcode_va_offset, stack_top};
+    use crate::mem::{clean_bss, detect_space_by_dtb, entry_addr, set_kcode_va_offset, stack_top};
     use crate::println;
 
     const FLAG_LE: usize = 0b0;
@@ -85,6 +85,8 @@ mod _m {
         println!("kcode va  : {}", kcode_va);
         println!("stack top : {}", stack_top());
         println!("fdt       : {}", fdt as usize);
+
+        unsafe { detect_space_by_dtb(fdt) };
 
         let rust_main_addr: *mut u8;
         unsafe {

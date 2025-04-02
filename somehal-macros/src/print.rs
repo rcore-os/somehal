@@ -65,6 +65,11 @@ pub fn println(input: TokenStream) -> Result<TokenStream, Error> {
 
             right = pat.right;
         }
+        if !right.is_empty() {
+            items.push(quote! {
+                let _ = vec.try_push(#right);
+            });
+        }
     }
 
     Ok(quote! {

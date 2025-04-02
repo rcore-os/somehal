@@ -26,11 +26,6 @@ SECTIONS
     }
     __kernel_size = . - __start_BootText;
 
-    tbss (NOLOAD) : ALIGN(0x10) {
-        *(.tbss .tbss.*)
-        *(.tcommon)
-    }
-
     bss (NOLOAD) : ALIGN(4K)  {
         *(.bss*)
         *(.sbss*)
