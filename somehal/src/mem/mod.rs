@@ -112,6 +112,21 @@ mod _m {
                 unsafe {
                     (*STACK_ALL.get()).replace(stack_all);
                 }
+
+                let percpu_size = percpu().len().align_up(Arch::page_size()) * cpu_count;
+
+                let percpu_start = phys_start;
+
+                phys_start += percpu_size;
+
+                let percpu_all = PhysMemory {
+                    addr: percpu_start,
+                    size: percpu_size,
+                };
+
+                unsafe {
+                    (*PERCPU_ALL.get()).replace(percpu_all);
+                }
             }
 
             size = phys_end.raw() - phys_start.raw();
@@ -136,6 +151,17 @@ mod _m {
             size: STACK_SIZE,
             phys_start: stack_start,
             name: "stack     ",
+            config: MemConfig {
+                access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
+                cache: CacheConfig::Normal,
+            },
+        });
+
+        mem_region_add(MemRegion {
+            virt_start: (percpu().as_ptr() as usize + kcode_offset()).into(),
+            size: percpu().len(),
+            phys_start: PERCPU_ALL.addr,
+            name: "percpu    ",
             config: MemConfig {
                 access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
                 cache: CacheConfig::Normal,
