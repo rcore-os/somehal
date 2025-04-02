@@ -6,7 +6,7 @@ mod _m {
     use aarch64_cpu::{asm::barrier, registers::*};
     use kmem::space::STACK_TOP;
 
-    use super::debug::init_by_dtb;
+    use crate::arch::debug::set_uart;
     use crate::arch::paging::enable_mmu;
     use crate::arch::rust_main;
     use crate::consts::STACK_SIZE;
@@ -96,9 +96,9 @@ mod _m {
         unsafe { set_kcode_va_offset(kcode_va) };
 
         let mut arch_regions = ArrayVec::<_, 4>::new();
-        let debug_region = fdt::init_debugcon(fdt).unwrap();
+        let (uart, debug_region) = fdt::init_debugcon(fdt).unwrap();
 
-        init_by_dtb(fdt);
+        set_uart(uart);
 
         println!("Booting up");
         println!("Entry     : {}", entry_addr());

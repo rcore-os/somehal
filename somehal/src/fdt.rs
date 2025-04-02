@@ -6,11 +6,7 @@ use crate::mem::{PhysMemory, PhysMemoryArray};
 
 #[link_boot::link_boot]
 mod _m {
-    use fdt_parser::Node;
-    use kmem::{
-        PhysAddr,
-        space::{AccessFlags, CacheConfig, MemConfig, OFFSET_LINER},
-    };
+    use kmem::space::{AccessFlags, CacheConfig, MemConfig, OFFSET_LINER};
     use somehal_macros::println;
 
     use crate::{ArchIf, arch::Arch, mem::MemRegion};
@@ -48,23 +44,35 @@ mod _m {
         Ok(nodes.count())
     }
 
-    pub fn init_debugcon(fdt: *mut u8) -> Option<MemRegion> {
+    fn phys_to_virt(p: usize) -> *mut u8 {
+        if Arch::is_mmu_enabled() {
+            return (p + OFFSET_LINER) as _;
+        }
+        p as _
+    }
+
+    pub fn init_debugcon(fdt: *mut u8) -> Option<(any_uart::Uart, MemRegion)> {
         let fdt = Fdt::from_ptr(NonNull::new(fdt)?).ok()?;
         let choson = fdt.chosen()?;
         let node = choson.debugcon()?;
 
+        let uart = any_uart::Uart::new_by_fdt_node(&node, phys_to_virt)?;
+
         let reg = node.reg()?.next()?;
         let phys_start = reg.address as usize;
 
-        Some(MemRegion {
-            virt_start: (phys_start + OFFSET_LINER).into(),
-            size: Arch::page_size(),
-            phys_start: phys_start.into(),
-            name: "debug uart",
-            config: MemConfig {
-                access: AccessFlags::Read | AccessFlags::Write,
-                cache: CacheConfig::NoCache,
+        Some((
+            uart,
+            MemRegion {
+                virt_start: (phys_start + OFFSET_LINER).into(),
+                size: Arch::page_size(),
+                phys_start: phys_start.into(),
+                name: "debug uart",
+                config: MemConfig {
+                    access: AccessFlags::Read | AccessFlags::Write,
+                    cache: CacheConfig::NoCache,
+                },
             },
-        })
+        ))
     }
 }

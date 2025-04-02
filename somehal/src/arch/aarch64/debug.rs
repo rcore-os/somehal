@@ -1,4 +1,3 @@
-
 #[link_boot::link_boot]
 mod _m {
 
@@ -9,8 +8,7 @@ mod _m {
 
     static TX: Mutex<Option<Sender>> = Mutex::new(None);
 
-    pub fn init_by_dtb(dtb: *mut u8) -> Option<()> {
-        let uart = any_uart::init(NonNull::new(dtb)?, |p| p as _)?;
+    pub(crate) fn set_uart(uart: any_uart::Uart) -> Option<()> {
         TX.lock().replace(uart.tx?);
         Some(())
     }

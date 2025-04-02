@@ -83,13 +83,14 @@ dependencies = [
 
 [[package]]
 name = "any-uart"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f900af586f54fe172ee020b1ce6f925502907dbfc6338246d6d36852850e766"
+checksum = "cc21cbba4e49a111cafa56d8ff79d71f0c4e45c969541aa1bd646bc1a206b990"
 dependencies = [
  "bitflags",
  "embedded-hal-nb",
  "fdt-parser",
+ "link-boot",
 ]
 
 [[package]]
