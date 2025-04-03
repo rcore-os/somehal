@@ -6,7 +6,6 @@ edition.workspace = true
 [features]
 vm = []
 
-
 [dependencies]
 somehal-macros = { path = "../somehal-macros" }
 kmem = { path = "../kmem" }

@@ -24,7 +24,7 @@ mod _m {
     use crate::dbgln;
     use kmem::space::{AccessFlags, MemConfig, OFFSET_LINER, STACK_TOP};
 
-    use crate::{ArchIf, arch::Arch, once_static::OnceStatic, vec::ArrayVec};
+    use crate::{once_static::OnceStatic, vec::ArrayVec};
 
     pub type PhysMemoryArray = ArrayVec<PhysMemory, 12>;
     static KCODE_VA_OFFSET: AtomicUsize = AtomicUsize::new(0);
@@ -67,19 +67,6 @@ mod _m {
 
     pub(crate) fn entry_addr() -> usize {
         BootText().as_ptr() as usize
-    }
-
-    pub(crate) fn boot_stack_top() -> usize {
-        unsafe extern "C" {
-            fn __stack_bottom();
-        }
-
-        __stack_bottom as usize + STACK_SIZE
-            - if Arch::is_mmu_enabled() {
-                kcode_offset()
-            } else {
-                0
-            }
     }
 
     pub(crate) fn kcode_offset() -> usize {
