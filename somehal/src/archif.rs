@@ -1,3 +1,4 @@
+pub use crate::mem::{PhysAddr, VirtAddr};
 use kmem::space::MemConfig;
 pub use page_table_generic::*;
 
@@ -6,4 +7,13 @@ pub trait ArchIf {
     fn is_mmu_enabled() -> bool;
     type PageTable: TableGeneric;
     fn new_pte_with_config(config: MemConfig) -> <Self::PageTable as TableGeneric>::PTE;
+    fn set_kernel_table(addr: PhysAddr);
+
+    fn get_kernel_table() -> PhysAddr;
+
+    fn set_user_table(addr: PhysAddr);
+
+    fn get_user_table() -> PhysAddr;
+
+    fn flush_tlb(vaddr: Option<VirtAddr>);
 }

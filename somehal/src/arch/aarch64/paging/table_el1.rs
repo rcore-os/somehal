@@ -24,8 +24,8 @@ mod _m {
         flush_tlb(None);
     }
 
-    pub fn get_user_table() -> usize {
-        TTBR0_EL1.get_baddr() as _
+    pub fn get_user_table() -> PhysAddr {
+        (TTBR0_EL1.get_baddr() as usize).into()
     }
 
     pub fn flush_tlb(vaddr: Option<VirtAddr>) {

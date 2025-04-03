@@ -6,13 +6,13 @@
     "configurations": [
         {
             "type": "cppdbg",
-            "name": "Debug",
+            "name": "Debug aarch64 test",
             "request": "launch",
             "miDebuggerServerAddress": "localhost:1234",
             "program": "${workspaceFolder}/target/kernel.elf",
             "miDebuggerPath": "gdb-multiarch",
             "cwd": "${workspaceRoot}",
-            "preLaunchTask": "qemu debug"
+            "preLaunchTask": "qemu debug aarch64"
         },
     ]
 }

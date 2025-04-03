@@ -3,7 +3,7 @@
     "tasks": [
         {
             "type": "shell",
-            "label": "qemu debug",
+            "label": "qemu debug aarch64",
             "command": "cargo",
             "args": [
                 "test",
