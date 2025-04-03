@@ -10,16 +10,17 @@ use crate::mem::{PhysMemory, PhysMemoryArray, main_memory_alloc, page::page_size
 
 #[link_boot::link_boot]
 mod _m {
+    use core::{
+        ptr::null_mut,
+        sync::atomic::{AtomicPtr, Ordering},
+    };
+
     use kmem::space::{AccessFlags, CacheConfig, MemConfig, OFFSET_LINER};
     use somehal_macros::println;
 
-    use crate::{
-        ArchIf,
-        arch::Arch,
-        mem::{MemRegion, kcode_offset},
-    };
+    use crate::mem::{MemRegion, kcode_offset};
 
-    static mut FDT_ADDR: usize = 0;
+    static FDT_ADDR: AtomicPtr<u8> = AtomicPtr::new(null_mut());
 
     pub fn find_memory(fdt: *mut u8) -> Result<PhysMemoryArray, FdtError<'static>> {
         let mut mems = PhysMemoryArray::new();
@@ -54,14 +55,11 @@ mod _m {
         Ok(nodes.count())
     }
 
-    fn phys_to_virt(p: usize) -> *mut u8 {
-        if Arch::is_mmu_enabled() {
-            return (p + OFFSET_LINER) as _;
-        }
-        p as _
-    }
-
     pub fn init_debugcon() -> Option<(any_uart::Uart, MemRegion)> {
+        fn phys_to_virt(p: usize) -> *mut u8 {
+            p as _
+        }
+
         let fdt = get_fdt()?;
         let choson = fdt.chosen()?;
         let node = choson.debugcon()?;
@@ -86,18 +84,19 @@ mod _m {
         ))
     }
     pub(crate) unsafe fn set_fdt_ptr(fdt: *mut u8) {
-        unsafe {
-            FDT_ADDR = fdt as _;
-        }
+        FDT_ADDR.store(fdt, Ordering::SeqCst);
+    }
+
+    fn fdt_ptr() -> *mut u8 {
+        FDT_ADDR.load(Ordering::SeqCst)
     }
 
     fn get_fdt<'a>() -> Option<Fdt<'a>> {
-        let ptr_src = unsafe { FDT_ADDR } as *mut u8;
-        Fdt::from_ptr(NonNull::new(ptr_src)?).ok()
+        Fdt::from_ptr(NonNull::new(fdt_ptr())?).ok()
     }
 
     pub(crate) fn save_fdt() -> Result<MemRegion, &'static str> {
-        let ptr_src = unsafe { FDT_ADDR } as *mut u8;
+        let ptr_src = fdt_ptr();
         let fdt = Fdt::from_ptr(NonNull::new(ptr_src).ok_or("")?).map_err(|_| "")?;
         let size = fdt.total_size().align_up(page_size());
 
@@ -109,7 +108,7 @@ mod _m {
             let dst = &mut *slice_from_raw_parts_mut(ptr_dst, size);
             dst.copy_from_slice(src);
 
-            FDT_ADDR = ptr_dst as _;
+            FDT_ADDR.store(ptr_dst, Ordering::SeqCst);
         }
 
         Ok(MemRegion {

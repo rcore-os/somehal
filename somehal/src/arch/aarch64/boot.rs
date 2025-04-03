@@ -11,7 +11,7 @@ mod _m {
     use aarch64_cpu::{asm::barrier, registers::*};
     use kmem::space::STACK_TOP;
 
-    use crate::arch::debug::set_uart;
+    use crate::arch::debug::{self, set_uart};
     use crate::arch::paging::{self, enable_mmu};
     use crate::arch::rust_main;
     use crate::consts::STACK_SIZE;
@@ -116,7 +116,7 @@ mod _m {
         println!("Booting up");
         println!("Entry     : {}", entry_addr());
         println!("kcode va  : {}", kcode_va);
-        println!("stack top : {}", boot_stack_top());
+        // println!("stack top : {}", boot_stack_top());
         println!("fdt       : {}", fdt as usize);
 
         let phys_memories = handle_err!(crate::fdt::find_memory(fdt), "fdt can not found memory");

@@ -8,8 +8,8 @@ mod paging;
 pub struct Arch;
 
 impl ArchIf for Arch {
-    fn early_write_str_list(str_list: impl Iterator<Item = &'static str>) {
-        debug::write_str_list(str_list);
+    fn early_debug_put(b: u8) {
+        debug::write_byte(b);
     }
 
     fn is_mmu_enabled() -> bool {

@@ -40,14 +40,14 @@ pub fn println(input: TokenStream) -> Result<TokenStream, Error> {
 
     if arg_count == 0 {
         items.push(quote! {
-            let _ = vec.try_push(#right);
+           crate::console::__print_str(#right);
         });
     } else {
         while let Some(pat) = find_patterns(&right) {
             let left = pat.left;
 
             items.push(quote! {
-                let _ = vec.try_push(#left);
+                crate::console::__print_str(#left);
             });
 
             let arg = args_iter
@@ -56,10 +56,7 @@ pub fn println(input: TokenStream) -> Result<TokenStream, Error> {
 
             items.push(quote! {
                 {
-                    let list = crate::console::AsConstStr::to_const_str(#arg);
-                    for one in list{
-                        let _ = vec.try_push(one);
-                    }
+                    crate::console::Print::_print(#arg);
                 }
             });
 
@@ -67,17 +64,15 @@ pub fn println(input: TokenStream) -> Result<TokenStream, Error> {
         }
         if !right.is_empty() {
             items.push(quote! {
-                let _ = vec.try_push(#right);
+                crate::console::__print_str(#right);
             });
         }
     }
 
     Ok(quote! {
         {
-            let mut vec = crate::vec::ArrayVec::<_, 128>::new();
             #(#items);*
-            let _ = vec.try_push("\r\n");
-            crate::console::__print_str_list(vec);
+            crate::console::__print_str("\r\n");
         }
     }
     .into())
