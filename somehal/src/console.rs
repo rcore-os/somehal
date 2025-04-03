@@ -4,6 +4,7 @@ use spin::Mutex;
 
 #[link_boot::link_boot]
 mod _boot {
+    use fdt_parser::FdtError;
     use page_table_generic::PagingError;
 
     use crate::{ArchIf, arch::Arch};
@@ -46,6 +47,28 @@ mod _boot {
                 }
                 PagingError::NotMapped => __print_str("NotMapped"),
                 PagingError::AlreadyMapped => __print_str("AlreadyMapped"),
+            }
+        }
+    }
+
+    impl Print for FdtError<'_> {
+        fn _print(self) {
+            match self {
+                FdtError::BadCell => __print_str("BadCell"),
+                FdtError::NotFound(s) => {
+                    __print_str("NotFound: ");
+                    __print_str(s);
+                }
+                FdtError::BadMagic => __print_str("BadMagic"),
+                FdtError::BadPtr => __print_str("BadPtr"),
+                FdtError::BadCellSize(s) => {
+                    __print_str("BadCellSize: ");
+                    hex_print(s);
+                }
+                FdtError::Eof => __print_str("Eof"),
+                FdtError::MissingProperty => __print_str("MissingProperty"),
+                FdtError::Utf8Parse { data: _ } => __print_str("Utf8Parse"),
+                FdtError::FromBytesUntilNull { data: _ } => __print_str("FromBytesUntilNull"),
             }
         }
     }

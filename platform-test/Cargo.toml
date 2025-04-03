@@ -16,4 +16,3 @@ somehal = { path = "../somehal" }
 [[test]]
 name = "test"
 harness = false
-dependencies = ["platform-test"]

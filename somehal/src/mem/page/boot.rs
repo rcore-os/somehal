@@ -54,7 +54,7 @@ mod _m {
         dbgln!("Tmp Table space: [{}, {})", tmp_alloc.start, tmp_alloc.end);
         let access = &mut tmp_alloc;
 
-        let mut table = Table::create_empty(access).map_err(|e| "create table failed")?;
+        let mut table = early_err!(Table::create_empty(access));
 
         for region in MEM_REGIONS.clone() {
             unsafe {

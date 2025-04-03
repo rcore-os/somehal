@@ -3,6 +3,36 @@ use crate::{
     mem::{setup_memory_main, setup_memory_regions},
 };
 
+#[naked]
+#[unsafe(no_mangle)]
+#[unsafe(link_section = ".text.boot.header")]
+/// The entry point of the kernel.
+pub unsafe extern "C" fn _start() -> ! {
+    unsafe {
+        naked_asm!(
+            // code0/code1
+            "nop",
+            "bl {entry}",
+            // text_offset
+            ".quad 0",
+            // image_size
+            ".quad __kernel_size",
+            // flags
+            ".quad {flags}",
+            // Reserved fields
+            ".quad 0",
+            ".quad 0",
+            ".quad 0",
+            // magic - yes 0x644d5241 is the same as ASCII string "ARM\x64"
+            ".ascii \"ARM\\x64\"",
+            // Another reserved field at the end of the header
+            ".byte 0, 0, 0, 0",
+            flags = const FLAG_LE | FLAG_PAGE_SIZE_4K | FLAG_ANY_MEM,
+            entry = sym primary_entry,
+        )
+    }
+}
+
 #[allow(unused)]
 #[link_boot::link_boot]
 mod _m {
@@ -11,50 +41,17 @@ mod _m {
     use aarch64_cpu::{asm::barrier, registers::*};
     use kmem::space::STACK_TOP;
 
-    use crate::arch::debug::set_uart;
     use crate::arch::paging::{self, enable_mmu};
     use crate::arch::rust_main;
     use crate::consts::STACK_SIZE;
     use crate::fdt::set_fdt_ptr;
-    use crate::mem::{
-        MemRegion, clean_bss, entry_addr, kcode_offset, set_kcode_va_offset, stack_top_cpu0,
-    };
-    use crate::once_static::OnceStatic;
+    use crate::mem::{clean_bss, entry_addr, kcode_offset, set_kcode_va_offset, stack_top_cpu0};
     use crate::vec::ArrayVec;
-    use crate::{dbgln, fdt};
+    use crate::{dbgln, early_err};
 
     const FLAG_LE: usize = 0b0;
     const FLAG_PAGE_SIZE_4K: usize = 0b10;
     const FLAG_ANY_MEM: usize = 0b1000;
-
-    #[naked]
-    #[unsafe(no_mangle)]
-    /// The entry point of the kernel.
-    pub unsafe extern "C" fn _start() -> ! {
-        unsafe {
-            naked_asm!(
-                // code0/code1
-                "nop",
-                "bl {entry}",
-                // text_offset
-                ".quad 0",
-                // image_size
-                ".quad __kernel_size",
-                // flags
-                ".quad {flags}",
-                // Reserved fields
-                ".quad 0",
-                ".quad 0",
-                ".quad 0",
-                // magic - yes 0x644d5241 is the same as ASCII string "ARM\x64"
-                ".ascii \"ARM\\x64\"",
-                // Another reserved field at the end of the header
-                ".byte 0, 0, 0, 0",
-                flags = const FLAG_LE | FLAG_PAGE_SIZE_4K | FLAG_ANY_MEM,
-                entry = sym primary_entry,
-            )
-        }
-    }
 
     #[naked]
     /// The entry point of the kernel.
@@ -88,41 +85,23 @@ mod _m {
         }
     }
 
-    macro_rules! handle_err {
-        ($f:expr, $msg:literal) => {
-            match $f {
-                Ok(v) => v,
-                Err(_) => {
-                    crate::dbgln!("{}", $msg);
-                    panic!();
-                }
-            }
-        };
-    }
-
-    static DEBUG_CON: OnceStatic<MemRegion> = OnceStatic::new();
-
     fn rust_boot(kcode_va: usize, fdt: *mut u8) -> ! {
-        unsafe { clean_bss() };
-        enable_fp();
         unsafe {
+            clean_bss();
+            enable_fp();
             set_kcode_va_offset(kcode_va);
             set_fdt_ptr(fdt);
         }
 
-        let (uart, debug_region) = fdt::init_debugcon().unwrap();
-
-        unsafe { (*DEBUG_CON.get()).replace(debug_region) };
-
-        set_uart(uart);
+        super::debug::init();
 
         dbgln!("Booting up");
         dbgln!("Entry     : {}", entry_addr());
         dbgln!("kcode va  : {}", kcode_offset());
         dbgln!("fdt       : {}", fdt as usize);
 
-        let phys_memories = handle_err!(crate::fdt::find_memory(fdt), "fdt can not found memory");
-        let cpu_count = handle_err!(crate::fdt::cpu_count(), "fdt can not found cpu");
+        let phys_memories = early_err!(crate::fdt::find_memory(fdt), "fdt can not found memory");
+        let cpu_count = early_err!(crate::fdt::cpu_count(), "fdt can not found cpu");
 
         dbgln!("cpu count : {}", cpu_count);
 
@@ -140,12 +119,12 @@ mod _m {
     }
 
     fn fix_sp() -> ! {
-        let region_fdt = handle_err!(save_fdt(), "save fdt failed");
+        let region_fdt = early_err!(save_fdt(), "save fdt failed");
 
         let mut rsv = ArrayVec::<_, 4>::new();
 
         let _ = rsv.try_push(region_fdt);
-        let _ = rsv.try_push(DEBUG_CON.clone());
+        let _ = rsv.try_push(super::debug::DEBUG_CON.clone());
 
         setup_memory_regions(rsv);
 

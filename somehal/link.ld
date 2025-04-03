@@ -6,6 +6,7 @@ SECTIONS
 {
     . = %KERNEL_VADDR% ;
     BootText : {
+        KEEP(*(.text.boot.header))
         KEEP(*(.text.boot*))
     }
     BootData : ALIGN(4K) {
