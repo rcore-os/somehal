@@ -22,7 +22,7 @@ mod _m {
     };
 
     use kmem::space::{AccessFlags, MemConfig, OFFSET_LINER, STACK_TOP};
-    use somehal_macros::println;
+    use crate::dbgln;
 
     use crate::{ArchIf, arch::Arch, once_static::OnceStatic, vec::ArrayVec};
 
@@ -220,7 +220,7 @@ mod _m {
         let size = region.size.align_up(page_size());
         region.size = size;
 
-        println!(
+        dbgln!(
             "region {} : [{}, {}) -> [{}, {}) {}",
             region.name,
             region.virt_start.raw(),
@@ -238,7 +238,7 @@ mod _m {
             .try_push(region)
             .is_err()
         {
-            println!("MemRegion is full");
+            dbgln!("MemRegion is full");
             panic!();
         }
     }
@@ -253,7 +253,7 @@ mod _m {
             ".text.boot",
             BootText(),
             MemConfig {
-                access: AccessFlags::Read | AccessFlags::Execute,
+                access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
                 cache: CacheConfig::Normal,
             },
         ));
@@ -261,7 +261,7 @@ mod _m {
             ".data.boot",
             BootData(),
             MemConfig {
-                access: AccessFlags::Read | AccessFlags::Write,
+                access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
                 cache: CacheConfig::Normal,
             },
         ));

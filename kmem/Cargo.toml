@@ -10,5 +10,5 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-bitflags = "2"
+bitflags = "2.9"
 link-boot = { version = "0.2" }

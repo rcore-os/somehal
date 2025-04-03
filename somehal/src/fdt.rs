@@ -15,8 +15,8 @@ mod _m {
         sync::atomic::{AtomicPtr, Ordering},
     };
 
+    use crate::dbgln;
     use kmem::space::{AccessFlags, CacheConfig, MemConfig, OFFSET_LINER};
-    use somehal_macros::println;
 
     use crate::mem::{MemRegion, kcode_offset};
 
@@ -40,7 +40,7 @@ mod _m {
                     })
                     .is_err()
                 {
-                    println!("too many phys memory regions");
+                    dbgln!("too many phys memory regions");
                     panic!();
                 };
             }

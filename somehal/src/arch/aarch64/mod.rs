@@ -1,6 +1,5 @@
-use somehal_macros::println;
+use crate::{ArchIf, dbgln};
 
-use crate::ArchIf;
 mod boot;
 mod context;
 pub mod debug;
@@ -28,5 +27,7 @@ impl ArchIf for Arch {
 }
 
 fn rust_main() {
-    println!("reloacte ok");
+    // dbgln!("reloacte ok");
+
+    
 }

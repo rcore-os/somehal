@@ -2,12 +2,11 @@
 mod _m {
     use kmem::{IntAlign, PhysAddr};
     use page_table_generic::{Access, MapConfig};
-    use somehal_macros::println;
 
     use crate::{
         ArchIf,
         arch::Arch,
-        early_err,
+        dbgln, early_err,
         mem::{MEM_REGIONS, MEMORY_MAIN},
     };
 
@@ -52,7 +51,7 @@ mod _m {
             start: start.raw(),
             end: end.raw(),
         };
-        println!("Tmp Table space: [{}, {})", tmp_alloc.start, tmp_alloc.end);
+        dbgln!("Tmp Table space: [{}, {})", tmp_alloc.start, tmp_alloc.end);
         let access = &mut tmp_alloc;
 
         let mut table = Table::create_empty(access).map_err(|e| "create table failed")?;

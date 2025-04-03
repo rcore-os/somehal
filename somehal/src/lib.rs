@@ -18,4 +18,4 @@ pub(crate) mod vec;
 pub(crate) mod fdt;
 
 pub(crate) use archif::ArchIf;
-pub(crate) use somehal_macros::println;
+pub(crate) use somehal_macros::dbgln;

@@ -86,8 +86,8 @@ macro_rules! early_err {
         match $f {
             Ok(v) => v,
             Err(e) => {
-                $crate::println!("{}", e);
-                $crate::println!("");
+                $crate::dbgln!("{}", e);
+                $crate::dbgln!("");
                 panic!();
             }
         }
@@ -96,8 +96,8 @@ macro_rules! early_err {
         match $f {
             Ok(v) => v,
             Err(e) => {
-                $crate::println!("{}:", $msg);
-                $crate::println!("{}", e);
+                $crate::dbgln!("{}:", $msg);
+                $crate::dbgln!("{}", e);
                 panic!();
             }
         }

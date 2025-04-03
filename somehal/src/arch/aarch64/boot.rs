@@ -21,7 +21,7 @@ mod _m {
     };
     use crate::once_static::OnceStatic;
     use crate::vec::ArrayVec;
-    use crate::{fdt, println};
+    use crate::{dbgln, fdt};
 
     const FLAG_LE: usize = 0b0;
     const FLAG_PAGE_SIZE_4K: usize = 0b10;
@@ -93,7 +93,7 @@ mod _m {
             match $f {
                 Ok(v) => v,
                 Err(_) => {
-                    println!("{}", $msg);
+                    crate::dbgln!("{}", $msg);
                     panic!();
                 }
             }
@@ -116,15 +116,15 @@ mod _m {
 
         set_uart(uart);
 
-        println!("Booting up");
-        println!("Entry     : {}", entry_addr());
-        println!("kcode va  : {}", kcode_offset());
-        println!("fdt       : {}", fdt as usize);
+        dbgln!("Booting up");
+        dbgln!("Entry     : {}", entry_addr());
+        dbgln!("kcode va  : {}", kcode_offset());
+        dbgln!("fdt       : {}", fdt as usize);
 
         let phys_memories = handle_err!(crate::fdt::find_memory(fdt), "fdt can not found memory");
         let cpu_count = handle_err!(crate::fdt::cpu_count(), "fdt can not found cpu");
 
-        println!("cpu count : {}", cpu_count);
+        dbgln!("cpu count : {}", cpu_count);
 
         unsafe {
             setup_memory_main(phys_memories, cpu_count);

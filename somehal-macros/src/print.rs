@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{Error, Expr, Lit, Token, parse::Parser, punctuated::Punctuated, spanned::Spanned};
-pub fn println(input: TokenStream) -> Result<TokenStream, Error> {
+pub fn dbgln(input: TokenStream) -> Result<TokenStream, Error> {
     let tokens = input.clone();
     let parser = Punctuated::<Expr, Token![,]>::parse_terminated;
     let args = parser.parse(tokens)?;

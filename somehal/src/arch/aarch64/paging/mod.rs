@@ -1,5 +1,3 @@
-use core::arch::asm;
-
 use aarch64_cpu::{asm::barrier::*, registers::*};
 
 cfg_match! {
@@ -14,46 +12,49 @@ cfg_match! {
 
 #[link_boot::link_boot]
 mod _m {
-    use somehal_macros::println;
+    use core::arch::naked_asm;
 
-    use crate::{arch::debug, early_err, mem::page::boot::new_boot_table};
+    use crate::{arch::debug, dbgln, early_err, mem::page::boot::new_boot_table};
 
     /// 参数为目标虚拟地址
     #[inline(always)]
     pub fn enable_mmu(stack_top: *mut u8, jump_to: *mut u8) -> ! {
         let table = early_err!(new_boot_table());
 
-        println!("Set kernel table {}", table.raw());
+        dbgln!("Set kernel table {}", table.raw());
         set_kernel_table(table);
         set_user_table(table);
         flush_tlb(None);
 
-        println!(
+        dbgln!(
             "relocate to pc: {} stack: {}",
-            jump_to as usize, stack_top as usize
+            jump_to as usize,
+            stack_top as usize
         );
-        unsafe {
-            // Enable the MMU and turn on I-cache and D-cache
-            cfg_match! {
-                feature = "vm" => {
+        // Enable the MMU and turn on I-cache and D-cache
+        cfg_match! {
+            feature = "vm" => {
 
-                }
-                _ =>{
-                    SCTLR_EL1
-                        .modify(SCTLR_EL1::M::Enable + SCTLR_EL1::C::Cacheable + SCTLR_EL1::I::Cacheable);
-                }
             }
+            _ =>{
+                SCTLR_EL1
+                    .modify(SCTLR_EL1::M::Enable + SCTLR_EL1::C::Cacheable + SCTLR_EL1::I::Cacheable);
+            }
+        }
 
-            isb(SY);
-            debug::reloacte();
-            asm!(
-                "MOV      sp,  {stack}",
-                "MOV      x8,  {entry}",
+        isb(SY);
+        debug::reloacte();
+        jump(stack_top, jump_to)
+    }
+
+    #[naked]
+    extern "C" fn jump(stack_top: *mut u8, jump_to: *mut u8) -> ! {
+        unsafe {
+            naked_asm!(
+                "MOV      sp,  x0",
+                "MOV      x8,  x1",
                 "BLR      x8",
                 "B       .",
-                stack = in(reg) stack_top as usize,
-                entry = in(reg) jump_to as usize,
-                options(nomem, nostack,noreturn)
             )
         }
     }

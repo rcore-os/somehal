@@ -332,6 +332,7 @@ dependencies = [
 name = "page-table-generic"
 version = "0.6.0"
 dependencies = [
+ "bitflags",
  "env_logger",
  "link-boot",
  "log",

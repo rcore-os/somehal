@@ -7,8 +7,8 @@ mod arch;
 mod print;
 
 #[proc_macro]
-pub fn println(input: TokenStream) -> TokenStream {
-    match print::println(input) {
+pub fn dbgln(input: TokenStream) -> TokenStream {
+    match print::dbgln(input) {
         Ok(o) => o,
         Err(e) => e.into_compile_error().into(),
     }
