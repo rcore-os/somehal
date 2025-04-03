@@ -21,8 +21,8 @@ mod _m {
         sync::atomic::{AtomicUsize, Ordering},
     };
 
-    use kmem::space::{AccessFlags, MemConfig, OFFSET_LINER, STACK_TOP};
     use crate::dbgln;
+    use kmem::space::{AccessFlags, MemConfig, OFFSET_LINER, STACK_TOP};
 
     use crate::{ArchIf, arch::Arch, once_static::OnceStatic, vec::ArrayVec};
 
@@ -253,7 +253,7 @@ mod _m {
             ".text.boot",
             BootText(),
             MemConfig {
-                access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
+                access: AccessFlags::Read | AccessFlags::Execute,
                 cache: CacheConfig::Normal,
             },
         ));
@@ -277,15 +277,15 @@ mod _m {
             ".data     ",
             data(),
             MemConfig {
-                access: AccessFlags::Read | AccessFlags::Write,
+                access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
                 cache: CacheConfig::Normal,
             },
         ));
         mem_region_add(link_section_to_kspace(
             ".rodata   ",
-            data(),
+            rodata(),
             MemConfig {
-                access: AccessFlags::Read,
+                access: AccessFlags::Read | AccessFlags::Execute,
                 cache: CacheConfig::Normal,
             },
         ));
@@ -294,7 +294,7 @@ mod _m {
             ".bss      ",
             data(),
             MemConfig {
-                access: AccessFlags::Read | AccessFlags::Write,
+                access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
                 cache: CacheConfig::Normal,
             },
         ));

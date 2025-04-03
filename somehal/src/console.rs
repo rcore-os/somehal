@@ -103,3 +103,10 @@ macro_rules! early_err {
         }
     };
 }
+
+
+macro_rules! println {
+    () => {
+        
+    };
+}
