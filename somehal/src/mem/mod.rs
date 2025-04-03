@@ -322,3 +322,8 @@ fn_link_section!(data);
 fn_link_section!(rodata);
 fn_link_section!(bss);
 fn_link_section!(percpu);
+
+/// Returns an iterator over all physical memory regions.
+pub fn memory_regions() -> impl Iterator<Item = MemRegion> {
+    MEM_REGIONS.clone()
+}

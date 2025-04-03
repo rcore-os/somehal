@@ -118,6 +118,14 @@ impl core::fmt::Write for DebugTx {
     }
 }
 
+pub fn write_bytes(s: &[u8]) {
+    let g = TX.lock();
+    for &b in s {
+        Arch::early_debug_put(b);
+    }
+    drop(g);
+}
+
 pub fn _print(args: core::fmt::Arguments) {
     let g = TX.lock();
     let _ = DebugTx {}.write_fmt(args);

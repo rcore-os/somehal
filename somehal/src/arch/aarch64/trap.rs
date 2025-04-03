@@ -22,8 +22,6 @@ fn handle_fiq(ctx: &Context) -> usize {
 
 #[aarch64_trap_handler(kind = "sync")]
 fn handle_sync(ctx: &Context) -> usize {
-    loop {}
-
     let sp = ctx.sp;
     let esr = ESR_EL1.extract();
     let iss = esr.read(ESR_EL1::ISS);
