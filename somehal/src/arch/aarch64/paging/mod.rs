@@ -16,20 +16,17 @@ cfg_match! {
 mod _m {
     use somehal_macros::println;
 
-    use crate::{arch::debug, mem::page::boot::new_boot_table};
+    use crate::{arch::debug, early_err, mem::page::boot::new_boot_table};
 
     /// 参数为目标虚拟地址
     #[inline(always)]
     pub fn enable_mmu(stack_top: *mut u8, jump_to: *mut u8) -> ! {
-        let table = match new_boot_table() {
-            Ok(t) => t,
-            Err(_e) => {
-                println!("create boot table failed");
-                panic!();
-            }
-        };
+        let table = early_err!(new_boot_table());
+
         println!("Set kernel table {}", table.raw());
         set_kernel_table(table);
+        set_user_table(table);
+        flush_tlb(None);
 
         println!(
             "relocate to pc: {} stack: {}",

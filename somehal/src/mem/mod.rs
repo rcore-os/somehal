@@ -15,7 +15,11 @@ pub struct PhysMemory {
 
 #[link_boot::link_boot]
 mod _m {
-    use core::{alloc::Layout, ptr::slice_from_raw_parts_mut};
+    use core::{
+        alloc::Layout,
+        ptr::slice_from_raw_parts_mut,
+        sync::atomic::{AtomicUsize, Ordering},
+    };
 
     use kmem::space::{AccessFlags, MemConfig, OFFSET_LINER, STACK_TOP};
     use somehal_macros::println;
@@ -23,7 +27,7 @@ mod _m {
     use crate::{ArchIf, arch::Arch, once_static::OnceStatic, vec::ArrayVec};
 
     pub type PhysMemoryArray = ArrayVec<PhysMemory, 12>;
-    static mut KCODE_VA_OFFSET: usize = 0;
+    static KCODE_VA_OFFSET: AtomicUsize = AtomicUsize::new(0);
     static mut CPU_COUNT: usize = 1;
     static MEM_REGIONS: OnceStatic<ArrayVec<MemRegion, 32>> = OnceStatic::new();
     static STACK_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
@@ -41,7 +45,7 @@ mod _m {
     }
 
     pub(crate) unsafe fn set_kcode_va_offset(offset: usize) {
-        unsafe { KCODE_VA_OFFSET = offset };
+        KCODE_VA_OFFSET.store(offset, Ordering::SeqCst);
     }
 
     fn bss_mut() -> &'static mut [u8] {
@@ -79,7 +83,7 @@ mod _m {
     }
 
     pub(crate) fn kcode_offset() -> usize {
-        unsafe { KCODE_VA_OFFSET }
+        KCODE_VA_OFFSET.load(Ordering::Relaxed)
     }
 
     fn link_section_end() -> PhysAddr {
@@ -137,7 +141,7 @@ mod _m {
                     virt_start: (phys_start.raw() + OFFSET_LINER).into(),
                     size,
                     phys_start,
-                    name: "memory   ",
+                    name: "memory    ",
                     config: MemConfig {
                         access: AccessFlags::Read | AccessFlags::Write,
                         cache: CacheConfig::Normal,

@@ -469,6 +469,7 @@ dependencies = [
  "fdt-parser",
  "kmem",
  "link-boot",
+ "log",
  "page-table-arm",
  "page-table-generic",
  "smccc",

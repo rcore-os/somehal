@@ -11,13 +11,13 @@ mod _m {
     use aarch64_cpu::{asm::barrier, registers::*};
     use kmem::space::STACK_TOP;
 
-    use crate::arch::debug::{self, set_uart};
+    use crate::arch::debug::set_uart;
     use crate::arch::paging::{self, enable_mmu};
     use crate::arch::rust_main;
     use crate::consts::STACK_SIZE;
     use crate::fdt::set_fdt_ptr;
     use crate::mem::{
-        MemRegion, boot_stack_top, clean_bss, entry_addr, set_kcode_va_offset, stack_top_cpu0,
+        MemRegion, clean_bss, entry_addr, kcode_offset, set_kcode_va_offset, stack_top_cpu0,
     };
     use crate::once_static::OnceStatic;
     use crate::vec::ArrayVec;
@@ -74,6 +74,9 @@ mod _m {
 
                 "BL       {switch_to_elx}",
 
+                "LDR      x0, =vector_table_el1",
+                "MSR      VBAR_EL1, x0",
+
                 "MOV      x0,  x18",
                 "MOV      x1,  x19",
                 "BL       {entry}",
@@ -115,14 +118,13 @@ mod _m {
 
         println!("Booting up");
         println!("Entry     : {}", entry_addr());
-        println!("kcode va  : {}", kcode_va);
-        // println!("stack top : {}", boot_stack_top());
+        println!("kcode va  : {}", kcode_offset());
         println!("fdt       : {}", fdt as usize);
 
         let phys_memories = handle_err!(crate::fdt::find_memory(fdt), "fdt can not found memory");
         let cpu_count = handle_err!(crate::fdt::cpu_count(), "fdt can not found cpu");
 
-        println!("cpu count  : {}", cpu_count);
+        println!("cpu count : {}", cpu_count);
 
         unsafe {
             setup_memory_main(phys_memories, cpu_count);

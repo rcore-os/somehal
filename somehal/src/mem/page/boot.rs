@@ -1,10 +1,15 @@
 #[link_boot::link_boot]
 mod _m {
     use kmem::{IntAlign, PhysAddr};
-    use page_table_generic::Access;
+    use page_table_generic::{Access, MapConfig};
     use somehal_macros::println;
 
-    use crate::mem::MEMORY_MAIN;
+    use crate::{
+        ArchIf,
+        arch::Arch,
+        early_err,
+        mem::{MEM_REGIONS, MEMORY_MAIN},
+    };
 
     use super::{Table, page_size};
 
@@ -50,7 +55,35 @@ mod _m {
         println!("Tmp Table space: [{}, {})", tmp_alloc.start, tmp_alloc.end);
         let access = &mut tmp_alloc;
 
-        let table = Table::create_empty(access).map_err(|e| "create table failed")?;
+        let mut table = Table::create_empty(access).map_err(|e| "create table failed")?;
+
+        for region in MEM_REGIONS.clone() {
+            unsafe {
+                early_err!(table.map(
+                    MapConfig {
+                        vaddr: region.virt_start.raw().into(),
+                        paddr: region.phys_start.raw().into(),
+                        size: region.size,
+                        pte: Arch::new_pte_with_config(region.config),
+                        allow_huge: true,
+                        flush: false,
+                    },
+                    access,
+                ));
+
+                early_err!(table.map(
+                    MapConfig {
+                        vaddr: region.phys_start.raw().into(),
+                        paddr: region.phys_start.raw().into(),
+                        size: region.size,
+                        pte: Arch::new_pte_with_config(region.config),
+                        allow_huge: true,
+                        flush: false,
+                    },
+                    access,
+                ));
+            }
+        }
 
         Ok(table.paddr().raw().into())
     }

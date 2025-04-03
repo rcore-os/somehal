@@ -1,5 +1,7 @@
 #[link_boot::link_boot]
 mod _boot {
+    use page_table_generic::PagingError;
+
     use crate::{ArchIf, arch::Arch};
 
     pub trait Print {
@@ -27,6 +29,20 @@ mod _boot {
     impl Print for bool {
         fn _print(self) {
             __print_str(if self { "true" } else { "false" })
+        }
+    }
+
+    impl Print for PagingError {
+        fn _print(self) {
+            match self {
+                PagingError::NoMemory => __print_str("NoMemory"),
+                PagingError::NotAligned(e) => {
+                    __print_str("NotAligned: ");
+                    __print_str(e);
+                }
+                PagingError::NotMapped => __print_str("NotMapped"),
+                PagingError::AlreadyMapped => __print_str("AlreadyMapped"),
+            }
         }
     }
 
@@ -62,4 +78,28 @@ mod _boot {
             Arch::early_debug_put(ch);
         }
     }
+}
+
+#[macro_export]
+macro_rules! early_err {
+    ($f:expr) => {
+        match $f {
+            Ok(v) => v,
+            Err(e) => {
+                $crate::println!("{}", e);
+                $crate::println!("");
+                panic!();
+            }
+        }
+    };
+    ($f:expr, $msg:expr) => {
+        match $f {
+            Ok(v) => v,
+            Err(e) => {
+                $crate::println!("{}:", $msg);
+                $crate::println!("{}", e);
+                panic!();
+            }
+        }
+    };
 }

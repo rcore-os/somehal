@@ -2,8 +2,10 @@ use somehal_macros::println;
 
 use crate::ArchIf;
 mod boot;
+mod context;
 pub mod debug;
 mod paging;
+mod trap;
 
 pub struct Arch;
 
