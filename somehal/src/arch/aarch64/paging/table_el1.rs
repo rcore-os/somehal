@@ -1,13 +1,44 @@
 use core::arch::asm;
 
+use kmem::VirtAddr;
+
 #[link_boot::link_boot]
 mod _m {
     use core::fmt::Debug;
 
     use aarch64_cpu::registers::*;
-    use kmem::space::AccessFlags;
+    use kmem::{PhysAddr, space::AccessFlags};
     use page_table_arm::{PTE, PTEFlags};
     use page_table_generic::{PTEGeneric, TableGeneric};
+
+    pub fn set_kernel_table(addr: PhysAddr) {
+        TTBR1_EL1.set_baddr(addr.raw() as _);
+        flush_tlb(None);
+    }
+
+    pub fn get_kernel_table() -> PhysAddr {
+        (TTBR1_EL1.get_baddr() as usize).into()
+    }
+
+    pub fn set_user_table(addr: PhysAddr) {
+        TTBR0_EL1.set_baddr(addr.raw() as _);
+        flush_tlb(None);
+    }
+
+    pub fn get_user_table() -> usize {
+        TTBR0_EL1.get_baddr() as _
+    }
+
+    pub fn flush_tlb(vaddr: Option<VirtAddr>) {
+        match vaddr {
+            Some(addr) => {
+                unsafe { asm!("tlbi vaae1is, {}; dsb nsh; isb", in(reg) addr.raw()) };
+            }
+            None => {
+                unsafe { asm!("tlbi vmalle1is; dsb nsh; isb") };
+            }
+        }
+    }
 
     pub fn setup_regs() {
         // Device-nGnRnE
@@ -97,14 +128,7 @@ mod _m {
         type PTE = Pte;
 
         fn flush(vaddr: Option<page_table_generic::VirtAddr>) {
-            match vaddr {
-                Some(addr) => {
-                    unsafe { asm!("tlbi vaae1is, {}; dsb nsh; isb", in(reg) addr.raw()) };
-                }
-                None => {
-                    unsafe { asm!("tlbi vmalle1is; dsb nsh; isb") };
-                }
-            }
+            flush_tlb(vaddr.map(|o| o.raw().into()));
         }
     }
 

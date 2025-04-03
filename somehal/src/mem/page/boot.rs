@@ -1,9 +1,12 @@
 #[link_boot::link_boot]
 mod _m {
-    use kmem::IntAlign;
+    use kmem::{IntAlign, PhysAddr};
     use page_table_generic::Access;
+    use somehal_macros::println;
 
-    use super::Table;
+    use crate::mem::MEMORY_MAIN;
+
+    use super::{Table, page_size};
 
     struct Alloc {
         start: usize,
@@ -37,8 +40,18 @@ mod _m {
         }
     }
 
-    pub fn new_boot_table() {
+    pub fn new_boot_table() -> Result<PhysAddr, &'static str> {
+        let start = (MEMORY_MAIN.addr + MEMORY_MAIN.size / 2).align_up(page_size());
+        let end = MEMORY_MAIN.addr + MEMORY_MAIN.size;
+        let mut tmp_alloc = Alloc {
+            start: start.raw(),
+            end: end.raw(),
+        };
+        println!("Tmp Table space: [{}, {})", tmp_alloc.start, tmp_alloc.end);
+        let access = &mut tmp_alloc;
 
-        // let table = Table::create_empty(access);
+        let table = Table::create_empty(access).map_err(|e| "create table failed")?;
+
+        Ok(table.paddr().raw().into())
     }
 }
