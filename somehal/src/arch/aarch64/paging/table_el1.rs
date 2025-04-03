@@ -152,7 +152,7 @@ mod _m {
 
         fn set_paddr(&mut self, paddr: page_table_generic::PhysAddr) {
             self.0 &= !Self::PHYS_ADDR_MASK;
-            self.0 |= (paddr.raw() & Self::PHYS_ADDR_MASK);
+            self.0 |= paddr.raw() & Self::PHYS_ADDR_MASK;
         }
 
         fn set_valid(&mut self, valid: bool) {

@@ -1,3 +1,7 @@
+use core::fmt::Write;
+
+use spin::Mutex;
+
 #[link_boot::link_boot]
 mod _boot {
     use page_table_generic::PagingError;
@@ -104,9 +108,32 @@ macro_rules! early_err {
     };
 }
 
+static TX: Mutex<()> = Mutex::new(());
 
+struct DebugTx;
+impl core::fmt::Write for DebugTx {
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+        __print_str(s);
+        Ok(())
+    }
+}
+
+pub fn _print(args: core::fmt::Arguments) {
+    let g = TX.lock();
+    let _ = DebugTx {}.write_fmt(args);
+    drop(g);
+}
+
+#[macro_export]
+macro_rules! print {
+    ($($arg:tt)*) => {
+        $crate::console::_print(format_args!($($arg)*));
+    };
+}
+
+#[macro_export]
 macro_rules! println {
-    () => {
-        
+    ($($arg:tt)*) => {
+        $crate::print!("{}\r\n", format_args!($($arg)*));
     };
 }

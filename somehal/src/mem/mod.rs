@@ -292,7 +292,7 @@ mod _m {
 
         mem_region_add(link_section_to_kspace(
             ".bss      ",
-            data(),
+            bss(),
             MemConfig {
                 access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
                 cache: CacheConfig::Normal,

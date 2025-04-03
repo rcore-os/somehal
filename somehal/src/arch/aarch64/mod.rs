@@ -1,4 +1,4 @@
-use crate::{ArchIf, console::__print_str, dbgln};
+use crate::{ArchIf, println};
 
 mod boot;
 mod context;
@@ -27,5 +27,5 @@ impl ArchIf for Arch {
 }
 
 fn rust_main() {
-    __print_str("Hello, world!\r\n");
+    println!("Hello, world!");
 }
