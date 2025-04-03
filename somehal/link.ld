@@ -14,27 +14,28 @@ SECTIONS
     }
 
     text : ALIGN(4K) {
-        *(.text*);
+        *(.text .text.*)
     } 
 
     rodata : ALIGN(4K) {
-        *(.rodata*)
-        *(.got*)
+        *(.rodata .rodata.*)
+        *(.got .got.*)
     } 
    
     data : ALIGN(4K) {
         *(.data*)
+        *(.sdata .sdata.*)
     }
 
     percpu : ALIGN(4K) {
-        *(.percpu*)
+        *(.percpu .percpu*)
     }
 
     __kernel_size = . - __start_BootText;
 
     bss (NOLOAD) : ALIGN(4K)  {
-        *(.bss*)
-        *(.sbss*)
+        *(.bss .bss.*)
+        *(.sbss .sbss.*)
         *(COMMON)
         . = ALIGN(4K);
     }
