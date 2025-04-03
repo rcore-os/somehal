@@ -8,7 +8,6 @@ mod _m {
 
     use aarch64_cpu::registers::*;
     use kmem::{PhysAddr, space::AccessFlags};
-    use page_table_arm::{PTE, PTEFlags};
     use page_table_generic::{PTEGeneric, TableGeneric};
 
     pub fn set_kernel_table(addr: PhysAddr) {
@@ -73,45 +72,107 @@ mod _m {
         Table::flush(None);
     }
 
+    bitflags::bitflags! {
+        #[repr(transparent)]
+        /// Memory attribute fields in the VMSAv8-64 translation table format descriptors.
+        #[derive(Clone, Copy)]
+        pub struct PteFlags: usize {
+            // Attribute fields in stage 1 VMSAv8-64 Block and Page descriptors:
+
+            /// Whether the descriptor is valid.
+            const VALID =       1 << 0;
+            /// The descriptor gives the address of the next level of translation table or 4KB page.
+            /// (not a 2M, 1G block)
+            const NON_BLOCK =   1 << 1;
+
+            /// Non-secure bit. For memory accesses from Secure state, specifies whether the output
+            /// address is in Secure or Non-secure memory.
+            const NS =          1 << 5;
+            /// Access permission: accessable at EL0.
+            const AP_EL0 =      1 << 6;
+            /// Access permission: read-only.
+            const AP_RO =       1 << 7;
+            /// Shareability: Inner Shareable (otherwise Outer Shareable).
+            const INNER =       1 << 8;
+            /// Shareability: Inner or Outer Shareable (otherwise Non-shareable).
+            const SHAREABLE =   1 << 9;
+            /// The Access flag.
+            const AF =          1 << 10;
+            /// The not global bit.
+            const NG =          1 << 11;
+            /// Indicates that 16 adjacent translation table entries point to contiguous memory regions.
+            const CONTIGUOUS =  1 <<  52;
+            /// The Privileged execute-never field.
+            const PXN =         1 <<  53;
+            /// The Execute-never or Unprivileged execute-never field.
+            const UXN =         1 <<  54;
+
+            // Next-level attributes in stage 1 VMSAv8-64 Table descriptors:
+
+            /// PXN limit for subsequent levels of lookup.
+            const PXN_TABLE =           1 << 59;
+            /// XN limit for subsequent levels of lookup.
+            const XN_TABLE =            1 << 60;
+            /// Access permissions limit for subsequent levels of lookup: access at EL0 not permitted.
+            const AP_NO_EL0_TABLE =     1 << 61;
+            /// Access permissions limit for subsequent levels of lookup: write access not permitted.
+            const AP_NO_WRITE_TABLE =   1 << 62;
+            /// For memory accesses from Secure state, specifies the Security state for subsequent
+            /// levels of lookup.
+            const NS_TABLE =            1 << 63;
+        }
+    }
+
     #[repr(transparent)]
     #[derive(Clone, Copy)]
-    pub struct Pte(PTE);
+    pub struct Pte(usize);
+
+    impl Pte {
+        const PHYS_ADDR_MASK: usize = 0x0000_ffff_ffff_f000; // bits 12..48
+        const MAIR_MASK: usize = 0b111 << 2;
+
+        fn as_flags(&self) -> PteFlags {
+            PteFlags::from_bits_truncate(self.0)
+        }
+
+        fn set_mair_idx(&mut self, idx: usize) {
+            self.0 &= !Self::MAIR_MASK;
+            self.0 |= idx << 2;
+        }
+    }
 
     impl PTEGeneric for Pte {
         fn valid(&self) -> bool {
-            self.0.get_flags().contains(PTEFlags::VALID)
+            self.as_flags().contains(PteFlags::VALID)
         }
 
         fn paddr(&self) -> page_table_generic::PhysAddr {
-            self.0.paddr().into()
+            (self.0 & Self::PHYS_ADDR_MASK).into()
         }
 
         fn set_paddr(&mut self, paddr: page_table_generic::PhysAddr) {
-            self.0.set_paddr(paddr.raw());
+            self.0 &= !Self::PHYS_ADDR_MASK;
+            self.0 |= (paddr.raw() & Self::PHYS_ADDR_MASK);
         }
 
         fn set_valid(&mut self, valid: bool) {
-            let mut v = self.0.get_flags();
             if valid {
-                v.insert(PTEFlags::VALID);
+                self.0 |= PteFlags::VALID.bits();
             } else {
-                v.remove(PTEFlags::VALID);
+                self.0 &= !PteFlags::VALID.bits();
             }
-            self.0.set_flags(v);
         }
 
         fn is_block(&self) -> bool {
-            !self.0.get_flags().contains(PTEFlags::NON_BLOCK)
+            !self.as_flags().contains(PteFlags::NON_BLOCK)
         }
 
         fn set_is_block(&mut self, is_block: bool) {
-            let mut v = self.0.get_flags();
             if is_block {
-                v.remove(PTEFlags::NON_BLOCK);
+                self.0 &= !PteFlags::NON_BLOCK.bits();
             } else {
-                v.insert(PTEFlags::NON_BLOCK);
+                self.0 |= PteFlags::NON_BLOCK.bits();
             }
-            self.0.set_flags(v);
         }
     }
 
@@ -133,32 +194,32 @@ mod _m {
     }
 
     pub fn new_pte_with_config(config: kmem::space::MemConfig) -> Pte {
-        let mut pte = PTE::from_paddr(0);
-        let mut flags = PTEFlags::AF | PTEFlags::VALID;
+        let mut flags = PteFlags::AF | PteFlags::VALID;
 
         if !config.access.contains(AccessFlags::Write) {
-            flags |= PTEFlags::AP_RO;
+            flags |= PteFlags::AP_RO;
         }
 
         if !config.access.contains(AccessFlags::Execute) {
-            flags |= PTEFlags::PXN;
+            flags |= PteFlags::PXN;
         }
 
         if config.access.contains(AccessFlags::LowerRead) {
-            flags |= PTEFlags::AP_EL0;
+            flags |= PteFlags::AP_EL0;
         }
 
         if !config.access.contains(AccessFlags::LowerExecute) {
-            flags |= PTEFlags::UXN;
+            flags |= PteFlags::UXN;
         }
 
-        pte.set_flags(flags);
+        let mut pte = Pte(flags.bits());
+
         pte.set_mair_idx(match config.cache {
             kmem::space::CacheConfig::Normal => 1,
             kmem::space::CacheConfig::NoCache => 0,
             kmem::space::CacheConfig::WriteThrough => 2,
         });
 
-        Pte(pte)
+        pte
     }
 }
