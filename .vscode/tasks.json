@@ -4,13 +4,19 @@
         {
             "type": "shell",
             "label": "qemu debug",
-            "command": "ostool",
+            "command": "cargo",
             "args": [
-                "run",
-                "qemu",
-                "-d"
+                "test",
+                "--target",
+                "aarch64-unknown-none",
+                "-p",
+                "platform-test",
+                "--test",
+                "test",
+                "--",
+                "--no-run",
+                "--show-output",
             ],
-            
             "options": {
                 "cwd": "${workspaceFolder}",
             },
@@ -19,7 +25,7 @@
                 "background": {
                     "activeOnStart": true,
                     "beginsPattern": "^.*",
-                    "endsPattern": "^qemu-system.*"
+                    "endsPattern": "^.*Running tests"
                 }
             },
             "group": {

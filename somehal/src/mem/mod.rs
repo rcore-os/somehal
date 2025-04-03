@@ -274,14 +274,6 @@ mod _m {
             },
         ));
         mem_region_add(link_section_to_kspace(
-            ".data     ",
-            data(),
-            MemConfig {
-                access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
-                cache: CacheConfig::Normal,
-            },
-        ));
-        mem_region_add(link_section_to_kspace(
             ".rodata   ",
             rodata(),
             MemConfig {
@@ -289,7 +281,14 @@ mod _m {
                 cache: CacheConfig::Normal,
             },
         ));
-
+        mem_region_add(link_section_to_kspace(
+            ".data     ",
+            data(),
+            MemConfig {
+                access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
+                cache: CacheConfig::Normal,
+            },
+        ));
         mem_region_add(link_section_to_kspace(
             ".bss      ",
             bss(),
