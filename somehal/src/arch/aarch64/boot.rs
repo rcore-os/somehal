@@ -1,7 +1,4 @@
-use crate::{
-    fdt::save_fdt,
-    mem::{setup_memory_main, setup_memory_regions},
-};
+use crate::mem::boot::*;
 
 #[naked]
 #[unsafe(no_mangle)]
@@ -39,15 +36,11 @@ mod _m {
     use core::arch::{asm, naked_asm};
 
     use aarch64_cpu::{asm::barrier, registers::*};
-    use kmem::region::STACK_TOP;
 
-    use crate::arch::paging::{self, enable_mmu};
-    use crate::arch::rust_main;
-    use crate::consts::STACK_SIZE;
+    use crate::arch::paging::enable_mmu;
+    use crate::consts::KERNEL_STACK_SIZE;
+    use crate::dbgln;
     use crate::fdt::set_fdt_ptr;
-    use crate::mem::{clean_bss, entry_addr, kcode_offset, set_kcode_va_offset, stack_top_cpu0};
-    use crate::vec::ArrayVec;
-    use crate::{dbgln, early_err};
 
     const FLAG_LE: usize = 0b0;
     const FLAG_PAGE_SIZE_4K: usize = 0b10;
@@ -78,7 +71,7 @@ mod _m {
                 "MOV      x1,  x19",
                 "BL       {entry}",
                 this_func = sym primary_entry,
-                stack_size = const STACK_SIZE,
+                stack_size = const KERNEL_STACK_SIZE,
                 switch_to_elx = sym switch_to_elx,
                 entry = sym rust_boot,
             )
@@ -91,66 +84,21 @@ mod _m {
             enable_fp();
             set_kcode_va_offset(kcode_va);
             set_fdt_ptr(fdt);
+
+            #[cfg(feature = "early-debug")]
+            super::debug::init();
+            dbgln!("Booting up");
+            dbgln!("Entry      : {}", kernal_load_addr().raw());
+            dbgln!("Code offset: {}", kcode_offset());
+            dbgln!("Current EL : {}", CurrentEL.read(CurrentEL::EL));
+            dbgln!("fdt        : {}", fdt);
+            dbgln!("fdt size   : {}", crate::fdt::fdt_size());
         }
-
-        super::debug::init();
-
-        dbgln!("Booting up");
-        dbgln!("Entry      : {}", entry_addr());
-        dbgln!("Code offset: {}", kcode_offset());
-        dbgln!("Current EL : {}", CurrentEL.read(CurrentEL::EL));
-        dbgln!("fdt        : {}", fdt);
-
-        let cpu_count = early_err!(crate::fdt::cpu_count(), "fdt can not found cpu");
-        dbgln!("cpu count  : {}", cpu_count);
-
-        let phys_memories = early_err!(crate::fdt::find_memory(), "fdt can not found memory");
-
-        unsafe {
-            setup_memory_main(phys_memories, cpu_count);
-            let sp = stack_top_cpu0().raw();
-            asm!(
-                "mov sp, {sp}",
-                "bl {fn_name}",
-                sp = in(reg) sp,
-                fn_name = sym fix_sp,
-                options(nostack, noreturn)
-            )
-        }
+        enable_mmu()
     }
 
-    fn fix_sp() -> ! {
-        let mut rsv = ArrayVec::<_, 4>::new();
-
-        if let Some(r) = save_fdt() {
-            let _ = rsv.try_push(r);
-        }
-
-        let _ = rsv.try_push(super::debug::MEM_REGION_DEBUG_CON.clone());
-
-        setup_memory_regions(rsv);
-
-        let rust_main_addr: *mut u8;
-        unsafe {
-            asm!("LDR {0}, ={fn_name}",
-                out(reg) rust_main_addr,
-                fn_name = sym rust_main,
-            );
-        }
-
-        paging::setup_regs();
-
-        enable_mmu(STACK_TOP as _, rust_main_addr)
-    }
-
+    #[cfg(not(feature = "vm"))]
     fn switch_to_elx() {
-        #[cfg(feature = "vm")]
-        switch_to_el2();
-        #[cfg(not(feature = "vm"))]
-        switch_to_el1();
-    }
-
-    fn switch_to_el1() {
         SPSel.write(SPSel::SP::ELx);
         SP_EL0.set(0);
         let current_el = CurrentEL.read(CurrentEL::EL);
@@ -208,7 +156,7 @@ mod _m {
     }
 
     #[cfg(feature = "vm")]
-    fn switch_to_el2() {
+    fn switch_to_elx() {
         SPSel.write(SPSel::SP::ELx);
         let current_el = CurrentEL.read(CurrentEL::EL);
         if current_el == 3 {

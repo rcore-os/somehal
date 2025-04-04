@@ -1,11 +1,12 @@
 use aarch64_cpu::asm::wfe;
 use kmem::paging::TableGeneric;
 
-use crate::{ArchIf, println};
+use crate::ArchIf;
 
 mod boot;
 mod context;
 pub mod debug;
+mod entry;
 mod paging;
 mod trap;
 
@@ -54,8 +55,9 @@ mod _m {
         fn wait_for_event() {
             wfe();
         }
+
+        fn init_debugcon() {
+            debug::init();
+        }
     }
-}
-fn rust_main() {
-    println!("Hello, world!");
 }

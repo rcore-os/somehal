@@ -1,4 +1,8 @@
+use core::arch::asm;
+
 use aarch64_cpu::{asm::barrier::*, registers::*};
+
+use super::entry::mmu_entry;
 
 cfg_match! {
     feature = "vm" =>{
@@ -12,50 +16,46 @@ cfg_match! {
 
 #[link_boot::link_boot]
 mod _m {
-    use core::arch::naked_asm;
 
-    use crate::{arch::debug, dbgln, mem::page::boot::new_boot_table};
+    use crate::{dbgln, fdt::fdt_size, mem::boot::new_boot_table};
 
     /// 参数为目标虚拟地址
     #[inline(always)]
-    pub fn enable_mmu(stack_top: *mut u8, jump_to: *mut u8) -> ! {
-        let table = new_boot_table();
+    pub fn enable_mmu() -> ! {
+        setup_table_regs();
+        let table = new_boot_table(fdt_size());
 
         dbgln!("Set kernel table {}", table.raw());
         set_kernel_table(table);
         set_user_table(table);
         flush_tlb(None);
 
-        dbgln!(
-            "relocate to pc: {} stack: {}",
-            jump_to as usize,
-            stack_top as usize
-        );
-        // Enable the MMU and turn on I-cache and D-cache
-        cfg_match! {
-            feature = "vm" => {
-                SCTLR_EL2
-                    .modify(SCTLR_EL2::M::Enable + SCTLR_EL2::C::Cacheable + SCTLR_EL2::I::Cacheable);
-            }
-            _ =>{
-                SCTLR_EL1
-                    .modify(SCTLR_EL1::M::Enable + SCTLR_EL1::C::Cacheable + SCTLR_EL1::I::Cacheable);
-            }
-        }
-
-        isb(SY);
-        debug::reloacte();
-        jump(stack_top, jump_to)
-    }
-
-    #[naked]
-    extern "C" fn jump(stack_top: *mut u8, jump_to: *mut u8) -> ! {
+        let jump_to: *mut u8;
         unsafe {
-            naked_asm!(
-                "MOV      sp,  x0",
-                "MOV      x8,  x1",
+            asm!("LDR {0}, ={fn_name}",
+                out(reg) jump_to,
+                fn_name = sym mmu_entry,
+            );
+            dbgln!("relocate to pc: {}", jump_to);
+            // Enable the MMU and turn on I-cache and D-cache
+            cfg_match! {
+                feature = "vm" => {
+                    SCTLR_EL2
+                        .modify(SCTLR_EL2::M::Enable + SCTLR_EL2::C::Cacheable + SCTLR_EL2::I::Cacheable);
+                }
+                _ =>{
+                    SCTLR_EL1
+                        .modify(SCTLR_EL1::M::Enable + SCTLR_EL1::C::Cacheable + SCTLR_EL1::I::Cacheable);
+                }
+            }
+
+            isb(SY);
+            asm!(
+                "MOV      x8,  {}",
                 "BLR      x8",
                 "B       .",
+                in(reg) jump_to,
+                options(nostack, noreturn)
             )
         }
     }

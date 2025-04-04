@@ -22,6 +22,7 @@ mod _m {
         (TTBR1_EL1.get_baddr() as usize).into()
     }
 
+    #[inline(always)]
     pub fn set_user_table(addr: PhysAddr) {
         TTBR0_EL1.set_baddr(addr.raw() as _);
         flush_tlb(None);
@@ -31,6 +32,7 @@ mod _m {
         (TTBR0_EL1.get_baddr() as usize).into()
     }
 
+    #[inline(always)]
     pub fn flush_tlb(vaddr: Option<VirtAddr>) {
         match vaddr {
             Some(addr) => {
@@ -42,7 +44,7 @@ mod _m {
         }
     }
 
-    pub fn setup_regs() {
+    pub fn setup_table_regs() {
         // Device-nGnRnE
         let attr0 = MAIR_EL1::Attr0_Device::nonGathering_nonReordering_noEarlyWriteAck;
         // Normal
