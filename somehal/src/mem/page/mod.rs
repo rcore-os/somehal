@@ -1,5 +1,4 @@
 use kmem::paging::*;
-use kmem::region::MemConfig;
 
 use crate::arch::Arch;
 use crate::archif::ArchIf;

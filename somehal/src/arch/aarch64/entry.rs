@@ -1,12 +1,11 @@
 use core::arch::asm;
 
-use aarch64_cpu::{asm::barrier, registers::*};
+use aarch64_cpu::registers::*;
 use kmem::region::STACK_TOP;
 
-use super::{Arch, debug};
+use super::debug;
 use crate::{
-    ArchIf,
-    arch::paging::{flush_tlb, set_kernel_table, set_user_table},
+    arch::paging::{set_kernel_table, set_user_table},
     fdt::{self, save_fdt},
     handle_err,
     mem::{
@@ -40,13 +39,13 @@ pub fn mmu_entry() -> ! {
             "MOV SP, {sp}",
             "B   {fix_sp}",
             sp = in(reg) sp.raw(),
-            fix_sp = sym fix_sp,
+            fix_sp = sym phys_sp_entry,
             options(noreturn, nostack),
         )
     }
 }
 
-fn fix_sp() -> ! {
+fn phys_sp_entry() -> ! {
     println!("SP moved");
     let mut rsv = ArrayVec::<_, 4>::new();
 
@@ -67,30 +66,19 @@ fn fix_sp() -> ! {
     debug::reloacte();
 
     set_kernel_table(table);
-
-    unsafe {
-        asm!(
-            "MOV SP, {sp}",
-            "B {f}",
-            sp = const STACK_TOP,
-            f = sym virt_sp,
-            options(nostack, noreturn),
-        );
-    }
-}
-
-fn virt_sp() -> ! {
-    println!("SP moved to virt");
     set_user_table(0usize.into());
+
     unsafe extern "C" {
         fn rust_main();
     }
 
     unsafe {
         asm!(
-            "B  {f}",
+            "MOV SP, {sp}",
+            "B {f}",
+            sp = const STACK_TOP,
             f = sym rust_main,
-            options(noreturn, nostack),
-        )
+            options(nostack, noreturn),
+        );
     }
 }
