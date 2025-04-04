@@ -1,7 +1,4 @@
-use crate::{
-    fdt::{fdt_size, save_fdt},
-    mem::{entry_addr, kcode_offset, setup_memory_main, setup_memory_regions},
-};
+use crate::{fdt::fdt_size, mem::boot::*};
 
 #[naked]
 #[unsafe(no_mangle)]
@@ -44,7 +41,6 @@ mod _m {
     use crate::consts::STACK_SIZE;
     use crate::dbgln;
     use crate::fdt::set_fdt_ptr;
-    use crate::mem::{clean_bss, set_kcode_va_offset};
 
     const FLAG_LE: usize = 0b0;
     const FLAG_PAGE_SIZE_4K: usize = 0b10;
@@ -94,7 +90,7 @@ mod _m {
         super::debug::init();
 
         dbgln!("Booting up");
-        dbgln!("Entry      : {}", entry_addr());
+        dbgln!("Entry      : {}", entry_addr().raw());
         dbgln!("Code offset: {}", kcode_offset());
         dbgln!("Current EL : {}", CurrentEL.read(CurrentEL::EL));
         dbgln!("fdt        : {}", fdt);

@@ -17,13 +17,13 @@ cfg_match! {
 #[link_boot::link_boot]
 mod _m {
 
-    use crate::{dbgln, fdt::fdt_size, mem::page::boot::new_boot_table2};
+    use crate::{dbgln, fdt::fdt_size, mem::boot::new_boot_table};
 
     /// 参数为目标虚拟地址
     #[inline(always)]
     pub fn enable_mmu() -> ! {
         setup_regs();
-        let table = new_boot_table2(fdt_size());
+        let table = new_boot_table(fdt_size());
 
         dbgln!("Set kernel table {}", table.raw());
         set_kernel_table(table);

@@ -29,9 +29,14 @@ mod _m {
     }
 
     pub(crate) fn init() {
-        let (uart, debug_region) = fdt::init_debugcon().unwrap();
-        unsafe { (*MEM_REGION_DEBUG_CON.get()).replace(debug_region) };
-        set_uart(uart);
+        unsafe {
+            if (*MEM_REGION_DEBUG_CON.get()).is_some() {
+                return;
+            }
+            let (uart, debug_region) = fdt::init_debugcon().unwrap();
+            (*MEM_REGION_DEBUG_CON.get()).replace(debug_region);
+            set_uart(uart);
+        }
     }
 
     fn set_uart(uart: any_uart::Uart) -> Option<()> {

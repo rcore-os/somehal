@@ -3,8 +3,6 @@ use kmem::paging::*;
 use crate::arch::Arch;
 use crate::archif::ArchIf;
 
-pub mod boot;
-
 pub type Table<'a> = PageTableRef<'a, <Arch as ArchIf>::PageTable>;
 
 pub const fn page_size() -> usize {
