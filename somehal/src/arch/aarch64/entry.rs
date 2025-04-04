@@ -34,6 +34,7 @@ pub fn mmu_entry() -> ! {
 
     println!("{:<12}: {:?}", "Stack top", sp);
 
+    // SP 移动到物理地址正确位置
     unsafe {
         asm!(
             "MOV SP, {sp}",
