@@ -25,6 +25,12 @@ mod _boot {
         }
     }
 
+    impl<T> Print for *mut T {
+        fn _print(self) {
+            __print_hex(self as _)
+        }
+    }
+
     impl Print for &str {
         fn _print(self) {
             __print_str(self);

@@ -38,7 +38,7 @@ mod _m {
         }
     }
 
-    pub fn new_boot_table() -> Result<PhysAddr, &'static str> {
+    pub fn new_boot_table() -> PhysAddr {
         let start = (MEMORY_MAIN.addr + MEMORY_MAIN.size / 2).align_up(page_size());
         let end = MEMORY_MAIN.addr + MEMORY_MAIN.size;
         let mut tmp_alloc = Alloc {
@@ -78,6 +78,6 @@ mod _m {
             }
         }
 
-        Ok(table.paddr())
+        table.paddr()
     }
 }

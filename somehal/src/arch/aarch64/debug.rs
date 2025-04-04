@@ -7,7 +7,7 @@ mod _m {
     use any_uart::Sender;
     use kmem::space::OFFSET_LINER;
 
-    pub(super) static DEBUG_CON: OnceStatic<MemRegion> = OnceStatic::new();
+    pub(super) static MEM_REGION_DEBUG_CON: OnceStatic<MemRegion> = OnceStatic::new();
     static UART: UartWapper = UartWapper(UnsafeCell::new(None));
 
     struct UartWapper(UnsafeCell<Option<Sender>>);
@@ -30,7 +30,7 @@ mod _m {
 
     pub(crate) fn init() {
         let (uart, debug_region) = fdt::init_debugcon().unwrap();
-        unsafe { (*DEBUG_CON.get()).replace(debug_region) };
+        unsafe { (*MEM_REGION_DEBUG_CON.get()).replace(debug_region) };
         set_uart(uart);
     }
 

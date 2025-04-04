@@ -96,12 +96,10 @@ mod _m {
         for m in memories {
             let mut phys_start = m.addr;
             let phys_raw = phys_start.raw();
-            // let mut name = "memory    ";
             let size = m.size;
             let mut phys_end = phys_start + size;
 
             if phys_raw < link_section_end().raw() && link_section_end().raw() < phys_raw + m.size {
-                // name = "mem main  ";
                 phys_start = link_section_end();
 
                 let stack_all_size = cpu_count * STACK_SIZE;

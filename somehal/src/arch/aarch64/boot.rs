@@ -96,14 +96,15 @@ mod _m {
         super::debug::init();
 
         dbgln!("Booting up");
-        dbgln!("Entry     : {}", entry_addr());
-        dbgln!("kcode va  : {}", kcode_offset());
-        dbgln!("fdt       : {}", fdt as usize);
+        dbgln!("Entry      : {}", entry_addr());
+        dbgln!("Code offset: {}", kcode_offset());
+        dbgln!("Current EL : {}", CurrentEL.read(CurrentEL::EL));
+        dbgln!("fdt        : {}", fdt);
 
-        let phys_memories = early_err!(crate::fdt::find_memory(fdt), "fdt can not found memory");
         let cpu_count = early_err!(crate::fdt::cpu_count(), "fdt can not found cpu");
+        dbgln!("cpu count  : {}", cpu_count);
 
-        dbgln!("cpu count : {}", cpu_count);
+        let phys_memories = early_err!(crate::fdt::find_memory(), "fdt can not found memory");
 
         unsafe {
             setup_memory_main(phys_memories, cpu_count);
@@ -119,12 +120,13 @@ mod _m {
     }
 
     fn fix_sp() -> ! {
-        let region_fdt = early_err!(save_fdt(), "save fdt failed");
-
         let mut rsv = ArrayVec::<_, 4>::new();
 
-        let _ = rsv.try_push(region_fdt);
-        let _ = rsv.try_push(super::debug::DEBUG_CON.clone());
+        if let Some(r) = save_fdt() {
+            let _ = rsv.try_push(r);
+        }
+
+        let _ = rsv.try_push(super::debug::MEM_REGION_DEBUG_CON.clone());
 
         setup_memory_regions(rsv);
 

@@ -15,17 +15,17 @@ mod _m {
         sync::atomic::{AtomicPtr, Ordering},
     };
 
-    use crate::dbgln;
+    use crate::{dbgln, early_err};
     use kmem::space::{AccessFlags, CacheConfig, MemConfig, OFFSET_LINER};
 
     use crate::mem::{MemRegion, kcode_offset};
 
     static FDT_ADDR: AtomicPtr<u8> = AtomicPtr::new(null_mut());
 
-    pub fn find_memory(fdt: *mut u8) -> Result<PhysMemoryArray, FdtError<'static>> {
+    pub fn find_memory() -> Result<PhysMemoryArray, FdtError<'static>> {
         let mut mems = PhysMemoryArray::new();
 
-        let fdt = fdt_parser::Fdt::from_ptr(NonNull::new(fdt).ok_or(FdtError::BadPtr)?)?;
+        let fdt = fdt_parser::Fdt::from_ptr(NonNull::new(fdt_ptr()).ok_or(FdtError::BadPtr)?)?;
 
         for mem in fdt.memory() {
             for region in mem.regions() {
@@ -95,13 +95,15 @@ mod _m {
         Fdt::from_ptr(NonNull::new(fdt_ptr())?).ok()
     }
 
-    pub(crate) fn save_fdt() -> Result<MemRegion, &'static str> {
+    pub(crate) fn save_fdt() -> Option<MemRegion> {
         let ptr_src = fdt_ptr();
-        let fdt = Fdt::from_ptr(NonNull::new(ptr_src).ok_or("")?).map_err(|_| "")?;
+        let fdt = early_err!(Fdt::from_ptr(NonNull::new(ptr_src)?));
         let size = fdt.total_size().align_up(page_size());
 
-        let ptr_dst = main_memory_alloc(Layout::from_size_align(size, page_size()).map_err(|_| "")?)
-            .raw() as *mut u8;
+        let ptr_dst = main_memory_alloc(
+            Layout::from_size_align(size, page_size()).unwrap()
+        )
+        .raw() as *mut u8;
 
         unsafe {
             let src = &mut *slice_from_raw_parts_mut(ptr_src, size);
@@ -111,7 +113,7 @@ mod _m {
             FDT_ADDR.store(ptr_dst, Ordering::SeqCst);
         }
 
-        Ok(MemRegion {
+        Some(MemRegion {
             virt_start: (ptr_dst as usize + kcode_offset()).into(),
             size,
             phys_start: (ptr_dst as usize).into(),

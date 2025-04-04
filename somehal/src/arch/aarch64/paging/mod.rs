@@ -14,12 +14,12 @@ cfg_match! {
 mod _m {
     use core::arch::naked_asm;
 
-    use crate::{arch::debug, dbgln, early_err, mem::page::boot::new_boot_table};
+    use crate::{arch::debug, dbgln, mem::page::boot::new_boot_table};
 
     /// 参数为目标虚拟地址
     #[inline(always)]
     pub fn enable_mmu(stack_top: *mut u8, jump_to: *mut u8) -> ! {
-        let table = early_err!(new_boot_table());
+        let table = new_boot_table();
 
         dbgln!("Set kernel table {}", table.raw());
         set_kernel_table(table);
@@ -34,7 +34,8 @@ mod _m {
         // Enable the MMU and turn on I-cache and D-cache
         cfg_match! {
             feature = "vm" => {
-
+                SCTLR_EL2
+                    .modify(SCTLR_EL2::M::Enable + SCTLR_EL2::C::Cacheable + SCTLR_EL2::I::Cacheable);
             }
             _ =>{
                 SCTLR_EL1
