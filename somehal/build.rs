@@ -16,6 +16,7 @@ fn main() {
     println!("cargo:rustc-link-search={}", out_dir().display());
 
     println!("cargo::rustc-check-cfg=cfg(hard_float)");
+
     if std::env::var("TARGET").unwrap() == "aarch64-unknown-none" {
         println!("cargo::rustc-cfg=hard_float");
     }
@@ -23,6 +24,11 @@ fn main() {
     gen_const();
 
     let arch = Arch::default();
+
+    println!("cargo::rustc-check-cfg=cfg(use_fdt)");
+    if matches!(arch, Arch::Aarch64 | Arch::Riscv64) {
+        println!("cargo::rustc-cfg=use_fdt");
+    }
 
     arch.gen_linker_script();
 }

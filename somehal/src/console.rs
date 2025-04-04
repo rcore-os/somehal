@@ -4,7 +4,6 @@ use spin::Mutex;
 
 #[link_boot::link_boot]
 mod _boot {
-    use fdt_parser::FdtError;
     use kmem::paging::PagingError;
 
     use crate::{ArchIf, arch::Arch};
@@ -57,24 +56,27 @@ mod _boot {
         }
     }
 
-    impl Print for FdtError<'_> {
+    #[cfg(use_fdt)]
+    impl Print for fdt_parser::FdtError<'_> {
         fn _print(self) {
             match self {
-                FdtError::BadCell => __print_str("BadCell"),
-                FdtError::NotFound(s) => {
+                fdt_parser::FdtError::BadCell => __print_str("BadCell"),
+                fdt_parser::FdtError::NotFound(s) => {
                     __print_str("NotFound: ");
                     __print_str(s);
                 }
-                FdtError::BadMagic => __print_str("BadMagic"),
-                FdtError::BadPtr => __print_str("BadPtr"),
-                FdtError::BadCellSize(s) => {
+                fdt_parser::FdtError::BadMagic => __print_str("BadMagic"),
+                fdt_parser::FdtError::BadPtr => __print_str("BadPtr"),
+                fdt_parser::FdtError::BadCellSize(s) => {
                     __print_str("BadCellSize: ");
                     __print_hex(s);
                 }
-                FdtError::Eof => __print_str("Eof"),
-                FdtError::MissingProperty => __print_str("MissingProperty"),
-                FdtError::Utf8Parse { data: _ } => __print_str("Utf8Parse"),
-                FdtError::FromBytesUntilNull { data: _ } => __print_str("FromBytesUntilNull"),
+                fdt_parser::FdtError::Eof => __print_str("Eof"),
+                fdt_parser::FdtError::MissingProperty => __print_str("MissingProperty"),
+                fdt_parser::FdtError::Utf8Parse { data: _ } => __print_str("Utf8Parse"),
+                fdt_parser::FdtError::FromBytesUntilNull { data: _ } => {
+                    __print_str("FromBytesUntilNull")
+                }
             }
         }
     }
