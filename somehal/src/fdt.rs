@@ -4,7 +4,7 @@ use core::{
 };
 
 use fdt_parser::{Fdt, FdtError};
-use kmem::IntAlign;
+use kmem::{IntAlign, region::MemRegionKind};
 
 use crate::mem::{PhysMemory, PhysMemoryArray, main_memory_alloc, page::page_size};
 
@@ -16,7 +16,7 @@ mod _m {
     };
 
     use crate::{dbgln, early_err};
-    use kmem::space::{AccessFlags, CacheConfig, MemConfig, OFFSET_LINER};
+    use kmem::region::{AccessFlags, CacheConfig, MemConfig, OFFSET_LINER};
 
     use crate::mem::{MemRegion, kcode_offset};
 
@@ -80,6 +80,7 @@ mod _m {
                     access: AccessFlags::Read | AccessFlags::Write,
                     cache: CacheConfig::Device,
                 },
+                kind: MemRegionKind::Device,
             },
         ))
     }
@@ -100,10 +101,8 @@ mod _m {
         let fdt = early_err!(Fdt::from_ptr(NonNull::new(ptr_src)?));
         let size = fdt.total_size().align_up(page_size());
 
-        let ptr_dst = main_memory_alloc(
-            Layout::from_size_align(size, page_size()).unwrap()
-        )
-        .raw() as *mut u8;
+        let ptr_dst =
+            main_memory_alloc(Layout::from_size_align(size, page_size()).unwrap()).raw() as *mut u8;
 
         unsafe {
             let src = &mut *slice_from_raw_parts_mut(ptr_src, size);
@@ -122,6 +121,7 @@ mod _m {
                 access: AccessFlags::Read,
                 cache: CacheConfig::Normal,
             },
+            kind: MemRegionKind::Code,
         })
     }
 }

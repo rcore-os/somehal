@@ -10,7 +10,7 @@ mod _m {
     use kmem::{
         PhysAddr,
         paging::{PTEGeneric, TableGeneric},
-        space::AccessFlags,
+        region::AccessFlags,
     };
 
     pub fn set_kernel_table(addr: PhysAddr) {
@@ -196,7 +196,7 @@ mod _m {
         }
     }
 
-    pub fn new_pte_with_config(config: kmem::space::MemConfig) -> Pte {
+    pub fn new_pte_with_config(config: kmem::region::MemConfig) -> Pte {
         let mut flags = PteFlags::AF | PteFlags::VALID;
 
         if !config.access.contains(AccessFlags::Write) {
@@ -218,9 +218,9 @@ mod _m {
         let mut pte = Pte(flags.bits());
 
         pte.set_mair_idx(match config.cache {
-            kmem::space::CacheConfig::Device => 0,
-            kmem::space::CacheConfig::Normal => 1,
-            kmem::space::CacheConfig::WriteThrough => 2,
+            kmem::region::CacheConfig::Device => 0,
+            kmem::region::CacheConfig::Normal => 1,
+            kmem::region::CacheConfig::WriteThrough => 2,
         });
 
         pte

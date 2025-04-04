@@ -1,6 +1,6 @@
 pub use crate::mem::{PhysAddr, VirtAddr};
 pub use kmem::paging::*;
-use kmem::space::MemConfig;
+use kmem::region::MemConfig;
 
 pub trait ArchIf {
     fn early_debug_put(byte: u8);

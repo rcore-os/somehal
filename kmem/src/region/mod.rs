@@ -1,5 +1,7 @@
 use core::fmt::Debug;
 
+use crate::{PhysAddr, VirtAddr};
+
 pub const OFFSET_LINER: usize = 0xffff_8000_0000_0000;
 pub const STACK_TOP: usize = 0xffff_f000_0000_0000;
 
@@ -77,10 +79,41 @@ impl Debug for MemConfig {
     }
 }
 
+#[repr(C)]
+#[derive(Clone)]
+pub struct MemRegion {
+    pub virt_start: VirtAddr,
+    pub size: usize,
+    pub phys_start: PhysAddr,
+    pub name: &'static str,
+    pub config: MemConfig,
+    pub kind: MemRegionKind,
+}
+
 #[repr(u8)]
-pub enum KSpaceKind {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MemRegionKind {
     Code,
     Stack,
     PerCpu,
-    Liner,
+    Memory,
+    Device,
+}
+
+pub fn region_phys_to_virt(regions: impl Iterator<Item = MemRegion>, p: PhysAddr) -> VirtAddr {
+    for region in regions {
+        if p >= region.phys_start && p < region.phys_start + region.size {
+            return region.virt_start + (p - region.phys_start);
+        }
+    }
+    panic!("region_phys_to_virt: not found")
+}
+
+pub fn region_virt_to_phys(regions: impl Iterator<Item = MemRegion>, v: VirtAddr) -> PhysAddr {
+    for region in regions {
+        if v >= region.virt_start && v < region.virt_start + region.size {
+            return region.phys_start + (v - region.virt_start);
+        }
+    }
+    panic!("region_virt_to_phys: not found")
 }

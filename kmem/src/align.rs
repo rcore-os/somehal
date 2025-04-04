@@ -5,15 +5,14 @@ pub trait IntAlign {
     fn align_up(self, align: usize) -> Self;
 }
 
-#[link_boot::link_boot]
-mod _m {
-    fn _align_down(x: usize, align: usize) -> usize {
-        x & !(align - 1)
-    }
+#[inline(always)]
+fn _align_down(x: usize, align: usize) -> usize {
+    x & !(align - 1)
+}
 
-    fn _align_up(x: usize, align: usize) -> usize {
-        (x + align - 1) & !(align - 1)
-    }
+#[inline(always)]
+fn _align_up(x: usize, align: usize) -> usize {
+    (x + align - 1) & !(align - 1)
 }
 
 impl IntAlign for usize {

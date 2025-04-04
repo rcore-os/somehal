@@ -26,7 +26,7 @@ mod _m {
         type PageTable = paging::Table;
 
         fn new_pte_with_config(
-            config: kmem::space::MemConfig,
+            config: kmem::region::MemConfig,
         ) -> <Self::PageTable as TableGeneric>::PTE {
             paging::new_pte_with_config(config)
         }

@@ -1,4 +1,4 @@
-use kmem::space::CacheConfig;
+use kmem::region::{CacheConfig, region_phys_to_virt, region_virt_to_phys};
 pub use kmem::*;
 use page::page_size;
 
@@ -22,7 +22,8 @@ mod _m {
     };
 
     use crate::dbgln;
-    use kmem::space::{AccessFlags, MemConfig, OFFSET_LINER, STACK_TOP};
+    pub use kmem::region::MemRegion;
+    use kmem::region::{AccessFlags, MemConfig, MemRegionKind, OFFSET_LINER, STACK_TOP};
 
     use crate::{once_static::OnceStatic, vec::ArrayVec};
 
@@ -33,16 +34,6 @@ mod _m {
     static STACK_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
     static PERCPU_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
     static MEMORY_MAIN: OnceStatic<PhysMemory> = OnceStatic::new();
-
-    #[repr(C)]
-    #[derive(Clone)]
-    pub struct MemRegion {
-        pub virt_start: VirtAddr,
-        pub size: usize,
-        pub phys_start: PhysAddr,
-        pub name: &'static str,
-        pub config: MemConfig,
-    }
 
     pub(crate) unsafe fn set_kcode_va_offset(offset: usize) {
         KCODE_VA_OFFSET.store(offset, Ordering::SeqCst);
@@ -131,6 +122,7 @@ mod _m {
                         access: AccessFlags::Read | AccessFlags::Write,
                         cache: CacheConfig::Normal,
                     },
+                    kind: MemRegionKind::Memory,
                 });
             }
         }
@@ -146,6 +138,7 @@ mod _m {
                 access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
                 cache: CacheConfig::Normal,
             },
+            kind: MemRegionKind::Stack,
         });
     }
 
@@ -172,6 +165,7 @@ mod _m {
                 access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
                 cache: CacheConfig::Normal,
             },
+            kind: MemRegionKind::PerCpu,
         });
 
         mem_region_add(MemRegion {
@@ -183,6 +177,7 @@ mod _m {
                 access: AccessFlags::Read | AccessFlags::Write,
                 cache: CacheConfig::Normal,
             },
+            kind: MemRegionKind::Memory,
         });
 
         for r in rsv {
@@ -295,6 +290,7 @@ mod _m {
             name,
             phys_start: phys_start.into(),
             config,
+            kind: MemRegionKind::Code,
         }
     }
 }
@@ -310,4 +306,12 @@ fn_link_section!(percpu);
 /// Returns an iterator over all physical memory regions.
 pub fn memory_regions() -> impl Iterator<Item = MemRegion> {
     MEM_REGIONS.clone()
+}
+
+pub fn phys_to_virt(p: PhysAddr) -> VirtAddr {
+    region_phys_to_virt(memory_regions(), p)
+}
+
+pub fn virt_to_phys(v: VirtAddr) -> PhysAddr {
+    region_virt_to_phys(memory_regions(), v)
 }

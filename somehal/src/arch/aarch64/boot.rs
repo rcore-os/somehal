@@ -39,7 +39,7 @@ mod _m {
     use core::arch::{asm, naked_asm};
 
     use aarch64_cpu::{asm::barrier, registers::*};
-    use kmem::space::STACK_TOP;
+    use kmem::region::STACK_TOP;
 
     use crate::arch::paging::{self, enable_mmu};
     use crate::arch::rust_main;
