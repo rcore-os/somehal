@@ -18,7 +18,10 @@ use kmem::region::{AccessFlags, CacheConfig, MemConfig, OFFSET_LINER};
 
 use crate::mem::{MemRegion, boot::kcode_offset};
 
-static FDT_ADDR: AtomicPtr<u8> = AtomicPtr::new(null_mut());
+#[link_boot::link_boot]
+mod _m {
+    static FDT_ADDR: AtomicPtr<u8> = AtomicPtr::new(null_mut());
+}
 
 pub fn find_memory() -> Result<PhysMemoryArray, FdtError<'static>> {
     let mut mems = PhysMemoryArray::new();
@@ -136,7 +139,7 @@ pub(crate) fn save_fdt() -> Option<MemRegion> {
         virt_start: (ptr_dst as usize + kcode_offset()).into(),
         size,
         phys_start: (ptr_dst as usize).into(),
-        name: "fdt data  ",
+        name: "fdt data",
         config: MemConfig {
             access: AccessFlags::Read,
             cache: CacheConfig::Normal,

@@ -23,3 +23,8 @@ smccc = "0.2"
 arm-gic-driver = "0.7"
 any-uart = "0.2"
 fdt-parser = "0.4"
+
+[build-dependencies]
+prettyplease = "0.2"
+quote = "1.0"
+syn = "2.0"

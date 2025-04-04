@@ -184,16 +184,14 @@ macro_rules! println {
 
 #[macro_export]
 macro_rules! handle_err {
-    () => {
-        ($f:expr) => {
-            match $f {
-                Ok(v) => v,
-                Err(e) => {
-                    $crate::println!("{:?}", e);
-                    loop {
-                        use $crate::archif::ArchIf;
-                        $crate::arch::Arch::wait_for_event();
-                    }
+    ($f:expr) => {
+        match $f {
+            Ok(v) => v,
+            Err(e) => {
+                $crate::println!("{:?}", e);
+                loop {
+                    use $crate::archif::ArchIf;
+                    $crate::arch::Arch::wait_for_event();
                 }
             }
         }

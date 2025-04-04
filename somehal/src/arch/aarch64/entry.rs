@@ -1,13 +1,96 @@
-use super::debug;
-use crate::{fdt, handle_err, println};
+use core::arch::asm;
 
-pub fn mmu_entry() {
+use aarch64_cpu::{asm::barrier, registers::*};
+use kmem::region::STACK_TOP;
+
+use super::{Arch, debug};
+use crate::{
+    ArchIf,
+    arch::paging::{flush_tlb, set_kernel_table, set_user_table},
+    fdt::{self, save_fdt},
+    handle_err,
+    mem::{
+        boot::kernal_load_addr, page::new_mapped_table, setup_memory_main, setup_memory_regions,
+        stack_top_cpu0,
+    },
+    println,
+    vec::ArrayVec,
+};
+
+pub fn mmu_entry() -> ! {
     debug::init();
     println!("MMU ready!");
+    println!("{:<12}: {:?}", "Kernel LMA", kernal_load_addr());
+    println!("{:<12}: {}", "Current EL", CurrentEL.read(CurrentEL::EL));
 
     let cpu_count = handle_err!(fdt::cpu_count(), "could not get cpu count");
 
     println!("{:<12}: {}", "CPU count", cpu_count);
 
-    // let memories = handle_err!(fdt::find_memory(), "could not get memories");
+    let memories = handle_err!(fdt::find_memory(), "could not get memories");
+
+    setup_memory_main(memories, cpu_count);
+
+    let sp = stack_top_cpu0();
+
+    println!("{:<12}: {:?}", "Stack top", sp);
+
+    unsafe {
+        asm!(
+            "MOV SP, {sp}",
+            "B   {fix_sp}",
+            sp = in(reg) sp.raw(),
+            fix_sp = sym fix_sp,
+            options(noreturn, nostack),
+        )
+    }
+}
+
+fn fix_sp() -> ! {
+    println!("SP moved");
+    let mut rsv = ArrayVec::<_, 4>::new();
+
+    if let Some(r) = save_fdt() {
+        let _ = rsv.try_push(r);
+    }
+
+    let _ = rsv.try_push(super::debug::MEM_REGION_DEBUG_CON.clone());
+
+    setup_memory_regions(rsv);
+
+    println!("Memory regions setup done!");
+
+    let table = new_mapped_table();
+
+    println!("Mov sp to {:#x}", STACK_TOP);
+
+    debug::reloacte();
+
+    set_kernel_table(table);
+
+    unsafe {
+        asm!(
+            "MOV SP, {sp}",
+            "B {f}",
+            sp = const STACK_TOP,
+            f = sym virt_sp,
+            options(nostack, noreturn),
+        );
+    }
+}
+
+fn virt_sp() -> ! {
+    println!("SP moved to virt");
+    set_user_table(0usize.into());
+    unsafe extern "C" {
+        fn rust_main();
+    }
+
+    unsafe {
+        asm!(
+            "B  {f}",
+            f = sym rust_main,
+            options(noreturn, nostack),
+        )
+    }
 }

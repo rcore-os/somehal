@@ -38,7 +38,7 @@ mod _m {
     use aarch64_cpu::{asm::barrier, registers::*};
 
     use crate::arch::paging::enable_mmu;
-    use crate::consts::STACK_SIZE;
+    use crate::consts::KERNEL_STACK_SIZE;
     use crate::dbgln;
     use crate::fdt::set_fdt_ptr;
 
@@ -71,7 +71,7 @@ mod _m {
                 "MOV      x1,  x19",
                 "BL       {entry}",
                 this_func = sym primary_entry,
-                stack_size = const STACK_SIZE,
+                stack_size = const KERNEL_STACK_SIZE,
                 switch_to_elx = sym switch_to_elx,
                 entry = sym rust_boot,
             )
@@ -84,28 +84,21 @@ mod _m {
             enable_fp();
             set_kcode_va_offset(kcode_va);
             set_fdt_ptr(fdt);
+
+            #[cfg(feature = "early-debug")]
+            super::debug::init();
+            dbgln!("Booting up");
+            dbgln!("Entry      : {}", kernal_load_addr().raw());
+            dbgln!("Code offset: {}", kcode_offset());
+            dbgln!("Current EL : {}", CurrentEL.read(CurrentEL::EL));
+            dbgln!("fdt        : {}", fdt);
+            dbgln!("fdt size   : {}", crate::fdt::fdt_size());
         }
-
-        #[cfg(feature = "early-debug")]
-        super::debug::init();
-        dbgln!("Booting up");
-        dbgln!("Entry      : {}", entry_addr().raw());
-        dbgln!("Code offset: {}", kcode_offset());
-        dbgln!("Current EL : {}", CurrentEL.read(CurrentEL::EL));
-        dbgln!("fdt        : {}", fdt);
-        dbgln!("fdt size   : {}", crate::fdt::fdt_size());
-
         enable_mmu()
     }
 
+    #[cfg(not(feature = "vm"))]
     fn switch_to_elx() {
-        #[cfg(feature = "vm")]
-        switch_to_el2();
-        #[cfg(not(feature = "vm"))]
-        switch_to_el1();
-    }
-
-    fn switch_to_el1() {
         SPSel.write(SPSel::SP::ELx);
         SP_EL0.set(0);
         let current_el = CurrentEL.read(CurrentEL::EL);
@@ -163,7 +156,7 @@ mod _m {
     }
 
     #[cfg(feature = "vm")]
-    fn switch_to_el2() {
+    fn switch_to_elx() {
         SPSel.write(SPSel::SP::ELx);
         let current_el = CurrentEL.read(CurrentEL::EL);
         if current_el == 3 {

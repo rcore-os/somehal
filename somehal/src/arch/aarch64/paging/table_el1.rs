@@ -22,6 +22,7 @@ mod _m {
         (TTBR1_EL1.get_baddr() as usize).into()
     }
 
+    #[inline(always)]
     pub fn set_user_table(addr: PhysAddr) {
         TTBR0_EL1.set_baddr(addr.raw() as _);
         flush_tlb(None);
@@ -31,6 +32,7 @@ mod _m {
         (TTBR0_EL1.get_baddr() as usize).into()
     }
 
+    #[inline(always)]
     pub fn flush_tlb(vaddr: Option<VirtAddr>) {
         match vaddr {
             Some(addr) => {

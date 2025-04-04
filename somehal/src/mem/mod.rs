@@ -1,9 +1,8 @@
-use boot::kcode_offset;
-use kmem::region::{CacheConfig, region_phys_to_virt, region_virt_to_phys};
+use boot::{kcode_offset, link_section_end};
+use kmem::region::{CacheConfig, STACK_TOP, region_phys_to_virt, region_virt_to_phys};
 pub use kmem::*;
 use page::page_size;
 
-use crate::consts::STACK_SIZE;
 use somehal_macros::fn_link_section;
 
 pub(crate) mod boot;
@@ -17,7 +16,7 @@ pub struct PhysMemory {
 
 use core::alloc::Layout;
 
-use crate::dbgln;
+use crate::{consts::KERNEL_STACK_SIZE, dbgln, println};
 pub use kmem::region::MemRegion;
 use kmem::region::{AccessFlags, MemConfig, MemRegionKind, OFFSET_LINER};
 
@@ -26,77 +25,76 @@ use crate::{once_static::OnceStatic, vec::ArrayVec};
 pub type PhysMemoryArray = ArrayVec<PhysMemory, 12>;
 
 static MEMORY_MAIN: OnceStatic<PhysMemory> = OnceStatic::new();
+static mut CPU_COUNT: usize = 1;
+static MEM_REGIONS: OnceStatic<ArrayVec<MemRegion, 32>> = OnceStatic::new();
+static STACK_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
+static PERCPU_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
 
 pub(crate) fn stack_top_cpu0() -> PhysAddr {
-    STACK_ALL.addr + STACK_SIZE
+    STACK_ALL.addr + KERNEL_STACK_SIZE
 }
 
-// ///
-// /// # Safety
-// /// 只能在`mmu`开启前调用
-// pub(crate) unsafe fn setup_memory_main(
-//     memories: impl Iterator<Item = PhysMemory>,
-//     cpu_count: usize,
-// ) {
-//     detect_link_space();
-//     unsafe { CPU_COUNT = cpu_count };
-//     for m in memories {
-//         let mut phys_start = m.addr;
-//         let phys_raw = phys_start.raw();
-//         let size = m.size;
-//         let mut phys_end = phys_start + size;
+pub(crate) fn setup_memory_main(memories: impl Iterator<Item = PhysMemory>, cpu_count: usize) {
+    detect_link_space();
+    unsafe { CPU_COUNT = cpu_count };
+    for m in memories {
+        let mut phys_start = m.addr;
+        let phys_raw = phys_start.raw();
+        let size = m.size;
+        let mut phys_end = phys_start + size;
+        let kcode_end = link_section_end();
 
-//         if phys_raw < link_section_end().raw() && link_section_end().raw() < phys_raw + m.size {
-//             phys_start = link_section_end();
+        if phys_raw < kcode_end.raw() && kcode_end.raw() < phys_raw + m.size {
+            phys_start = kcode_end;
 
-//             let stack_all_size = cpu_count * STACK_SIZE;
+            let stack_all_size = cpu_count * KERNEL_STACK_SIZE;
 
-//             phys_end = phys_end - stack_all_size;
+            phys_end = phys_end - stack_all_size;
 
-//             let stack_all = PhysMemory {
-//                 addr: phys_end,
-//                 size: stack_all_size,
-//             };
+            let stack_all = PhysMemory {
+                addr: phys_end,
+                size: stack_all_size,
+            };
 
-//             unsafe {
-//                 (*STACK_ALL.get()).replace(stack_all);
-//             }
+            unsafe {
+                (*STACK_ALL.get()).replace(stack_all);
+            }
 
-//             unsafe {
-//                 (*MEMORY_MAIN.get()).replace(PhysMemory {
-//                     addr: phys_start,
-//                     size: phys_end.raw() - phys_start.raw(),
-//                 });
-//             }
-//         } else {
-//             mem_region_add(MemRegion {
-//                 virt_start: (phys_start.raw() + OFFSET_LINER).into(),
-//                 size,
-//                 phys_start,
-//                 name: "memory    ",
-//                 config: MemConfig {
-//                     access: AccessFlags::Read | AccessFlags::Write,
-//                     cache: CacheConfig::Normal,
-//                 },
-//                 kind: MemRegionKind::Memory,
-//             });
-//         }
-//     }
+            unsafe {
+                (*MEMORY_MAIN.get()).replace(PhysMemory {
+                    addr: phys_start,
+                    size: phys_end.raw() - phys_start.raw(),
+                });
+            }
+        } else {
+            mem_region_add(MemRegion {
+                virt_start: (phys_start.raw() + OFFSET_LINER).into(),
+                size,
+                phys_start,
+                name: "memory",
+                config: MemConfig {
+                    access: AccessFlags::Read | AccessFlags::Write,
+                    cache: CacheConfig::Normal,
+                },
+                kind: MemRegionKind::Memory,
+            });
+        }
+    }
 
-//     let stack_start = STACK_ALL.addr + STACK_ALL.size - STACK_SIZE;
+    let stack_start = STACK_ALL.addr + STACK_ALL.size - KERNEL_STACK_SIZE;
 
-//     mem_region_add(MemRegion {
-//         virt_start: (STACK_TOP - STACK_SIZE).into(),
-//         size: STACK_SIZE,
-//         phys_start: stack_start,
-//         name: "stack     ",
-//         config: MemConfig {
-//             access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
-//             cache: CacheConfig::Normal,
-//         },
-//         kind: MemRegionKind::Stack,
-//     });
-// }
+    mem_region_add(MemRegion {
+        virt_start: (STACK_TOP - KERNEL_STACK_SIZE).into(),
+        size: KERNEL_STACK_SIZE,
+        phys_start: stack_start,
+        name: "stack",
+        config: MemConfig {
+            access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
+            cache: CacheConfig::Normal,
+        },
+        kind: MemRegionKind::Stack,
+    });
+}
 
 pub(crate) fn setup_memory_regions(rsv: impl Iterator<Item = MemRegion>) {
     let percpu_size = percpu().len().align_up(page_size()) * unsafe { CPU_COUNT };
@@ -113,10 +111,10 @@ pub(crate) fn setup_memory_regions(rsv: impl Iterator<Item = MemRegion>) {
         (*PERCPU_ALL.get()).replace(percpu_all);
     }
     mem_region_add(MemRegion {
-        virt_start: (percpu().as_ptr() as usize + kcode_offset()).into(),
+        virt_start: percpu().as_ptr().into(),
         size: percpu_size,
         phys_start: percpu_start,
-        name: ".percpu   ",
+        name: ".percpu",
         config: MemConfig {
             access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
             cache: CacheConfig::Normal,
@@ -128,7 +126,7 @@ pub(crate) fn setup_memory_regions(rsv: impl Iterator<Item = MemRegion>) {
         virt_start: (MEMORY_MAIN.addr.raw() + OFFSET_LINER).into(),
         size: MEMORY_MAIN.size,
         phys_start: MEMORY_MAIN.addr,
-        name: "mem main  ",
+        name: "mem main",
         config: MemConfig {
             access: AccessFlags::Read | AccessFlags::Write,
             cache: CacheConfig::Normal,
@@ -156,13 +154,15 @@ fn mem_region_add(mut region: MemRegion) {
     let size = region.size.align_up(page_size());
     region.size = size;
 
-    dbgln!(
-        "region {} : [{}, {}) -> [{}, {}) {}",
+    println!(
+        "region {:<12}: [{:?}, {:?}) -> [{:?}, {:?}) {:?} {:?} {}",
         region.name,
-        region.virt_start.raw(),
-        region.virt_start.raw() + region.size,
-        region.phys_start.raw(),
-        region.phys_start.raw() + region.size,
+        region.virt_start,
+        region.virt_start + region.size,
+        region.phys_start,
+        region.phys_start + region.size,
+        region.config,
+        region.kind,
         if size == 0 { "skip empty" } else { "" }
     );
 
@@ -202,7 +202,7 @@ fn detect_link_space() {
         },
     ));
     mem_region_add(link_section_to_kspace(
-        ".text     ",
+        ".text",
         text(),
         MemConfig {
             access: AccessFlags::Read | AccessFlags::Execute,
@@ -210,7 +210,7 @@ fn detect_link_space() {
         },
     ));
     mem_region_add(link_section_to_kspace(
-        ".rodata   ",
+        ".rodata",
         rodata(),
         MemConfig {
             access: AccessFlags::Read | AccessFlags::Execute,
@@ -218,7 +218,7 @@ fn detect_link_space() {
         },
     ));
     mem_region_add(link_section_to_kspace(
-        ".data     ",
+        ".data",
         data(),
         MemConfig {
             access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
@@ -226,7 +226,7 @@ fn detect_link_space() {
         },
     ));
     mem_region_add(link_section_to_kspace(
-        ".bss      ",
+        ".bss",
         bss(),
         MemConfig {
             access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
@@ -237,11 +237,11 @@ fn detect_link_space() {
 
 /// `section`在mmu开启前是物理地址
 fn link_section_to_kspace(name: &'static str, section: &[u8], config: MemConfig) -> MemRegion {
-    let phys_start = section.as_ptr() as usize;
-    let virt_start = phys_start + kcode_offset();
+    let virt_start: VirtAddr = section.as_ptr().into();
+    let phys_start = virt_start.raw() - kcode_offset();
     let size = section.len();
     MemRegion {
-        virt_start: virt_start.into(),
+        virt_start,
         size,
         name,
         phys_start: phys_start.into(),
@@ -257,11 +257,6 @@ fn_link_section!(data);
 fn_link_section!(rodata);
 fn_link_section!(bss);
 fn_link_section!(percpu);
-
-static mut CPU_COUNT: usize = 1;
-static MEM_REGIONS: OnceStatic<ArrayVec<MemRegion, 32>> = OnceStatic::new();
-static STACK_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
-static PERCPU_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
 
 /// Returns an iterator over all physical memory regions.
 pub fn memory_regions() -> impl Iterator<Item = MemRegion> {

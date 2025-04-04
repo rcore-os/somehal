@@ -27,9 +27,9 @@ mod _m {
     static BOOT_TABLE: OnceStatic<PhysMemory> = OnceStatic::new();
 
     pub struct LineAllocator {
-        start: PhysAddr,
+        pub start: PhysAddr,
         iter: PhysAddr,
-        end: PhysAddr,
+        pub end: PhysAddr,
     }
 
     impl LineAllocator {
@@ -99,7 +99,7 @@ mod _m {
         let mut table = early_err!(Table::create_empty(access));
 
         unsafe {
-            let code_start_phys = entry_addr().align_down(page_size()).raw();
+            let code_start_phys = kernal_load_addr().align_down(page_size()).raw();
             let code_start = code_start_phys + kcode_offset();
             let code_end = (link_section_end() + kcode_offset())
                 .align_up(page_size())
@@ -158,15 +158,28 @@ mod _m {
         table.paddr()
     }
 
-    pub fn entry_addr() -> PhysAddr {
-        (BootText().as_ptr() as usize).into()
+    pub fn kernal_load_addr() -> PhysAddr {
+        let mut addr = BootText().as_ptr() as usize;
+
+        if Arch::is_mmu_enabled() {
+            addr -= kcode_offset();
+        }
+
+        addr.into()
     }
 
-    fn link_section_end() -> PhysAddr {
+    pub fn link_section_end() -> PhysAddr {
         unsafe extern "C" {
             static mut __stack_bottom: u8;
         }
-        (addr_of_mut!(__stack_bottom) as usize).into()
+        let addr = addr_of_mut!(__stack_bottom) as usize;
+
+        if Arch::is_mmu_enabled() {
+            addr - kcode_offset()
+        } else {
+            addr
+        }
+        .into()
     }
 
     fn bss_mut() -> &'static mut [u8] {

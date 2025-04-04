@@ -1,4 +1,5 @@
-use std::path::PathBuf;
+use quote::quote;
+use std::{io::Write, path::PathBuf};
 
 const MB: usize = 1024 * 1024;
 
@@ -74,11 +75,13 @@ impl Arch {
 }
 
 fn gen_const() {
-    let const_content = format!(
-        r#"pub const KERNEL_STACK_SIZE: usize = {:#x};
-            "#,
-        DEFAULT_KERNEL_STACK_SIZE
-    );
+    let const_content = quote! {
+        pub const KERNEL_STACK_SIZE: usize = #DEFAULT_KERNEL_STACK_SIZE;
+    };
 
-    std::fs::write(out_dir().join("constant.rs"), const_content).expect("const write failed");
+    let mut file =
+        std::fs::File::create(out_dir().join("constant.rs")).expect("constant.rs create failed");
+    let syntax_tree = syn::parse2(const_content).unwrap();
+    let formatted = prettyplease::unparse(&syntax_tree);
+    file.write_all(formatted.as_bytes()).unwrap();
 }

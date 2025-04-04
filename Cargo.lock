@@ -358,6 +358,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "prettyplease"
+version = "0.2.31"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5316f57387668042f561aae71480de936257848f9c43ce528e311d89a07cadeb"
+dependencies = [
+ "proc-macro2",
+ "syn",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.94"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -467,9 +477,12 @@ dependencies = [
  "link-boot",
  "log",
  "page-table-arm",
+ "prettyplease",
+ "quote",
  "smccc",
  "somehal-macros",
  "spin",
+ "syn",
  "tock-registers",
 ]
 
