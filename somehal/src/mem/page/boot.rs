@@ -116,7 +116,7 @@ mod _m {
             let code_end = (link_section_end() + kcode_offset())
                 .align_up(page_size())
                 .raw();
-            let size = code_end - code_start;
+            let size = (code_end - code_start).max(2 * MB);
 
             dbgln!(
                 "code : [{}, {}) -> [{}, {})",
@@ -142,6 +142,7 @@ mod _m {
             ));
 
             let size = page_level_size(page_levels());
+
             dbgln!("liner: [{}, {})", 0usize, size);
 
             early_err!(table.map(

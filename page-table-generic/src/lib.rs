@@ -22,6 +22,7 @@ pub trait TableGeneric: Sync + Send + Clone + Copy + 'static {
 
     const PAGE_SIZE: usize = 0x1000;
     const LEVEL: usize = 4;
+    const VALID_BITS: usize = 48;
     const TABLE_LEN: usize = Self::PAGE_SIZE / core::mem::size_of::<Self::PTE>();
     fn flush(vaddr: Option<VirtAddr>);
 }

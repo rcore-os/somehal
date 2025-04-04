@@ -179,3 +179,34 @@ macro_rules! println {
         $crate::print!("{}\r\n", format_args!($($arg)*));
     };
 }
+
+#[macro_export]
+macro_rules! handle_err {
+    () => {
+        ($f:expr) => {
+            match $f {
+                Ok(v) => v,
+                Err(e) => {
+                    $crate::println!("{:?}", e);
+                    loop {
+                        use $crate::archif::ArchIf;
+                        $crate::arch::Arch::wait_for_event();
+                    }
+                }
+            }
+        }
+    };
+    ($f:expr, $msg:expr) => {
+        match $f {
+            Ok(v) => v,
+            Err(e) => {
+                $crate::println!("{}:", $msg);
+                $crate::println!("{:?}", e);
+                loop {
+                    use $crate::archif::ArchIf;
+                    $crate::arch::Arch::wait_for_event();
+                }
+            }
+        }
+    };
+}

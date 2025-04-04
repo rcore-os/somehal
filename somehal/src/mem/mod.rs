@@ -29,10 +29,7 @@ mod _m {
 
     pub type PhysMemoryArray = ArrayVec<PhysMemory, 12>;
     static KCODE_VA_OFFSET: AtomicUsize = AtomicUsize::new(0);
-    static mut CPU_COUNT: usize = 1;
-    static MEM_REGIONS: OnceStatic<ArrayVec<MemRegion, 32>> = OnceStatic::new();
-    static STACK_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
-    static PERCPU_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
+
     static MEMORY_MAIN: OnceStatic<PhysMemory> = OnceStatic::new();
     static BOOT_TABLE: OnceStatic<PhysMemory> = OnceStatic::new();
 
@@ -303,6 +300,11 @@ fn_link_section!(data);
 fn_link_section!(rodata);
 fn_link_section!(bss);
 fn_link_section!(percpu);
+
+static mut CPU_COUNT: usize = 1;
+static MEM_REGIONS: OnceStatic<ArrayVec<MemRegion, 32>> = OnceStatic::new();
+static STACK_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
+static PERCPU_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
 
 /// Returns an iterator over all physical memory regions.
 pub fn memory_regions() -> impl Iterator<Item = MemRegion> {
