@@ -1,4 +1,4 @@
-use crate::{PhysAddr, VirtAddr};
+use page_table_generic::{PhysAddr, VirtAddr};
 
 pub trait IntAlign {
     fn align_down(self, align: usize) -> Self;

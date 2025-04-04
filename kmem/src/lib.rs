@@ -1,9 +1,9 @@
 #![no_std]
 
-mod addr;
 mod align;
 pub mod ifhal;
+pub mod paging;
 pub mod space;
-
-pub use addr::*;
 pub use align::*;
+
+pub use paging::{PhysAddr, VirtAddr};

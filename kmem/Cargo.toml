@@ -12,3 +12,4 @@ repository.workspace = true
 [dependencies]
 bitflags = "2.9"
 link-boot = { version = "0.2" }
+page-table-generic = { version = "0.6", path = "../page-table-generic" }

@@ -1,7 +1,9 @@
 use std::path::PathBuf;
 
+const MB: usize = 1024 * 1024;
+
 // 2MiB stack size per hart
-const DEFAULT_KERNEL_STACK_SIZE: usize = 2 * 1024 * 1024;
+const DEFAULT_KERNEL_STACK_SIZE: usize = 2 * MB;
 
 // const ENTRY_VADDR: u64 = 0x40200000;
 const ENTRY_VADDR: u64 = 0xffff_e000_0000_0000;

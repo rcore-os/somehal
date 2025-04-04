@@ -108,12 +108,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "arrayvec"
-version = "0.7.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
-
-[[package]]
 name = "autocfg"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -271,6 +265,7 @@ version = "0.1.0"
 dependencies = [
  "bitflags",
  "link-boot",
+ "page-table-generic",
 ]
 
 [[package]]
@@ -466,14 +461,12 @@ dependencies = [
  "aarch64-cpu",
  "any-uart",
  "arm-gic-driver",
- "arrayvec",
  "bitflags",
  "fdt-parser",
  "kmem",
  "link-boot",
  "log",
  "page-table-arm",
- "page-table-generic",
  "smccc",
  "somehal-macros",
  "spin",

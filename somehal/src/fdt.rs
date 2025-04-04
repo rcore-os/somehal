@@ -78,7 +78,7 @@ mod _m {
                 name: "debug uart",
                 config: MemConfig {
                     access: AccessFlags::Read | AccessFlags::Write,
-                    cache: CacheConfig::NoCache,
+                    cache: CacheConfig::Device,
                 },
             },
         ))

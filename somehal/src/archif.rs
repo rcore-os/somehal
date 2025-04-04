@@ -1,6 +1,6 @@
 pub use crate::mem::{PhysAddr, VirtAddr};
+pub use kmem::paging::*;
 use kmem::space::MemConfig;
-pub use page_table_generic::*;
 
 pub trait ArchIf {
     fn early_debug_put(byte: u8);
@@ -16,4 +16,6 @@ pub trait ArchIf {
     fn get_user_table() -> PhysAddr;
 
     fn flush_tlb(vaddr: Option<VirtAddr>);
+
+    fn wait_for_event();
 }

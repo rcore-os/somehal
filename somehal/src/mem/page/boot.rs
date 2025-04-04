@@ -1,7 +1,9 @@
 #[link_boot::link_boot]
 mod _m {
-    use kmem::{IntAlign, PhysAddr};
-    use page_table_generic::{Access, MapConfig};
+    use kmem::{
+        IntAlign, PhysAddr,
+        paging::{Access, MapConfig},
+    };
 
     use crate::{
         ArchIf,
@@ -18,10 +20,7 @@ mod _m {
     }
 
     impl Access for Alloc {
-        unsafe fn alloc(
-            &mut self,
-            layout: core::alloc::Layout,
-        ) -> Option<page_table_generic::PhysAddr> {
+        unsafe fn alloc(&mut self, layout: core::alloc::Layout) -> Option<PhysAddr> {
             let start = self.start.align_up(layout.align());
             if start + layout.size() > self.end {
                 return None;
@@ -32,14 +31,9 @@ mod _m {
             Some(start.into())
         }
 
-        unsafe fn dealloc(
-            &mut self,
-            _ptr: page_table_generic::PhysAddr,
-            _layout: core::alloc::Layout,
-        ) {
-        }
+        unsafe fn dealloc(&mut self, _ptr: PhysAddr, _layout: core::alloc::Layout) {}
 
-        fn phys_to_mut(&self, phys: page_table_generic::PhysAddr) -> *mut u8 {
+        fn phys_to_mut(&self, phys: PhysAddr) -> *mut u8 {
             phys.raw() as _
         }
     }
@@ -60,8 +54,8 @@ mod _m {
             unsafe {
                 early_err!(table.map(
                     MapConfig {
-                        vaddr: region.virt_start.raw().into(),
-                        paddr: region.phys_start.raw().into(),
+                        vaddr: region.virt_start,
+                        paddr: region.phys_start,
                         size: region.size,
                         pte: Arch::new_pte_with_config(region.config),
                         allow_huge: true,
@@ -73,7 +67,7 @@ mod _m {
                 early_err!(table.map(
                     MapConfig {
                         vaddr: region.phys_start.raw().into(),
-                        paddr: region.phys_start.raw().into(),
+                        paddr: region.phys_start,
                         size: region.size,
                         pte: Arch::new_pte_with_config(region.config),
                         allow_huge: true,
@@ -84,6 +78,6 @@ mod _m {
             }
         }
 
-        Ok(table.paddr().raw().into())
+        Ok(table.paddr())
     }
 }

@@ -5,7 +5,7 @@ use spin::Mutex;
 #[link_boot::link_boot]
 mod _boot {
     use fdt_parser::FdtError;
-    use page_table_generic::PagingError;
+    use kmem::paging::PagingError;
 
     use crate::{ArchIf, arch::Arch};
 
@@ -15,13 +15,13 @@ mod _boot {
 
     impl Print for usize {
         fn _print(self) {
-            hex_print(self)
+            __print_hex(self)
         }
     }
 
     impl Print for u64 {
         fn _print(self) {
-            hex_print(self as _)
+            __print_hex(self as _)
         }
     }
 
@@ -63,7 +63,7 @@ mod _boot {
                 FdtError::BadPtr => __print_str("BadPtr"),
                 FdtError::BadCellSize(s) => {
                     __print_str("BadCellSize: ");
-                    hex_print(s);
+                    __print_hex(s);
                 }
                 FdtError::Eof => __print_str("Eof"),
                 FdtError::MissingProperty => __print_str("MissingProperty"),
@@ -78,7 +78,7 @@ mod _boot {
             Arch::early_debug_put(b);
         }
     }
-    pub fn hex_print(v: usize) {
+    pub fn __print_hex(v: usize) {
         const HEX_BUF_SIZE: usize = 20; // 最大长度，包括前缀"0x"和数字
         let mut hex_buf: [u8; HEX_BUF_SIZE] = [b'0'; HEX_BUF_SIZE];
         let mut n = v;
@@ -114,8 +114,10 @@ macro_rules! early_err {
             Ok(v) => v,
             Err(e) => {
                 $crate::dbgln!("{}", e);
-                $crate::dbgln!("");
-                panic!();
+                loop {
+                    use $crate::archif::ArchIf;
+                    $crate::arch::Arch::wait_for_event();
+                }
             }
         }
     };
@@ -125,7 +127,10 @@ macro_rules! early_err {
             Err(e) => {
                 $crate::dbgln!("{}:", $msg);
                 $crate::dbgln!("{}", e);
-                panic!();
+                loop {
+                    use $crate::archif::ArchIf;
+                    $crate::arch::Arch::wait_for_event();
+                }
             }
         }
     };

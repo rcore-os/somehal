@@ -1,4 +1,4 @@
-use page_table_generic::*;
+use kmem::paging::*;
 
 use crate::arch::Arch;
 use crate::archif::ArchIf;

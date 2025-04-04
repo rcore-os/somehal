@@ -59,7 +59,8 @@ impl Debug for AccessFlags {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CacheConfig {
     Normal,
-    NoCache,
+    Device,
+    /// 需要强制写入主存的场景（如 DMA 缓冲区）
     WriteThrough,
 }
 

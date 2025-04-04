@@ -7,8 +7,11 @@ mod _m {
     use core::fmt::Debug;
 
     use aarch64_cpu::registers::*;
-    use kmem::{PhysAddr, space::AccessFlags};
-    use page_table_generic::{PTEGeneric, TableGeneric};
+    use kmem::{
+        PhysAddr,
+        paging::{PTEGeneric, TableGeneric},
+        space::AccessFlags,
+    };
 
     pub fn set_kernel_table(addr: PhysAddr) {
         TTBR1_EL1.set_baddr(addr.raw() as _);
@@ -46,8 +49,8 @@ mod _m {
         let attr1 = MAIR_EL1::Attr1_Normal_Inner::WriteBack_NonTransient_ReadWriteAlloc
             + MAIR_EL1::Attr1_Normal_Outer::WriteBack_NonTransient_ReadWriteAlloc;
         // WriteThrough
-        let attr2 = MAIR_EL1::Attr2_Normal_Inner::WriteThrough_NonTransient_ReadWriteAlloc
-            + MAIR_EL1::Attr2_Normal_Outer::WriteThrough_NonTransient_ReadWriteAlloc;
+        let attr2 = MAIR_EL1::Attr2_Normal_Inner::WriteThrough_Transient_WriteAlloc
+            + MAIR_EL1::Attr2_Normal_Outer::WriteThrough_Transient_WriteAlloc;
 
         MAIR_EL1.write(attr0 + attr1 + attr2);
 
@@ -146,11 +149,11 @@ mod _m {
             self.as_flags().contains(PteFlags::VALID)
         }
 
-        fn paddr(&self) -> page_table_generic::PhysAddr {
+        fn paddr(&self) -> PhysAddr {
             (self.0 & Self::PHYS_ADDR_MASK).into()
         }
 
-        fn set_paddr(&mut self, paddr: page_table_generic::PhysAddr) {
+        fn set_paddr(&mut self, paddr: PhysAddr) {
             self.0 &= !Self::PHYS_ADDR_MASK;
             self.0 |= paddr.raw() & Self::PHYS_ADDR_MASK;
         }
@@ -188,7 +191,7 @@ mod _m {
     impl TableGeneric for Table {
         type PTE = Pte;
 
-        fn flush(vaddr: Option<page_table_generic::VirtAddr>) {
+        fn flush(vaddr: Option<VirtAddr>) {
             flush_tlb(vaddr.map(|o| o.raw().into()));
         }
     }
@@ -215,8 +218,8 @@ mod _m {
         let mut pte = Pte(flags.bits());
 
         pte.set_mair_idx(match config.cache {
+            kmem::space::CacheConfig::Device => 0,
             kmem::space::CacheConfig::Normal => 1,
-            kmem::space::CacheConfig::NoCache => 0,
             kmem::space::CacheConfig::WriteThrough => 2,
         });
 
