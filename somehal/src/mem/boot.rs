@@ -175,9 +175,11 @@ mod _m {
             static mut __stop_bss: u8;
         }
         unsafe {
+            let start = addr_of_mut!(__start_bss);
+
             &mut *slice_from_raw_parts_mut(
-                addr_of_mut!(__start_bss),
-                addr_of_mut!(__stop_bss) as usize - addr_of_mut!(__start_bss) as usize,
+                start,
+                addr_of_mut!(__stop_bss) as usize - start as usize,
             )
         }
     }

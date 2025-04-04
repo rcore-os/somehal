@@ -42,7 +42,7 @@ mod _m {
         }
     }
 
-    pub fn setup_regs() {
+    pub fn setup_table_regs() {
         // Device-nGnRnE
         let attr0 = MAIR_EL1::Attr0_Device::nonGathering_nonReordering_noEarlyWriteAck;
         // Normal

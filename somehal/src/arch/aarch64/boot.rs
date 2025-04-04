@@ -1,4 +1,4 @@
-use crate::{fdt::fdt_size, mem::boot::*};
+use crate::mem::boot::*;
 
 #[naked]
 #[unsafe(no_mangle)]
@@ -88,13 +88,12 @@ mod _m {
 
         #[cfg(feature = "early-debug")]
         super::debug::init();
-
         dbgln!("Booting up");
         dbgln!("Entry      : {}", entry_addr().raw());
         dbgln!("Code offset: {}", kcode_offset());
         dbgln!("Current EL : {}", CurrentEL.read(CurrentEL::EL));
         dbgln!("fdt        : {}", fdt);
-        dbgln!("fdt size   : {}", fdt_size());
+        dbgln!("fdt size   : {}", crate::fdt::fdt_size());
 
         enable_mmu()
     }

@@ -22,7 +22,7 @@ mod _m {
     /// 参数为目标虚拟地址
     #[inline(always)]
     pub fn enable_mmu() -> ! {
-        setup_regs();
+        setup_table_regs();
         let table = new_boot_table(fdt_size());
 
         dbgln!("Set kernel table {}", table.raw());
@@ -36,22 +36,20 @@ mod _m {
                 out(reg) jump_to,
                 fn_name = sym mmu_entry,
             );
-        }
-        dbgln!("relocate to pc: {}", jump_to);
-        // Enable the MMU and turn on I-cache and D-cache
-        cfg_match! {
-            feature = "vm" => {
-                SCTLR_EL2
-                    .modify(SCTLR_EL2::M::Enable + SCTLR_EL2::C::Cacheable + SCTLR_EL2::I::Cacheable);
+            dbgln!("relocate to pc: {}", jump_to);
+            // Enable the MMU and turn on I-cache and D-cache
+            cfg_match! {
+                feature = "vm" => {
+                    SCTLR_EL2
+                        .modify(SCTLR_EL2::M::Enable + SCTLR_EL2::C::Cacheable + SCTLR_EL2::I::Cacheable);
+                }
+                _ =>{
+                    SCTLR_EL1
+                        .modify(SCTLR_EL1::M::Enable + SCTLR_EL1::C::Cacheable + SCTLR_EL1::I::Cacheable);
+                }
             }
-            _ =>{
-                SCTLR_EL1
-                    .modify(SCTLR_EL1::M::Enable + SCTLR_EL1::C::Cacheable + SCTLR_EL1::I::Cacheable);
-            }
-        }
 
-        isb(SY);
-        unsafe {
+            isb(SY);
             asm!(
                 "MOV      x8,  {}",
                 "BLR      x8",
