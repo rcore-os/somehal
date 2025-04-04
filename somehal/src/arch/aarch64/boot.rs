@@ -1,6 +1,6 @@
 use crate::{
     fdt::{fdt_size, save_fdt},
-    mem::{setup_memory_main, setup_memory_regions},
+    mem::{entry_addr, kcode_offset, setup_memory_main, setup_memory_regions},
 };
 
 #[naked]

@@ -34,6 +34,7 @@ mod _m {
     static STACK_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
     static PERCPU_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
     static MEMORY_MAIN: OnceStatic<PhysMemory> = OnceStatic::new();
+    static BOOT_TABLE: OnceStatic<PhysMemory> = OnceStatic::new();
 
     pub(crate) unsafe fn set_kcode_va_offset(offset: usize) {
         KCODE_VA_OFFSET.store(offset, Ordering::SeqCst);

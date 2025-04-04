@@ -2,7 +2,7 @@ use core::arch::asm;
 
 use aarch64_cpu::{asm::barrier::*, registers::*};
 
-use crate::rust_main::rust_main;
+use super::entry::mmu_entry;
 
 cfg_match! {
     feature = "vm" =>{
@@ -34,7 +34,7 @@ mod _m {
         unsafe {
             asm!("LDR {0}, ={fn_name}",
                 out(reg) jump_to,
-                fn_name = sym rust_main,
+                fn_name = sym mmu_entry,
             );
         }
         dbgln!("relocate to pc: {}", jump_to);

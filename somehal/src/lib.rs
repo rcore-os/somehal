@@ -12,7 +12,6 @@ mod consts;
 pub mod mem;
 pub(crate) mod once_static;
 pub(crate) mod platform;
-pub(crate) mod rust_main;
 pub(crate) mod vec;
 
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]

@@ -14,7 +14,8 @@ mod _m {
         consts::KERNEL_STACK_SIZE,
         dbgln, early_err,
         mem::{
-            MEM_REGIONS, MEMORY_MAIN, entry_addr, kcode_offset, link_section_end,
+            BOOT_TABLE, MEM_REGIONS, MEMORY_MAIN, PhysMemory, entry_addr, kcode_offset,
+            link_section_end,
             page::{page_level_size, page_levels},
         },
     };
@@ -160,8 +161,13 @@ mod _m {
         }
 
         let used = tmp_alloc.iter - tmp_alloc.start;
-
         dbgln!("used: {}", used);
+        unsafe {
+            (*BOOT_TABLE.get()).replace(PhysMemory {
+                addr: tmp_alloc.start.into(),
+                size: used,
+            });
+        }
 
         table.paddr()
     }

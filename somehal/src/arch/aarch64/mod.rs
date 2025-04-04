@@ -1,11 +1,12 @@
 use aarch64_cpu::asm::wfe;
 use kmem::paging::TableGeneric;
 
-use crate::{ArchIf, println};
+use crate::ArchIf;
 
 mod boot;
 mod context;
 pub mod debug;
+mod entry;
 mod paging;
 mod trap;
 

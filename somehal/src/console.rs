@@ -118,8 +118,8 @@ macro_rules! early_err {
     ($f:expr) => {
         match $f {
             Ok(v) => v,
-            Err(e) => {
-                $crate::dbgln!("{}", e);
+            Err(_e) => {
+                $crate::dbgln!("{}", _e);
                 loop {
                     use $crate::archif::ArchIf;
                     $crate::arch::Arch::wait_for_event();
@@ -130,9 +130,9 @@ macro_rules! early_err {
     ($f:expr, $msg:expr) => {
         match $f {
             Ok(v) => v,
-            Err(e) => {
+            Err(_e) => {
                 $crate::dbgln!("{}:", $msg);
-                $crate::dbgln!("{}", e);
+                $crate::dbgln!("{}", _e);
                 loop {
                     use $crate::archif::ArchIf;
                     $crate::arch::Arch::wait_for_event();
