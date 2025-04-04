@@ -14,3 +14,7 @@ pub const fn page_size() -> usize {
 pub const fn page_levels() -> usize {
     <Arch as ArchIf>::PageTable::LEVEL
 }
+
+pub fn page_level_size(level: usize) -> usize {
+    page_size() * <Arch as ArchIf>::PageTable::TABLE_LEN.pow((level - 1) as _)
+}

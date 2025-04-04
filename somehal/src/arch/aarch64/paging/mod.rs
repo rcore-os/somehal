@@ -14,12 +14,17 @@ cfg_match! {
 mod _m {
     use core::arch::naked_asm;
 
-    use crate::{arch::debug, dbgln, mem::page::boot::new_boot_table};
+    use crate::{
+        arch::debug,
+        dbgln,
+        mem::page::boot::{new_boot_table, new_boot_table2},
+    };
 
     /// 参数为目标虚拟地址
     #[inline(always)]
     pub fn enable_mmu(stack_top: *mut u8, jump_to: *mut u8) -> ! {
-        let table = new_boot_table();
+        // let table = new_boot_table();
+        let table = new_boot_table2();
 
         dbgln!("Set kernel table {}", table.raw());
         set_kernel_table(table);
