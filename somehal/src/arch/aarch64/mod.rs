@@ -54,8 +54,9 @@ mod _m {
         fn wait_for_event() {
             wfe();
         }
+
+        fn init_debugcon() {
+            debug::init();
+        }
     }
-}
-fn rust_main() {
-    println!("Hello, world!");
 }

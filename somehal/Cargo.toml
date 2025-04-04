@@ -5,6 +5,7 @@ edition.workspace = true
 
 [features]
 vm = []
+early-debug = []
 
 [dependencies]
 somehal-macros = { path = "../somehal-macros" }

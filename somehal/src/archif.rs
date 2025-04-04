@@ -18,4 +18,6 @@ pub trait ArchIf {
     fn flush_tlb(vaddr: Option<VirtAddr>);
 
     fn wait_for_event();
+
+    fn init_debugcon();
 }

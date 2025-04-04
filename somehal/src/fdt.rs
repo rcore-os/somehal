@@ -11,7 +11,7 @@ use crate::mem::{PhysMemory, PhysMemoryArray, main_memory_alloc, page::page_size
 #[link_boot::link_boot]
 mod _m {
     use core::{
-        ptr::null_mut,
+        ptr::{null_mut, slice_from_raw_parts},
         sync::atomic::{AtomicPtr, Ordering},
     };
 
@@ -94,6 +94,28 @@ mod _m {
 
     fn get_fdt<'a>() -> Option<Fdt<'a>> {
         Fdt::from_ptr(NonNull::new(fdt_ptr())?).ok()
+    }
+
+    pub(crate) fn fdt_size() -> usize {
+        let ptr = fdt_ptr();
+        unsafe {
+            if ptr.is_null() {
+                return 0;
+            }
+
+            let raw = &*slice_from_raw_parts(ptr as *const u8, 4 * 2);
+            let mut bytes = [0; 4];
+
+            bytes.copy_from_slice(&raw[..4]);
+            let magic = u32::from_be_bytes(bytes) as usize;
+
+            bytes.copy_from_slice(&raw[4..8]);
+            let size = u32::from_be_bytes(bytes) as usize;
+            if magic != 0xd00dfeed {
+                return 0;
+            }
+            size
+        }
     }
 
     pub(crate) fn save_fdt() -> Option<MemRegion> {

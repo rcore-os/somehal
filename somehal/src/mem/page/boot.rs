@@ -90,8 +90,11 @@ mod _m {
         table.paddr()
     }
 
-    pub fn new_boot_table2() -> PhysAddr {
-        let start = (link_section_end() + KERNEL_STACK_SIZE + 8 * MB).align_up(page_size());
+    /// `rsv_space` 在 `boot stack` 之后保留的空间到校
+    pub fn new_boot_table2(rsv_space: usize) -> PhysAddr {
+        dbgln!("Rsv space: {}", rsv_space);
+
+        let start = (link_section_end() + KERNEL_STACK_SIZE + rsv_space).align_up(page_size());
         let end = start + GB;
 
         let mut tmp_alloc = Alloc {

@@ -1,5 +1,5 @@
 use crate::{
-    fdt::save_fdt,
+    fdt::{fdt_size, save_fdt},
     mem::{setup_memory_main, setup_memory_regions},
 };
 
@@ -39,15 +39,12 @@ mod _m {
     use core::arch::{asm, naked_asm};
 
     use aarch64_cpu::{asm::barrier, registers::*};
-    use kmem::region::STACK_TOP;
 
-    use crate::arch::paging::{self, enable_mmu};
-    use crate::arch::rust_main;
+    use crate::arch::paging::enable_mmu;
     use crate::consts::STACK_SIZE;
+    use crate::dbgln;
     use crate::fdt::set_fdt_ptr;
-    use crate::mem::{clean_bss, entry_addr, kcode_offset, set_kcode_va_offset, stack_top_cpu0};
-    use crate::vec::ArrayVec;
-    use crate::{dbgln, early_err};
+    use crate::mem::{clean_bss, set_kcode_va_offset};
 
     const FLAG_LE: usize = 0b0;
     const FLAG_PAGE_SIZE_4K: usize = 0b10;
@@ -93,6 +90,7 @@ mod _m {
             set_fdt_ptr(fdt);
         }
 
+        #[cfg(feature = "early-debug")]
         super::debug::init();
 
         dbgln!("Booting up");
@@ -100,47 +98,9 @@ mod _m {
         dbgln!("Code offset: {}", kcode_offset());
         dbgln!("Current EL : {}", CurrentEL.read(CurrentEL::EL));
         dbgln!("fdt        : {}", fdt);
+        dbgln!("fdt size   : {}", fdt_size());
 
-        let cpu_count = early_err!(crate::fdt::cpu_count(), "fdt can not found cpu");
-        dbgln!("cpu count  : {}", cpu_count);
-
-        let phys_memories = early_err!(crate::fdt::find_memory(), "fdt can not found memory");
-
-        unsafe {
-            setup_memory_main(phys_memories, cpu_count);
-            let sp = stack_top_cpu0().raw();
-            asm!(
-                "mov sp, {sp}",
-                "bl {fn_name}",
-                sp = in(reg) sp,
-                fn_name = sym fix_sp,
-                options(nostack, noreturn)
-            )
-        }
-    }
-
-    fn fix_sp() -> ! {
-        let mut rsv = ArrayVec::<_, 4>::new();
-
-        if let Some(r) = save_fdt() {
-            let _ = rsv.try_push(r);
-        }
-
-        let _ = rsv.try_push(super::debug::MEM_REGION_DEBUG_CON.clone());
-
-        setup_memory_regions(rsv);
-
-        let rust_main_addr: *mut u8;
-        unsafe {
-            asm!("LDR {0}, ={fn_name}",
-                out(reg) rust_main_addr,
-                fn_name = sym rust_main,
-            );
-        }
-
-        paging::setup_regs();
-
-        enable_mmu(STACK_TOP as _, rust_main_addr)
+        enable_mmu()
     }
 
     fn switch_to_elx() {
