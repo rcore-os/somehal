@@ -9,7 +9,7 @@ use kmem::{IntAlign, region::MemRegionKind};
 use crate::mem::{PhysMemory, PhysMemoryArray, main_memory_alloc, page::page_size};
 
 use core::{
-    ptr::{null_mut, slice_from_raw_parts},
+    ptr::null_mut,
     sync::atomic::{AtomicPtr, Ordering},
 };
 
@@ -20,7 +20,21 @@ use crate::mem::{MemRegion, boot::kcode_offset};
 
 #[link_boot::link_boot]
 mod _m {
+    use fdt_parser::FdtHeader;
+
     static FDT_ADDR: AtomicPtr<u8> = AtomicPtr::new(null_mut());
+
+    pub(crate) fn fdt_size() -> usize {
+        let ptr = if let Some(ptr) = NonNull::new(fdt_ptr()) {
+            ptr
+        } else {
+            return 0;
+        };
+
+        let header = early_err!(FdtHeader::from_ptr(ptr));
+
+        header.total_size()
+    }
 }
 
 pub fn find_memory() -> Result<PhysMemoryArray, FdtError<'static>> {
@@ -95,28 +109,6 @@ fn fdt_ptr() -> *mut u8 {
 
 fn get_fdt<'a>() -> Option<Fdt<'a>> {
     Fdt::from_ptr(NonNull::new(fdt_ptr())?).ok()
-}
-
-pub(crate) fn fdt_size() -> usize {
-    let ptr = fdt_ptr();
-    unsafe {
-        if ptr.is_null() {
-            return 0;
-        }
-
-        let raw = &*slice_from_raw_parts(ptr as *const u8, 4 * 2);
-        let mut bytes = [0; 4];
-
-        bytes.copy_from_slice(&raw[..4]);
-        let magic = u32::from_be_bytes(bytes) as usize;
-
-        bytes.copy_from_slice(&raw[4..8]);
-        let size = u32::from_be_bytes(bytes) as usize;
-        if magic != 0xd00dfeed {
-            return 0;
-        }
-        size
-    }
 }
 
 pub(crate) fn save_fdt() -> Option<MemRegion> {

@@ -213,9 +213,9 @@ dependencies = [
 
 [[package]]
 name = "fdt-parser"
-version = "0.4.12"
+version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "371a22bb791074c597c250202eb46293e301ee49a2bc3b1a4f47839ed74796e9"
+checksum = "214e8d784c55ebd592f5211aebc6191ec08cf74f9403ddb44655ab57c42e1756"
 
 [[package]]
 name = "fnv"
@@ -359,9 +359,9 @@ dependencies = [
 
 [[package]]
 name = "prettyplease"
-version = "0.2.31"
+version = "0.2.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5316f57387668042f561aae71480de936257848f9c43ce528e311d89a07cadeb"
+checksum = "664ec5419c51e34154eec046ebcba56312d5a2fc3b09a06da188e1ad21afadf6"
 dependencies = [
  "proc-macro2",
  "syn",
