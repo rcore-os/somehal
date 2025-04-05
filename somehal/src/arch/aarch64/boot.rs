@@ -1,5 +1,9 @@
 use crate::mem::boot::*;
 
+const FLAG_LE: usize = 0b0;
+const FLAG_PAGE_SIZE_4K: usize = 0b10;
+const FLAG_ANY_MEM: usize = 0b1000;
+
 #[naked]
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.boot.header")]
@@ -41,10 +45,6 @@ mod _m {
     use crate::consts::KERNEL_STACK_SIZE;
     use crate::dbgln;
     use crate::fdt::set_fdt_ptr;
-
-    const FLAG_LE: usize = 0b0;
-    const FLAG_PAGE_SIZE_4K: usize = 0b10;
-    const FLAG_ANY_MEM: usize = 0b1000;
 
     #[naked]
     /// The entry point of the kernel.
@@ -97,6 +97,7 @@ mod _m {
         enable_mmu()
     }
 
+    /// Switch to EL1.
     #[cfg(not(feature = "vm"))]
     fn switch_to_elx() {
         SPSel.write(SPSel::SP::ELx);
@@ -155,6 +156,7 @@ mod _m {
         }
     }
 
+    /// Switch to EL2.
     #[cfg(feature = "vm")]
     fn switch_to_elx() {
         SPSel.write(SPSel::SP::ELx);
