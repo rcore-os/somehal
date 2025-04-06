@@ -70,6 +70,7 @@ pub fn cpu_count() -> Result<usize, FdtError<'static>> {
     Ok(nodes.count())
 }
 
+#[cfg(not(target_arch = "riscv64"))]
 pub fn init_debugcon() -> Option<(any_uart::Uart, MemRegion)> {
     fn phys_to_virt(p: usize) -> *mut u8 {
         p as _

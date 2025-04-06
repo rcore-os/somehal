@@ -75,8 +75,11 @@ impl Arch {
 }
 
 fn gen_const() {
+    let entry_vaddr = ENTRY_VADDR as usize;
+
     let const_content = quote! {
         pub const KERNEL_STACK_SIZE: usize = #DEFAULT_KERNEL_STACK_SIZE;
+        pub const KERNEL_ENTRY_VADDR: usize = #entry_vaddr;
     };
 
     let mut file =

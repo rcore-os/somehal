@@ -7,7 +7,7 @@ pub struct Arch;
 
 impl ArchIf for Arch {
     fn early_debug_put(byte: u8) {
-        todo!()
+        sbi_rt::console_write_byte(byte);
     }
 
     fn is_mmu_enabled() -> bool {

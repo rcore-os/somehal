@@ -31,6 +31,7 @@ SECTIONS
         *(.percpu .percpu*)
     }
 
+    __ekernel_load = .;
     __kernel_size = . - __start_BootText;
 
     bss (NOLOAD) : ALIGN(4K)  {
