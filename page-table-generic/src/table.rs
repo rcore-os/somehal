@@ -115,15 +115,6 @@ mod _m {
 
             let mut size = config.size;
 
-            trace!(
-                "map_region: [{:#x}, {:#x}) -> [{:#x}, {:#x}) {:?}",
-                vaddr.raw(),
-                vaddr.raw() + size,
-                paddr.raw(),
-                paddr.raw() + size,
-                config.pte,
-            );
-
             let mut map_cfg = _MapConfig {
                 vaddr,
                 paddr,

@@ -23,7 +23,7 @@ use crate::{
 mod _m {
     use core::ptr::addr_of_mut;
 
-    static KCODE_VA_OFFSET: AtomicUsize = AtomicUsize::new(0);
+    static mut KCODE_VA_OFFSET: usize = 0;
     static BOOT_TABLE: OnceStatic<PhysMemory> = OnceStatic::new();
 
     pub struct LineAllocator {
@@ -73,15 +73,17 @@ mod _m {
     }
 
     pub unsafe fn set_kcode_va_offset(offset: usize) {
-        KCODE_VA_OFFSET.store(offset, Ordering::SeqCst);
+        unsafe { KCODE_VA_OFFSET = offset };
     }
 
     pub fn kcode_offset() -> usize {
-        KCODE_VA_OFFSET.load(Ordering::Relaxed)
+        unsafe { KCODE_VA_OFFSET }
     }
 
     /// `rsv_space` 在 `boot stack` 之后保留的空间到校
-    pub fn new_boot_table(rsv_space: usize) -> PhysAddr {
+    pub fn new_boot_table(mut rsv_space: usize) -> PhysAddr {
+        rsv_space = rsv_space.align_up(page_size());
+
         dbgln!("Rsv space: {}", rsv_space);
 
         let start = (link_section_end() + KERNEL_STACK_SIZE + rsv_space).align_up(page_size());
@@ -97,7 +99,6 @@ mod _m {
         let access = &mut tmp_alloc;
 
         let mut table = early_err!(Table::create_empty(access));
-
         unsafe {
             let code_start_phys = kernal_load_addr().align_down(page_size()).raw();
             let code_start = code_start_phys + kcode_offset();
@@ -132,7 +133,6 @@ mod _m {
             let size = page_level_size(page_levels());
 
             dbgln!("eq   : [{}, {})", 0usize, size);
-
             early_err!(table.map(
                 MapConfig {
                     vaddr: 0.into(),

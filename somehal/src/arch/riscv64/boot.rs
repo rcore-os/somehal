@@ -1,4 +1,8 @@
-use crate::consts::KERNEL_STACK_SIZE;
+use crate::{
+    consts::{KERNEL_ENTRY_VADDR, KERNEL_STACK_SIZE},
+    fdt::set_fdt_ptr,
+    mem::boot::*,
+};
 
 /// The earliest entry point for the primary CPU.
 #[naked]
@@ -9,6 +13,9 @@ unsafe extern "C" fn _start() -> ! {
     // a1 = dtb
     unsafe {
         core::arch::naked_asm!("
+        auipc   t2, 0
+        li      t0, {kernel_load_addr}
+        sub     t2, t0, t2
         mv      s0, a0                  // save hartid
         mv      s1, a1                  // save DTB pointer
         la      sp, __stack_bottom
@@ -17,10 +24,10 @@ unsafe extern "C" fn _start() -> ! {
 
         mv      a0, s0
         mv      a1, s1
-        la      a2, {entry}
-        add     a2, a2, s2
-        jalr    a2                      // call rust_entry(hartid, dtb)
-        j       .",
+        mv      a2, t2
+        call    {entry}
+        ",
+            kernel_load_addr = const KERNEL_ENTRY_VADDR,
             boot_stack_size = const KERNEL_STACK_SIZE,
             entry = sym boot_entry,
         )
@@ -29,10 +36,21 @@ unsafe extern "C" fn _start() -> ! {
 
 #[link_boot::link_boot]
 mod _m {
-    use crate::dbgln;
+    use crate::{arch::paging::enable_mmu, dbgln};
 
-    fn boot_entry() {
+    fn boot_entry(_hartid: usize, fdt: *mut u8, kcode_va: usize) -> ! {
+        unsafe {
+            clean_bss();
+            set_kcode_va_offset(kcode_va);
+            set_fdt_ptr(fdt);
+        }
+
         dbgln!("Booting up");
-        
+        dbgln!("Entry      : {}", KERNEL_ENTRY_VADDR - kcode_va);
+        dbgln!("Code offset: {}", kcode_offset());
+        dbgln!("fdt        : {}", fdt);
+        dbgln!("fdt size   : {}", crate::fdt::fdt_size());
+
+        enable_mmu()
     }
 }

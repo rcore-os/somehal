@@ -8,6 +8,7 @@ const DEFAULT_KERNEL_STACK_SIZE: usize = 2 * MB;
 
 // const ENTRY_VADDR: u64 = 0x40200000;
 const ENTRY_VADDR: u64 = 0xffff_e000_0000_0000;
+// const ENTRY_VADDR: u64 = 0x80200000;
 
 fn main() {
     println!("cargo::rustc-link-arg=-Tlink.x");

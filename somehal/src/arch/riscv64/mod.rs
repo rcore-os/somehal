@@ -1,6 +1,9 @@
+use riscv::register::satp;
+
 use crate::ArchIf;
 
 mod boot;
+mod entry;
 pub(crate) mod paging;
 
 pub struct Arch;
@@ -11,7 +14,7 @@ impl ArchIf for Arch {
     }
 
     fn is_mmu_enabled() -> bool {
-        todo!()
+        paging::is_mmu_enabled()
     }
 
     type PageTable = paging::Table;
@@ -19,7 +22,7 @@ impl ArchIf for Arch {
     fn new_pte_with_config(
         config: kmem::region::MemConfig,
     ) -> <Self::PageTable as kmem::paging::TableGeneric>::PTE {
-        todo!()
+        paging::new_pte_with_config(config)
     }
 
     fn set_kernel_table(addr: kmem::PhysAddr) {
@@ -46,7 +49,5 @@ impl ArchIf for Arch {
         todo!()
     }
 
-    fn init_debugcon() {
-        todo!()
-    }
+    fn init_debugcon() {}
 }

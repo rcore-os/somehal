@@ -22,7 +22,7 @@ use crate::mem::{MemRegion, boot::kcode_offset};
 mod _m {
     use fdt_parser::FdtHeader;
 
-    static FDT_ADDR: AtomicPtr<u8> = AtomicPtr::new(null_mut());
+    static mut FDT_ADDR: usize = 0;
 
     pub(crate) fn fdt_size() -> usize {
         let ptr = if let Some(ptr) = NonNull::new(fdt_ptr()) {
@@ -101,11 +101,11 @@ pub fn init_debugcon() -> Option<(any_uart::Uart, MemRegion)> {
     ))
 }
 pub(crate) unsafe fn set_fdt_ptr(fdt: *mut u8) {
-    FDT_ADDR.store(fdt, Ordering::SeqCst);
+    unsafe { FDT_ADDR = fdt as _ };
 }
 
 fn fdt_ptr() -> *mut u8 {
-    FDT_ADDR.load(Ordering::SeqCst)
+    unsafe { FDT_ADDR as _ }
 }
 
 fn get_fdt<'a>() -> Option<Fdt<'a>> {
@@ -125,7 +125,7 @@ pub(crate) fn save_fdt() -> Option<MemRegion> {
         let dst = &mut *slice_from_raw_parts_mut(ptr_dst, size);
         dst.copy_from_slice(src);
 
-        FDT_ADDR.store(ptr_dst, Ordering::SeqCst);
+        FDT_ADDR = ptr_dst as _;
     }
 
     Some(MemRegion {

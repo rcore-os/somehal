@@ -24,5 +24,15 @@
             "cwd": "${workspaceRoot}",
             "preLaunchTask": "qemu debug x86_64"
         },
+        {
+            "type": "cppdbg",
+            "name": "Debug riscv64 test",
+            "request": "launch",
+            "miDebuggerServerAddress": "localhost:1234",
+            "program": "${workspaceFolder}/target/kernel.elf",
+            "miDebuggerPath": "gdb-multiarch",
+            "cwd": "${workspaceRoot}",
+            "preLaunchTask": "qemu debug riscv64"
+        },
     ]
 }

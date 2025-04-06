@@ -1,49 +1,47 @@
-use core::{arch::asm, fmt::Debug};
+mod table_s;
 
-use kmem::{paging::{PTEGeneric, TableGeneric}, VirtAddr};
+use core::arch::asm;
 
-#[repr(transparent)]
-#[derive(Clone, Copy)]
-pub struct Pte(usize);
+pub use table_s::*;
 
-impl PTEGeneric for Pte {
-    fn valid(&self) -> bool {
-        todo!()
+#[link_boot::link_boot]
+mod _m {
+
+    use riscv::register::satp;
+
+    use crate::{
+        arch::entry::mmu_entry,
+        dbgln,
+        fdt::fdt_size,
+        mem::boot::{kcode_offset, new_boot_table},
+    };
+
+    static mut IS_MMU_ENABLED: bool = false;
+
+    pub fn is_mmu_enabled() -> bool {
+        unsafe { IS_MMU_ENABLED }
     }
 
-    fn paddr(&self) -> kmem::PhysAddr {
-        todo!()
-    }
+    pub fn enable_mmu() -> ! {
+        unsafe {
+            let table = new_boot_table(fdt_size());
+            dbgln!("Set kernel table {}", table.raw());
+            satp::set(satp::Mode::Sv48, 0, table.raw() >> 12);
+            IS_MMU_ENABLED = true;
 
-    fn set_paddr(&mut self, paddr: kmem::PhysAddr) {
-        todo!()
-    }
+            riscv::asm::sfence_vma_all();
 
-    fn set_valid(&mut self, valid: bool) {
-        todo!()
-    }
+            let va = kcode_offset();
 
-    fn is_block(&self) -> bool {
-        todo!()
-    }
-
-    fn set_is_block(&mut self, is_block: bool) {
-        todo!()
-    }
-}
-
-impl Debug for Pte {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_tuple("Pte").field(&self.0).finish()
-    }
-}
-
-#[derive(Clone, Copy)]
-pub struct Table;
-
-impl TableGeneric for Table {
-    type PTE = Pte;
-
-    fn flush(vaddr: Option<VirtAddr>) {
+            asm!(
+                "la      a2, {jump_to}",
+                "add     a2, a2, {va}",
+                "jalr    a2",
+                "j       .",
+                jump_to = sym mmu_entry,
+                va = in(reg) va,
+                options(nostack, noreturn)
+            )
+        }
     }
 }
