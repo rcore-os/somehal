@@ -1,14 +1,11 @@
 use std::{
     alloc::{self, Layout},
-    fmt::{Debug, Pointer},
+    fmt::Debug,
     mem,
-    ptr::NonNull,
 };
 
 use log::trace;
 use page_table_generic::*;
-
-use PTE::Register;
 use tock_registers::{interfaces::*, register_bitfields, registers::*};
 
 const MB: usize = 1024 * 1024;
@@ -107,7 +104,15 @@ impl TableGeneric for Table {
     }
 }
 
-struct AccessImpl;
+struct AccessImpl {
+    used: usize,
+}
+
+impl AccessImpl {
+    fn new() -> Self {
+        Self { used: 0 }
+    }
+}
 
 impl Access for AccessImpl {
     fn phys_to_mut(&self, phys: PhysAddr) -> *mut u8 {
@@ -117,6 +122,7 @@ impl Access for AccessImpl {
     unsafe fn alloc(&mut self, layout: Layout) -> Option<PhysAddr> {
         let ptr = unsafe { alloc::alloc(layout) };
         trace!("alloc: {:?}", ptr);
+        self.used += layout.size();
         Some((ptr as usize).into())
     }
 
@@ -124,6 +130,12 @@ impl Access for AccessImpl {
         trace!("dealloc: {:?}", ptr);
         unsafe { alloc::dealloc(ptr.raw() as _, layout) };
     }
+}
+
+fn new_alloc_and_table<'a>() -> (AccessImpl, PageTableRef<'a, Table>) {
+    let mut access = AccessImpl::new();
+    let tb = PageTableRef::<Table>::create_empty(&mut access).unwrap();
+    (access, tb)
 }
 
 #[test]
@@ -144,9 +156,7 @@ fn test_new() {
         .filter_level(log::LevelFilter::Trace)
         .try_init();
 
-    let mut access = AccessImpl;
-
-    let mut pg = PageTableRef::<Table>::create_empty(&mut access).unwrap();
+    let (mut access, mut pg) = new_alloc_and_table();
     unsafe {
         pg.map(
             MapConfig::new(
@@ -192,10 +202,7 @@ fn test_block() {
         .filter_level(log::LevelFilter::Trace)
         .try_init();
 
-    let mut access = AccessImpl;
-
-    let mut pg = PageTableRef::<Table>::create_empty(&mut access).unwrap();
-
+    let (mut access, mut pg) = new_alloc_and_table();
     unsafe {
         pg.map(
             MapConfig::new(
@@ -236,16 +243,67 @@ fn test_block() {
 }
 
 #[test]
+fn test_block_level() {
+    let _ = env_logger::builder()
+        .is_test(true)
+        .filter_level(log::LevelFilter::Trace)
+        .try_init();
+
+    let (mut access, mut pg) = new_alloc_and_table();
+
+    let entry_size = pg.max_block_size();
+
+    println!("entry size {} GB", entry_size / GB);
+
+    let n = 5;
+
+    unsafe {
+        pg.map(
+            MapConfig::new(
+                0x0usize.into(),
+                0x0usize.into(),
+                n * entry_size,
+                PteImpl(0),
+                true,
+                false,
+            ),
+            &mut access,
+        )
+        .unwrap();
+    }
+    let msg = pg
+        .as_slice(&access)
+        .iter()
+        .filter_map(|o| {
+            if o.valid() {
+                Some(format!("{:#x}", o.0))
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    println!("vec: {}", msg);
+
+    let list = pg.iter_all(&access).collect::<Vec<_>>();
+
+    for i in &list {
+        println!("l: {:x}, va: {:?} c: {:?}", i.level, i.vaddr, i.pte);
+    }
+
+    assert_eq!(list.len(), n + 1);
+    assert!(list.last().unwrap().pte.is_block());
+}
+
+#[test]
 fn test_release() {
     let _ = env_logger::builder()
         .is_test(true)
         .filter_level(log::LevelFilter::Trace)
         .try_init();
 
-    let mut access = AccessImpl;
-
-    let mut pg = PageTableRef::<Table>::create_empty(&mut access).unwrap();
-
+    let (mut access, mut pg) = new_alloc_and_table();
     unsafe {
         pg.map(
             MapConfig::new(

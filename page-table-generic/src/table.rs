@@ -82,6 +82,11 @@ mod _m {
             }
         }
 
+        pub fn max_block_size(&self) -> usize {
+            let max = PageWalk::<T>::new(T::MAX_BLOCK_LEVEL);
+            self.walk.level_entry_size().min(max.level_entry_size())
+        }
+
         /// Map a contiguous virtual memory region to a contiguous physical memory
         /// region with the given mapping `flags`.
         ///
@@ -122,9 +127,9 @@ mod _m {
 
             while size > 0 {
                 let level_deepth = if config.allow_huge {
-                    self.walk
-                        .detect_align_level(map_cfg.vaddr.raw(), size)
-                        .min(self.walk.detect_align_level(map_cfg.paddr.raw(), size))
+                    let v_align = self.walk.detect_align_level(map_cfg.vaddr.raw(), size);
+                    let p_align = self.walk.detect_align_level(map_cfg.paddr.raw(), size);
+                    v_align.min(p_align).min(T::MAX_BLOCK_LEVEL)
                 } else {
                     1
                 };
@@ -357,7 +362,7 @@ mod _m {
         }
 
         fn detect_align_level(&self, addr: usize, size: usize) -> usize {
-            for level in (0..self.level).rev() {
+            for level in (1..self.level + 1).rev() {
                 let level_size = self.copy_with_level(level).level_entry_size();
                 if addr % level_size == 0 && size >= level_size {
                     return level;

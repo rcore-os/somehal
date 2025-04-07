@@ -48,7 +48,6 @@ mod _m {
                         .modify(SCTLR_EL1::M::Enable + SCTLR_EL1::C::Cacheable + SCTLR_EL1::I::Cacheable);
                 }
             }
-
             isb(SY);
             asm!(
                 "MOV      x8,  {}",

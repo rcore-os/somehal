@@ -127,7 +127,8 @@ mod _m {
                 access,
             ));
 
-            let size = page_level_size(page_levels());
+            let size = table.entry_size() * 2;
+            // let size = page_level_size(3) * 12;
 
             dbgln!("eq   : [{}, {})", 0usize, size);
             early_err!(table.map(
