@@ -8,11 +8,6 @@ use kmem::{IntAlign, region::MemRegionKind};
 
 use crate::mem::{PhysMemory, PhysMemoryArray, main_memory_alloc, page::page_size};
 
-use core::{
-    ptr::null_mut,
-    sync::atomic::{AtomicPtr, Ordering},
-};
-
 use crate::{dbgln, early_err};
 use kmem::region::{AccessFlags, CacheConfig, MemConfig, OFFSET_LINER};
 
