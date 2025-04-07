@@ -46,7 +46,7 @@ impl ArchIf for Arch {
     }
 
     fn wait_for_event() {
-        todo!()
+        riscv::asm::wfi();
     }
 
     fn init_debugcon() {}

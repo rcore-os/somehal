@@ -82,6 +82,8 @@ mod _m {
 
     impl TableGeneric for Table {
         type PTE = Pte;
+        const LEVEL: usize = 3;
+        const MAX_BLOCK_LEVEL: usize = 2;
 
         fn flush(_vaddr: Option<VirtAddr>) {
             riscv::asm::sfence_vma_all();

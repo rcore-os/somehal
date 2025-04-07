@@ -1,7 +1,7 @@
 [qemu]
 machine = "virt"
-cpu = "cortex-a53"
+# cpu = "cortex-a53"
 graphic = false
 # args = "-d mmu,int -monitor telnet:127.0.0.1:4444,server,nowait"
 # args = ""
-args = "-d int"
+args = "-d int -D ../target/qemu.log"

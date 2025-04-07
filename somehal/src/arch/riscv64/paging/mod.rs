@@ -7,10 +7,13 @@ pub use table_s::*;
 #[link_boot::link_boot]
 mod _m {
 
+    use core::hint::spin_loop;
+
     use riscv::register::satp;
 
     use crate::{
-        arch::entry::mmu_entry,
+        ArchIf,
+        arch::{Arch, entry::mmu_entry},
         dbgln,
         fdt::fdt_size,
         mem::boot::{kcode_offset, new_boot_table},
@@ -26,20 +29,26 @@ mod _m {
         unsafe {
             let table = new_boot_table(fdt_size());
             dbgln!("Set kernel table {}", table.raw());
-            satp::set(satp::Mode::Sv48, 0, table.raw() >> 12);
-            IS_MMU_ENABLED = true;
+
+            let entry = mmu_entry as *const u8 as usize + kcode_offset();
+
+            let pnn = table.raw();
+
+            dbgln!("pnn1 {}", pnn);
+            dbgln!("pnn2 {}", pnn >> 12);
+            dbgln!("Jump to {}", entry);
+
+            satp::set(satp::Mode::Sv39, 0, table.raw() >> 12);
+
+            // dbgln!("open");
+            // IS_MMU_ENABLED = true;
 
             riscv::asm::sfence_vma_all();
 
-            let va = kcode_offset();
-
             asm!(
-                "la      a2, {jump_to}",
-                "add     a2, a2, {va}",
-                "jalr    a2",
+                "jalr    {entry}",
                 "j       .",
-                jump_to = sym mmu_entry,
-                va = in(reg) va,
+                entry = in(reg) entry,
                 options(nostack, noreturn)
             )
         }

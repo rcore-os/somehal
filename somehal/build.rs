@@ -8,7 +8,13 @@ const DEFAULT_KERNEL_STACK_SIZE: usize = 2 * MB;
 
 // const ENTRY_VADDR: u64 = 0x40200000;
 const ENTRY_VADDR: u64 = 0xffff_e000_0000_0000;
+const ENTRY_VADDR_RISCV64: u64 = 0xffff_ffe0_0000_0000;
 // const ENTRY_VADDR: u64 = 0x80200000;
+
+struct Config {
+    entry_vaddr: u64,
+    stack_size: usize,
+}
 
 fn main() {
     println!("cargo::rustc-link-arg=-Tlink.x");
@@ -23,16 +29,25 @@ fn main() {
         println!("cargo::rustc-cfg=hard_float");
     }
 
-    gen_const();
+    let mut config = Config {
+        entry_vaddr: ENTRY_VADDR,
+        stack_size: DEFAULT_KERNEL_STACK_SIZE,
+    };
 
     let arch = Arch::default();
+
+    if matches!(arch, Arch::Riscv64) {
+        config.entry_vaddr = ENTRY_VADDR_RISCV64;
+    }
+
+    gen_const(&config);
 
     println!("cargo::rustc-check-cfg=cfg(use_fdt)");
     if matches!(arch, Arch::Aarch64 | Arch::Riscv64) {
         println!("cargo::rustc-cfg=use_fdt");
     }
 
-    arch.gen_linker_script();
+    arch.gen_linker_script(&config);
 }
 
 #[derive(Debug)]
@@ -58,7 +73,7 @@ fn out_dir() -> PathBuf {
 }
 
 impl Arch {
-    fn gen_linker_script(&self) {
+    fn gen_linker_script(&self, config: &Config) {
         let output_arch = if matches!(self, Arch::X86_64) {
             "i386:x86-64".to_string()
         } else if matches!(self, Arch::Riscv64) {
@@ -69,17 +84,19 @@ impl Arch {
 
         let ld_content = std::fs::read_to_string("link.ld").unwrap();
         let ld_content = ld_content.replace("%ARCH%", &output_arch);
-        let ld_content = ld_content.replace("%KERNEL_VADDR%", &format!("{:#x}", ENTRY_VADDR));
+        let ld_content =
+            ld_content.replace("%KERNEL_VADDR%", &format!("{:#x}", config.entry_vaddr));
 
         std::fs::write(out_dir().join("link.x"), ld_content).expect("link.x write failed");
     }
 }
 
-fn gen_const() {
-    let entry_vaddr = ENTRY_VADDR as usize;
+fn gen_const(config: &Config) {
+    let entry_vaddr = config.entry_vaddr as usize;
+    let stack_size = config.stack_size;
 
     let const_content = quote! {
-        pub const KERNEL_STACK_SIZE: usize = #DEFAULT_KERNEL_STACK_SIZE;
+        pub const KERNEL_STACK_SIZE: usize = #stack_size;
         pub const KERNEL_ENTRY_VADDR: usize = #entry_vaddr;
     };
 
