@@ -2,7 +2,6 @@
 #![feature(pointer_is_aligned_to)]
 
 mod addr;
-mod align;
 mod iter;
 mod table;
 use core::{alloc::Layout, fmt::Debug};

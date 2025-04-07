@@ -132,7 +132,7 @@ fn test_pte() {
     want.set_valid(true);
     assert!(want.valid());
 
-    let addr = PhysAddr::from(0xff123456000);
+    let addr = PhysAddr::from(0xff123456000usize);
     want.set_paddr(addr);
     assert_eq!(want.paddr(), addr);
 }
@@ -151,7 +151,7 @@ fn test_new() {
         pg.map(
             MapConfig::new(
                 0xfffff00000000000usize.into(),
-                0x0000.into(),
+                0x0000usize.into(),
                 0x2000,
                 PteImpl(0),
                 false,
@@ -200,7 +200,7 @@ fn test_block() {
         pg.map(
             MapConfig::new(
                 0xff0000000000usize.into(),
-                0x80000000.into(),
+                0x80000000usize.into(),
                 2 * GB,
                 PteImpl(0),
                 true,
@@ -250,7 +250,7 @@ fn test_release() {
         pg.map(
             MapConfig::new(
                 0xffff000000000000usize.into(),
-                0x0000.into(),
+                0x0000usize.into(),
                 0x2000,
                 PteImpl(0),
                 false,

@@ -15,6 +15,7 @@ log = "0.4"
 thiserror = { version = "2", default-features = false }
 link-boot = { version = "0.2" }
 bitflags = "2.9"
+num-align = "0.1"
 
 [dev-dependencies]
 env_logger = "0.11"

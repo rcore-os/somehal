@@ -335,6 +335,12 @@ name = "num-align"
 version = "0.1.0"
 
 [[package]]
+name = "num-align"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4b86e8ef968de2261141fc760ee57cae8fabb3a0e756b3390a4c4871b16c3d1"
+
+[[package]]
 name = "once_cell"
 version = "1.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -359,6 +365,7 @@ dependencies = [
  "env_logger",
  "link-boot",
  "log",
+ "num-align 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
  "tock-registers",
 ]

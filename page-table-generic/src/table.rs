@@ -4,11 +4,10 @@ use core::{
     ptr::{slice_from_raw_parts, slice_from_raw_parts_mut},
 };
 
-use crate::{
-    Access, PTEGeneric, PagingError, PagingResult, PhysAddr, align::AlignTo, iter::TableIter,
-};
+use num_align::*;
+
+use crate::{Access, PTEGeneric, PagingError, PagingResult, PhysAddr, iter::TableIter};
 use crate::{TableGeneric, VirtAddr};
-use log::trace;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -370,8 +369,8 @@ mod _m {
 }
 #[cfg(test)]
 mod test {
-    use crate::{GB, MB};
     use super::*;
+    use crate::{GB, MB};
 
     #[test]
     fn test_log2() {
