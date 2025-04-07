@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "kmem",
+    "kmem", "num-align",
     "page-table-generic",
     "platform-test",
     "somehal",

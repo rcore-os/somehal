@@ -1,7 +1,4 @@
-use core::{
-    ptr::slice_from_raw_parts_mut,
-    sync::atomic::{AtomicUsize, Ordering},
-};
+use core::ptr::slice_from_raw_parts_mut;
 
 use kmem::{
     GB, IntAlign, MB,

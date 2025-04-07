@@ -370,10 +370,8 @@ mod _m {
 }
 #[cfg(test)]
 mod test {
+    use crate::{GB, MB};
     use super::*;
-
-    const MB: usize = 1024 * 1024;
-    const GB: usize = 1024 * MB;
 
     #[test]
     fn test_log2() {
