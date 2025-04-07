@@ -12,7 +12,7 @@ use crate::{
     arch::Arch,
     consts::KERNEL_STACK_SIZE,
     dbgln, early_err,
-    mem::page::{Table, page_level_size, page_levels, page_size},
+    mem::page::{Table, page_size},
     once_static::OnceStatic,
 };
 
@@ -128,7 +128,6 @@ mod _m {
             ));
 
             let size = table.entry_size() * 2;
-            // let size = page_level_size(3) * 12;
 
             dbgln!("eq   : [{}, {})", 0usize, size);
             early_err!(table.map(
