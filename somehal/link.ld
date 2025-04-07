@@ -10,6 +10,7 @@ SECTIONS
         KEEP(*(.text.boot*))
     }
     BootData : ALIGN(4K) {
+        KEEP(*(.data.boot.table))
         KEEP(*(.data.boot*))
     }
 

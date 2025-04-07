@@ -203,7 +203,7 @@ mod _m {
             while table.level() > 0 {
                 let idx = table.index_of_table(map_cfg.vaddr);
                 if table.level() == level {
-                    let mut pte = map_cfg.pte;
+                    let mut pte: <T as TableGeneric>::PTE = map_cfg.pte;
                     pte.set_paddr(map_cfg.paddr);
                     pte.set_valid(true);
                     pte.set_is_block(level > 1);
@@ -448,6 +448,12 @@ mod test {
 
         let w = Walk::new(4);
         assert_eq!(w.index_of_table((512 * GB).into()), 1);
+    }
+
+    #[test]
+    fn test_idx_of_table2() {
+        let w = Walk::new(3);
+        assert_eq!(w.index_of_table(0xffff_ffc0_8000_0000.into()), 0x102);
     }
 
     #[test]

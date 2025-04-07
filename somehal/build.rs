@@ -8,8 +8,9 @@ const DEFAULT_KERNEL_STACK_SIZE: usize = 2 * MB;
 
 // const ENTRY_VADDR: u64 = 0x40200000;
 const ENTRY_VADDR: u64 = 0xffff_e000_0000_0000;
-const ENTRY_VADDR_RISCV64: u64 = 0xffff_ffe0_0000_0000;
-// const ENTRY_VADDR: u64 = 0x80200000;
+// const ENTRY_VADDR_RISCV64: u64 = 0xffff_ffe0_0000_0000;
+// const ENTRY_VADDR_RISCV64: u64 = 0x80200000;
+const ENTRY_VADDR_RISCV64: u64 = 0xffff_ffc0_8020_0000;
 
 struct Config {
     entry_vaddr: u64,

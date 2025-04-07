@@ -6,6 +6,8 @@ use kmem::{
     region::AccessFlags,
 };
 
+use crate::arch::Arch;
+
 bitflags::bitflags! {
     /// Page-table entry flags.
     #[derive(Debug)]
@@ -32,10 +34,15 @@ bitflags::bitflags! {
 }
 #[link_boot::link_boot]
 mod _m {
+    use crate::ArchIf;
 
     #[repr(transparent)]
     #[derive(Clone, Copy)]
     pub struct Pte(usize);
+
+    impl Pte {
+        const PHYS_ADDR_MASK: usize = (1 << 54) - (1 << 10);
+    }
 
     impl PTEGeneric for Pte {
         fn valid(&self) -> bool {
@@ -43,11 +50,11 @@ mod _m {
         }
 
         fn paddr(&self) -> kmem::PhysAddr {
-            (self.0 >> 10 & ((1usize << 44) - 1)).into()
+            ((self.0 & Self::PHYS_ADDR_MASK) << 2).into()
         }
 
         fn set_paddr(&mut self, paddr: kmem::PhysAddr) {
-            self.0 = (self.0 & !((1usize << 44) - 1)) | (paddr.raw() << 10);
+            self.0 = (self.0 & !Self::PHYS_ADDR_MASK) | ((paddr.raw() >> 2) & Self::PHYS_ADDR_MASK);
         }
 
         fn set_valid(&mut self, valid: bool) {
@@ -63,10 +70,8 @@ mod _m {
         }
 
         fn set_is_block(&mut self, is_block: bool) {
-            if is_block {
+            if !is_block {
                 self.0 &= !(PTEFlags::R | PTEFlags::W | PTEFlags::X).bits();
-            } else {
-                self.0 |= PTEFlags::R.bits()
             }
         }
     }
@@ -83,21 +88,22 @@ mod _m {
     impl TableGeneric for Table {
         type PTE = Pte;
         const LEVEL: usize = 3;
-        const MAX_BLOCK_LEVEL: usize = 2;
+        const MAX_BLOCK_LEVEL: usize = 3;
+        const VALID_BITS: usize = 39;
 
-        fn flush(_vaddr: Option<VirtAddr>) {
-            riscv::asm::sfence_vma_all();
+        fn flush(vaddr: Option<VirtAddr>) {
+            Arch::flush_tlb(vaddr);
         }
     }
 
     pub fn new_pte_with_config(config: kmem::region::MemConfig) -> Pte {
-        let mut flags = PTEFlags::V | PTEFlags::D | PTEFlags::A;
+        let mut flags = PTEFlags::V | PTEFlags::D | PTEFlags::A | PTEFlags::R | PTEFlags::G;
 
-        if !config.access.contains(AccessFlags::Write) {
+        if config.access.contains(AccessFlags::Write) {
             flags |= PTEFlags::W;
         }
 
-        if !config.access.contains(AccessFlags::Execute) {
+        if config.access.contains(AccessFlags::Execute) {
             flags |= PTEFlags::X;
         }
 
@@ -105,8 +111,12 @@ mod _m {
             flags |= PTEFlags::U;
         }
 
-        if !config.access.contains(AccessFlags::LowerExecute) {
-            flags |= PTEFlags::U;
+        if config.access.contains(AccessFlags::LowerWrite) {
+            flags |= PTEFlags::U | PTEFlags::W;
+        }
+
+        if config.access.contains(AccessFlags::LowerExecute) {
+            flags |= PTEFlags::U | PTEFlags::X;
         }
 
         Pte(flags.bits())

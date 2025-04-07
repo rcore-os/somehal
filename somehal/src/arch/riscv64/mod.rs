@@ -1,4 +1,7 @@
-use riscv::register::satp;
+use riscv::{
+    asm::{sfence_vma, sfence_vma_all},
+    register::satp,
+};
 
 use crate::ArchIf;
 
@@ -41,8 +44,13 @@ impl ArchIf for Arch {
         todo!()
     }
 
+    #[inline(always)]
     fn flush_tlb(vaddr: Option<kmem::VirtAddr>) {
-        todo!()
+        if let Some(vaddr) = vaddr {
+            sfence_vma(0, vaddr.raw())
+        } else {
+            sfence_vma_all();
+        }
     }
 
     fn wait_for_event() {
