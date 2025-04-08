@@ -182,16 +182,14 @@ mod _m {
 
     fn bss_mut() -> &'static mut [u8] {
         unsafe extern "C" {
-            static mut __start_bss: u8;
-            static mut __stop_bss: u8;
+            fn __start_bss();
+            fn __stop_bss();
         }
         unsafe {
-            let start = addr_of_mut!(__start_bss);
+            let start = __start_bss as *mut u8;
+            let end = __stop_bss as *mut u8;
 
-            &mut *slice_from_raw_parts_mut(
-                start,
-                addr_of_mut!(__stop_bss) as usize - start as usize,
-            )
+            &mut *slice_from_raw_parts_mut(start, end as usize - start as usize)
         }
     }
 

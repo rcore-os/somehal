@@ -5,4 +5,5 @@
 ```bash
 cargo test --target aarch64-unknown-none -p platform-test  --test test -- --show-output
 cargo test --release --target aarch64-unknown-none -p platform-test  --test test -- --show-output --uboot
+cargo test --release --target riscv64gc-unknown-none-elf -p platform-test  --test test -- --show-output --uboot
 ```
