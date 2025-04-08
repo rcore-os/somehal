@@ -1,12 +1,10 @@
 use std::{
     alloc::{self, Layout},
     fmt::Debug,
-    mem,
 };
 
 use log::trace;
 use page_table_generic::*;
-use tock_registers::{interfaces::*, register_bitfields, registers::*};
 
 bitflags::bitflags! {
     /// Page-table entry flags.
@@ -32,66 +30,63 @@ bitflags::bitflags! {
         const D =   1 << 7;
     }
 }
-#[link_boot::link_boot]
-mod _m {
 
-    #[repr(transparent)]
-    #[derive(Clone, Copy)]
-    pub struct PteImpl(usize);
+#[repr(transparent)]
+#[derive(Clone, Copy)]
+pub struct PteImpl(usize);
 
-    impl PteImpl {
-        const PHYS_ADDR_MASK: usize = (1 << 54) - (1 << 10);
+impl PteImpl {
+    const PHYS_ADDR_MASK: usize = (1 << 54) - (1 << 10);
+}
+
+impl PTEGeneric for PteImpl {
+    fn valid(&self) -> bool {
+        PTEFlags::from_bits_truncate(self.0).contains(PTEFlags::V)
     }
 
-    impl PTEGeneric for PteImpl {
-        fn valid(&self) -> bool {
-            PTEFlags::from_bits_truncate(self.0).contains(PTEFlags::V)
-        }
+    fn paddr(&self) -> PhysAddr {
+        ((self.0 & Self::PHYS_ADDR_MASK) << 2).into()
+    }
 
-        fn paddr(&self) -> PhysAddr {
-            ((self.0 & Self::PHYS_ADDR_MASK) << 2).into()
-        }
+    fn set_paddr(&mut self, paddr: PhysAddr) {
+        self.0 = (self.0 & !Self::PHYS_ADDR_MASK) | ((paddr.raw() >> 2) & Self::PHYS_ADDR_MASK);
+    }
 
-        fn set_paddr(&mut self, paddr: PhysAddr) {
-            self.0 = (self.0 & !Self::PHYS_ADDR_MASK) | ((paddr.raw() >> 2) & Self::PHYS_ADDR_MASK);
-        }
-
-        fn set_valid(&mut self, valid: bool) {
-            if valid {
-                self.0 |= PTEFlags::V.bits();
-            } else {
-                self.0 &= !PTEFlags::V.bits();
-            }
-        }
-
-        fn is_huge(&self) -> bool {
-            PTEFlags::from_bits_truncate(self.0).intersects(PTEFlags::R | PTEFlags::W | PTEFlags::X)
-        }
-
-        fn set_is_huge(&mut self, b: bool) {
-            if !b {
-                self.0 &= !(PTEFlags::R | PTEFlags::W | PTEFlags::X).bits();
-            }
+    fn set_valid(&mut self, valid: bool) {
+        if valid {
+            self.0 |= PTEFlags::V.bits();
+        } else {
+            self.0 &= !PTEFlags::V.bits();
         }
     }
 
-    impl Debug for PteImpl {
-        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-            f.debug_tuple("Pte").field(&self.0).finish()
+    fn is_huge(&self) -> bool {
+        PTEFlags::from_bits_truncate(self.0).intersects(PTEFlags::R | PTEFlags::W | PTEFlags::X)
+    }
+
+    fn set_is_huge(&mut self, b: bool) {
+        if !b {
+            self.0 &= !(PTEFlags::R | PTEFlags::W | PTEFlags::X).bits();
         }
     }
+}
 
-    #[derive(Clone, Copy)]
-    pub struct Table;
-
-    impl TableGeneric for Table {
-        type PTE = PteImpl;
-        const LEVEL: usize = 3;
-        const MAX_BLOCK_LEVEL: usize = 3;
-        const VALID_BITS: usize = 39;
-
-        fn flush(vaddr: Option<VirtAddr>) {}
+impl Debug for PteImpl {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_tuple("Pte").field(&self.0).finish()
     }
+}
+
+#[derive(Clone, Copy)]
+pub struct Table;
+
+impl TableGeneric for Table {
+    type PTE = PteImpl;
+    const LEVEL: usize = 3;
+    const MAX_BLOCK_LEVEL: usize = 3;
+    const VALID_BITS: usize = 39;
+
+    fn flush(_vaddr: Option<VirtAddr>) {}
 }
 
 struct AccessImpl {
