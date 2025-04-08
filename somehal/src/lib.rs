@@ -37,3 +37,9 @@ pub(crate) use somehal_macros::dbgln;
 macro_rules! dbgln {
     ($($arg:tt)*) => {};
 }
+
+pub use somehal_macros::entry;
+
+unsafe extern "C" {
+    pub(crate) fn __somehal_main() -> !;
+}

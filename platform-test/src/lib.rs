@@ -6,8 +6,8 @@ extern crate somehal;
 
 pub mod lang_items;
 
-#[unsafe(no_mangle)]
-pub extern "C" fn rust_main(_cpu_id: usize, _dtb: usize) -> ! {
+#[somehal::entry]
+fn main(_cpu_id: usize, _dtb: usize) -> ! {
     println!("Hello, world!");
 
     unimplemented!()

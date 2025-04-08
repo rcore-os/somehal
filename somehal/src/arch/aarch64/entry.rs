@@ -69,16 +69,12 @@ fn phys_sp_entry() -> ! {
     set_kernel_table(table);
     set_user_table(0usize.into());
 
-    unsafe extern "C" {
-        fn rust_main();
-    }
-
     unsafe {
         asm!(
             "MOV SP, {sp}",
             "B {f}",
             sp = const STACK_TOP,
-            f = sym rust_main,
+            f = sym crate::__somehal_main,
             options(nostack, noreturn),
         );
     }

@@ -72,8 +72,9 @@ fn phys_sp_entry() -> ! {
 
     unsafe {
         asm!("mv    t1,  {satp}",
-             "la     t2,  rust_main ",
+             "la     t2, {entry}",
             satp = in(reg) old.bits(),
+            entry = sym crate::__somehal_main
         );
         asm!(
             "li    sp, {sp}",
