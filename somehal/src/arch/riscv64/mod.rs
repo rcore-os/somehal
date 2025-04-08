@@ -17,16 +17,19 @@ pub(crate) mod paging;
 pub struct Arch;
 
 impl ArchIf for Arch {
+    #[inline(always)]
     fn early_debug_put(byte: u8) {
         sbi_rt::console_write_byte(byte);
     }
 
+    #[inline(always)]
     fn is_mmu_enabled() -> bool {
         paging::is_mmu_enabled()
     }
 
     type PageTable = paging::Table;
 
+    #[inline(always)]
     fn new_pte_with_config(
         config: kmem::region::MemConfig,
     ) -> <Self::PageTable as kmem::paging::TableGeneric>::PTE {
@@ -38,7 +41,7 @@ impl ArchIf for Arch {
     }
 
     fn get_kernel_table() -> kmem::PhysAddr {
-        todo!()
+        (satp::read().ppn() << 12).into()
     }
 
     fn set_user_table(addr: kmem::PhysAddr) {

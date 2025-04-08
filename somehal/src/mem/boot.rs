@@ -128,7 +128,7 @@ mod _m {
                 access,
             ));
 
-            let size = table.entry_size() * 4;
+            let size = table.entry_size() * 12;
 
             dbgln!("eq   : [{}, {})", 0usize, size);
             early_err!(table.map(

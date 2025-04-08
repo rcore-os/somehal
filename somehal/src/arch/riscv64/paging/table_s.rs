@@ -65,11 +65,11 @@ mod _m {
             }
         }
 
-        fn is_leaf(&self) -> bool {
+        fn is_huge(&self) -> bool {
             PTEFlags::from_bits_truncate(self.0).intersects(PTEFlags::R | PTEFlags::W | PTEFlags::X)
         }
 
-        fn set_is_leaf(&mut self, b: bool) {
+        fn set_is_huge(&mut self, b: bool) {
             if !b {
                 self.0 &= !0xff;
                 self.0 |= 1;
@@ -88,9 +88,9 @@ mod _m {
 
     impl TableGeneric for Table {
         type PTE = Pte;
-        const LEVEL: usize = 3;
+        // const LEVEL: usize = 3;
         const MAX_BLOCK_LEVEL: usize = 3;
-        const VALID_BITS: usize = 39;
+        // const VALID_BITS: usize = 39;
 
         fn flush(vaddr: Option<VirtAddr>) {
             Arch::flush_tlb(vaddr);

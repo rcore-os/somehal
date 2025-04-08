@@ -2,7 +2,15 @@ mod table_s;
 
 use core::arch::asm;
 
+use kmem::PhysAddr;
+
 pub use table_s::*;
+
+#[inline(always)]
+pub fn set_page_table(addr: PhysAddr) {
+    unsafe { satp::set(satp::Mode::Sv48, 0, addr.raw() >> 12) };
+    Arch::flush_tlb(None);
+}
 
 #[link_boot::link_boot]
 mod _m {
@@ -25,21 +33,19 @@ mod _m {
 
     pub fn enable_mmu() -> ! {
         unsafe {
-            let table = new_boot_table(fdt_size()).raw();
+            let table = new_boot_table(fdt_size());
             let entry = mmu_entry as *const u8 as usize + kcode_offset();
-            let ppn = table >> 12;
 
-            dbgln!("Set kernel table {}", table);
-            dbgln!("pnn {}", ppn);
+            dbgln!("Set kernel table {}", table.raw());
             dbgln!("Jump to {}", entry);
 
-            satp::set(satp::Mode::Sv39, 0, ppn);
-            Arch::flush_tlb(None);
+            set_page_table(table);
 
             IS_MMU_ENABLED = true;
 
             asm!(
-                "la gp, __global_pointer$",
+                "la a1, __global_pointer$",
+                "mv  gp, a1",
                 "mv ra,  {entry}",
                 "ret",
                 entry = in(reg) entry,
