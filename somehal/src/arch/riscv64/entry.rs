@@ -78,7 +78,7 @@ fn phys_sp_entry() -> ! {
         asm!(
             "li    sp, {sp}",
             "sfence.vma",
-            "csrw satp, t1", 
+            "csrw satp, t1",
             "jalr  t2",
             "j     .",
             sp = const STACK_TOP,

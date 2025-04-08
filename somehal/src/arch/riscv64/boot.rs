@@ -1,5 +1,3 @@
-use riscv::register::stvec;
-
 use crate::{
     consts::{KERNEL_ENTRY_VADDR, KERNEL_STACK_SIZE},
     fdt::set_fdt_ptr,
@@ -52,22 +50,7 @@ mod _m {
             dbgln!("fdt        : {}", fdt);
             dbgln!("fdt size   : {}", crate::fdt::fdt_size());
 
-            unsafe extern "C" {
-                fn trap_vector_base();
-            }
-            set_trap_vector_base(trap_vector_base as usize);
-
             enable_mmu()
         }
-    }
-}
-/// Writes Supervisor Trap Vector Base Address Register (`stvec`).
-#[inline]
-pub fn set_trap_vector_base(stvec: usize) {
-    let mut v = stvec::Stvec::from_bits(0);
-    v.set_address(stvec);
-    v.set_trap_mode(stvec::TrapMode::Direct);
-    unsafe {
-        stvec::write(v);
     }
 }
