@@ -2,12 +2,18 @@ mod table_s;
 
 use core::arch::asm;
 
+use kmem::PhysAddr;
+
 pub use table_s::*;
+
+#[inline(always)]
+pub fn set_page_table(addr: PhysAddr) {
+    unsafe { satp::set(satp::Mode::Sv48, 0, addr.raw() >> 12) };
+    Arch::flush_tlb(None);
+}
 
 #[link_boot::link_boot]
 mod _m {
-
-    use core::hint::spin_loop;
 
     use riscv::register::satp;
 
@@ -28,26 +34,20 @@ mod _m {
     pub fn enable_mmu() -> ! {
         unsafe {
             let table = new_boot_table(fdt_size());
-            dbgln!("Set kernel table {}", table.raw());
-
             let entry = mmu_entry as *const u8 as usize + kcode_offset();
 
-            let pnn = table.raw();
-
-            dbgln!("pnn1 {}", pnn);
-            dbgln!("pnn2 {}", pnn >> 12);
+            dbgln!("Set kernel table {}", table.raw());
             dbgln!("Jump to {}", entry);
 
-            satp::set(satp::Mode::Sv39, 0, table.raw() >> 12);
+            set_page_table(table);
 
-            // dbgln!("open");
-            // IS_MMU_ENABLED = true;
-
-            riscv::asm::sfence_vma_all();
+            IS_MMU_ENABLED = true;
 
             asm!(
-                "jalr    {entry}",
-                "j       .",
+                "la a1, __global_pointer$",
+                "mv  gp, a1",
+                "mv ra,  {entry}",
+                "ret",
                 entry = in(reg) entry,
                 options(nostack, noreturn)
             )

@@ -1,6 +1,9 @@
 use core::{arch::asm, fmt::Debug};
 
-use kmem::{paging::{PTEGeneric, TableGeneric}, VirtAddr};
+use kmem::{
+    VirtAddr,
+    paging::{PTEGeneric, TableGeneric},
+};
 
 #[repr(transparent)]
 #[derive(Clone, Copy)]
@@ -23,11 +26,11 @@ impl PTEGeneric for Pte {
         todo!()
     }
 
-    fn is_block(&self) -> bool {
+    fn is_huge(&self) -> bool {
         todo!()
     }
 
-    fn set_is_block(&mut self, is_block: bool) {
+    fn set_is_huge(&mut self, is_block: bool) {
         todo!()
     }
 }
@@ -44,6 +47,5 @@ pub struct Table;
 impl TableGeneric for Table {
     type PTE = Pte;
 
-    fn flush(vaddr: Option<VirtAddr>) {
-    }
+    fn flush(vaddr: Option<VirtAddr>) {}
 }

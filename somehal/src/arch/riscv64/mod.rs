@@ -1,24 +1,31 @@
-use riscv::register::satp;
+use riscv::{
+    asm::{sfence_vma, sfence_vma_all},
+    register::satp,
+};
 
 use crate::ArchIf;
 
 mod boot;
 mod entry;
+
 pub(crate) mod paging;
 
 pub struct Arch;
 
 impl ArchIf for Arch {
+    #[inline(always)]
     fn early_debug_put(byte: u8) {
         sbi_rt::console_write_byte(byte);
     }
 
+    #[inline(always)]
     fn is_mmu_enabled() -> bool {
         paging::is_mmu_enabled()
     }
 
     type PageTable = paging::Table;
 
+    #[inline(always)]
     fn new_pte_with_config(
         config: kmem::region::MemConfig,
     ) -> <Self::PageTable as kmem::paging::TableGeneric>::PTE {
@@ -30,7 +37,7 @@ impl ArchIf for Arch {
     }
 
     fn get_kernel_table() -> kmem::PhysAddr {
-        todo!()
+        (satp::read().ppn() << 12).into()
     }
 
     fn set_user_table(addr: kmem::PhysAddr) {
@@ -41,8 +48,13 @@ impl ArchIf for Arch {
         todo!()
     }
 
+    #[inline(always)]
     fn flush_tlb(vaddr: Option<kmem::VirtAddr>) {
-        todo!()
+        if let Some(vaddr) = vaddr {
+            sfence_vma(0, vaddr.raw())
+        } else {
+            sfence_vma_all();
+        }
     }
 
     fn wait_for_event() {

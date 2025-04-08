@@ -1,6 +1,5 @@
 use core::fmt::{self, Debug};
 
-
 #[repr(C, align(0x10))]
 #[derive(Clone)]
 pub struct Context {
@@ -42,4 +41,3 @@ impl Debug for Context {
         writeln!(f, "  sp  : {:p}", self.sp)
     }
 }
-

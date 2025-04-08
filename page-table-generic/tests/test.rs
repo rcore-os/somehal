@@ -55,7 +55,7 @@ impl Debug for PteImpl {
             return write!(f, "invalid");
         }
 
-        write!(f, "PTE PA: {:?} Block: {:?}", self.paddr(), self.is_block())
+        write!(f, "PTE PA: {:?} Block: {:?}", self.paddr(), self.is_huge())
     }
 }
 
@@ -81,11 +81,11 @@ impl PTEGeneric for PteImpl {
         });
     }
 
-    fn is_block(&self) -> bool {
+    fn is_huge(&self) -> bool {
         self.reg().is_set(PTE::BLOCK)
     }
 
-    fn set_is_block(&mut self, is_block: bool) {
+    fn set_is_huge(&mut self, is_block: bool) {
         self.reg().modify(if is_block {
             PTE::BLOCK::SET
         } else {
@@ -239,7 +239,7 @@ fn test_block() {
     }
 
     assert_eq!(list.len(), 3);
-    assert!(list.last().unwrap().pte.is_block());
+    assert!(list.last().unwrap().pte.is_huge());
 }
 
 #[test]
@@ -293,7 +293,7 @@ fn test_block_level() {
     }
 
     assert_eq!(list.len(), n + 1);
-    assert!(list.last().unwrap().pte.is_block());
+    assert!(list.last().unwrap().pte.is_huge());
 }
 
 #[test]

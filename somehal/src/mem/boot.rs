@@ -97,17 +97,18 @@ mod _m {
 
         let mut table = early_err!(Table::create_empty(access));
         unsafe {
-            let code_start_phys = kernal_load_addr().align_down(page_size()).raw();
+            let align = 2 * MB;
+
+            let code_start_phys = kernal_load_addr().align_down(align).raw();
             let code_start = code_start_phys + kcode_offset();
-            let code_end = (link_section_end() + kcode_offset())
-                .align_up(page_size())
-                .raw();
-            let size = (code_end - code_start).max(2 * MB);
+            let code_end: usize = (link_section_end() + kcode_offset()).align_up(align).raw();
+
+            let size = (code_end - code_start).max(align);
 
             dbgln!(
                 "code : [{}, {}) -> [{}, {})",
                 code_start,
-                code_end,
+                code_start + size,
                 code_start_phys,
                 code_start_phys + size
             );
@@ -127,7 +128,7 @@ mod _m {
                 access,
             ));
 
-            let size = table.entry_size() * 2;
+            let size = table.entry_size() * 12;
 
             dbgln!("eq   : [{}, {})", 0usize, size);
             early_err!(table.map(

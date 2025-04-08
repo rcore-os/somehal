@@ -43,14 +43,14 @@ mod _m {
             clean_bss();
             set_kcode_va_offset(kcode_va);
             set_fdt_ptr(fdt);
+
+            dbgln!("Booting up");
+            dbgln!("Entry      : {}", KERNEL_ENTRY_VADDR - kcode_va);
+            dbgln!("Code offset: {}", kcode_offset());
+            dbgln!("fdt        : {}", fdt);
+            dbgln!("fdt size   : {}", crate::fdt::fdt_size());
+
+            enable_mmu()
         }
-
-        dbgln!("Booting up");
-        dbgln!("Entry      : {}", KERNEL_ENTRY_VADDR - kcode_va);
-        dbgln!("Code offset: {}", kcode_offset());
-        dbgln!("fdt        : {}", fdt);
-        dbgln!("fdt size   : {}", crate::fdt::fdt_size());
-
-        enable_mmu()
     }
 }

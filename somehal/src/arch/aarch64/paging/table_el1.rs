@@ -168,11 +168,11 @@ mod _m {
             }
         }
 
-        fn is_block(&self) -> bool {
+        fn is_huge(&self) -> bool {
             !self.as_flags().contains(PteFlags::NON_BLOCK)
         }
 
-        fn set_is_block(&mut self, is_block: bool) {
+        fn set_is_huge(&mut self, is_block: bool) {
             if is_block {
                 self.0 &= !PteFlags::NON_BLOCK.bits();
             } else {
@@ -199,7 +199,7 @@ mod _m {
     }
 
     pub fn new_pte_with_config(config: kmem::region::MemConfig) -> Pte {
-        let mut flags = PteFlags::AF | PteFlags::VALID;
+        let mut flags = PteFlags::AF | PteFlags::VALID | PteFlags::NON_BLOCK;
 
         if !config.access.contains(AccessFlags::Write) {
             flags |= PteFlags::AP_RO;

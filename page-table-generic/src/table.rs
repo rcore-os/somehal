@@ -178,7 +178,7 @@ mod _m {
                 let vaddr = vaddr_usize.into();
 
                 if pte.valid() {
-                    let is_block = pte.is_block();
+                    let is_block = pte.is_huge();
 
                     if self.level() > 1 && !is_block {
                         let mut table_ref = self.next_table(i, access)?;
@@ -203,10 +203,13 @@ mod _m {
             while table.level() > 0 {
                 let idx = table.index_of_table(map_cfg.vaddr);
                 if table.level() == level {
-                    let mut pte = map_cfg.pte;
+                    let mut pte: <T as TableGeneric>::PTE = map_cfg.pte;
                     pte.set_paddr(map_cfg.paddr);
                     pte.set_valid(true);
-                    pte.set_is_block(level > 1);
+                    // pte.set_is_leaf(level > 1);
+                    if level > 1 {
+                        pte.set_is_huge(true);
+                    }
 
                     table.as_slice_mut(access)[idx] = pte;
                     return Ok(());
@@ -233,7 +236,7 @@ mod _m {
                 let ptr = table.addr;
                 pte.set_valid(true);
                 pte.set_paddr(ptr);
-                pte.set_is_block(false);
+                pte.set_is_huge(false);
 
                 let s = self.as_slice_mut(access);
                 s[idx] = pte;
@@ -244,7 +247,7 @@ mod _m {
 
         fn next_table(&self, idx: usize, access: &impl Access) -> Option<Self> {
             let pte = self.get_pte(idx, access);
-            if pte.is_block() {
+            if pte.is_huge() {
                 return None;
             }
             if pte.valid() {
@@ -405,11 +408,11 @@ mod test {
             todo!()
         }
 
-        fn is_block(&self) -> bool {
+        fn is_huge(&self) -> bool {
             todo!()
         }
 
-        fn set_is_block(&mut self, _is_block: bool) {
+        fn set_is_huge(&mut self, _is_block: bool) {
             todo!()
         }
 
@@ -448,6 +451,12 @@ mod test {
 
         let w = Walk::new(4);
         assert_eq!(w.index_of_table((512 * GB).into()), 1);
+    }
+
+    #[test]
+    fn test_idx_of_table2() {
+        let w = Walk::new(3);
+        assert_eq!(w.index_of_table(0xffff_ffc0_8000_0000.into()), 0x102);
     }
 
     #[test]

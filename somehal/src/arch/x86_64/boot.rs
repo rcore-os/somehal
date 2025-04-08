@@ -35,12 +35,12 @@ const EFER: u64 = EferFlags::LONG_MODE_ENABLE.bits() | EferFlags::NO_EXECUTE_ENA
 static mut BOOT_STACK: [u8; KERNEL_STACK_SIZE] = [0; KERNEL_STACK_SIZE];
 
 global_asm!(
-    include_str!("multiboot.S"), 
+    include_str!("multiboot.S"),
     mb_magic = const MULTIBOOT_BOOTLOADER_MAGIC,
     mb_hdr_magic = const MULTIBOOT_HEADER_MAGIC,
     mb_hdr_flags = const MULTIBOOT_HEADER_FLAGS,
     entry = sym rust_entry,
-    entry_secondary = sym rust_entry_secondary,    
+    entry_secondary = sym rust_entry_secondary,
 
     offset = const KCODE_OFFSET,
     boot_stack = sym BOOT_STACK,
