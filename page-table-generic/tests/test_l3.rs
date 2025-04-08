@@ -64,11 +64,11 @@ mod _m {
             }
         }
 
-        fn is_block(&self) -> bool {
+        fn is_leaf(&self) -> bool {
             PTEFlags::from_bits_truncate(self.0).intersects(PTEFlags::R | PTEFlags::W | PTEFlags::X)
         }
 
-        fn set_is_block(&mut self, b: bool) {
+        fn set_is_leaf(&mut self, b: bool) {
             if !b {
                 self.0 &= !(PTEFlags::R | PTEFlags::W | PTEFlags::X).bits();
             }

@@ -47,7 +47,7 @@ impl<'a, 'b: 'a, P: TableGeneric, A: Access> TableIter<'a, 'b, P, A> {
     }
 
     fn idx_next(&mut self, pte: P::PTE) {
-        if pte.is_block() || self.level == 1 || !pte.valid() {
+        if pte.is_leaf() || self.level == 1 || !pte.valid() {
             self.idx_stack[self.level - 1] += 1;
             if self.level < self.max_level && self.idx() >= P::TABLE_LEN {
                 self.level += 1;
