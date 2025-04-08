@@ -68,8 +68,8 @@ mod _m {
             PTEFlags::from_bits_truncate(self.0).intersects(PTEFlags::R | PTEFlags::W | PTEFlags::X)
         }
 
-        fn set_is_block(&mut self, is_block: bool) {
-            if !is_block {
+        fn set_is_block(&mut self, b: bool) {
+            if !b {
                 self.0 &= !(PTEFlags::R | PTEFlags::W | PTEFlags::X).bits();
             }
         }
@@ -150,9 +150,55 @@ fn test_new() {
     unsafe {
         pg.map(
             MapConfig::new(
-                0xffffffc080200000usize.into(),
+                0xffffff3080200000usize.into(),
                 0x80200000usize.into(),
                 2 * MB,
+                PteImpl(0xef),
+                true,
+                false,
+            ),
+            &mut access,
+        )
+        .unwrap();
+    }
+    let msg = pg
+        .as_slice(&access)
+        .iter()
+        .filter_map(|o| {
+            if o.valid() {
+                Some(format!("{:#x}", o.0))
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    println!("vec: {}", msg);
+
+    let list = pg.iter_all(&access).collect::<Vec<_>>();
+
+    for i in &list {
+        println!("l: {:x}, va: {:?} c: {:#x}", i.level, i.vaddr, i.pte.0);
+    }
+
+    assert_eq!(list.len(), 2);
+}
+
+#[test]
+fn test_new2() {
+    let _ = env_logger::builder()
+        .is_test(true)
+        .filter_level(log::LevelFilter::Trace)
+        .try_init();
+
+    let (mut access, mut pg) = new_alloc_and_table();
+    unsafe {
+        pg.map(
+            MapConfig::new(
+                0xffffffc080200000usize.into(),
+                0x80200000usize.into(),
+                0x1000,
                 PteImpl(0xef),
                 true,
                 false,

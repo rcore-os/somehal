@@ -37,7 +37,7 @@ pub trait PTEGeneric: Debug + Sync + Send + Clone + Copy + Sized + 'static {
     fn set_paddr(&mut self, paddr: PhysAddr);
     fn set_valid(&mut self, valid: bool);
     fn is_block(&self) -> bool;
-    fn set_is_block(&mut self, is_block: bool);
+    fn set_is_block(&mut self, b: bool);
 }
 
 pub trait Access {

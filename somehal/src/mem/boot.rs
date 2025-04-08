@@ -97,12 +97,11 @@ mod _m {
 
         let mut table = early_err!(Table::create_empty(access));
         unsafe {
-            // let align = GB;
             let align = 2 * MB;
 
             let code_start_phys = kernal_load_addr().align_down(align).raw();
             let code_start = code_start_phys + kcode_offset();
-            let code_end = (link_section_end() + kcode_offset()).align_up(align).raw();
+            let code_end: usize = (link_section_end() + kcode_offset()).align_up(align).raw();
 
             let size = (code_end - code_start).max(align);
 
@@ -129,7 +128,7 @@ mod _m {
                 access,
             ));
 
-            let size = table.entry_size() * 12;
+            let size = table.entry_size() * 4;
 
             dbgln!("eq   : [{}, {})", 0usize, size);
             early_err!(table.map(
@@ -146,10 +145,6 @@ mod _m {
                 },
                 access,
             ));
-        }
-        use kmem::paging::PTEGeneric;
-        for t in table.iter_all(access) {
-            dbgln!("va {}  pa {}", t.vaddr.raw(), t.pte.paddr().raw());
         }
 
         unsafe {

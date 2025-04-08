@@ -206,7 +206,9 @@ mod _m {
                     let mut pte: <T as TableGeneric>::PTE = map_cfg.pte;
                     pte.set_paddr(map_cfg.paddr);
                     pte.set_valid(true);
-                    pte.set_is_block(level > 1);
+                    if level > 1 {
+                        pte.set_is_block(true);
+                    }
 
                     table.as_slice_mut(access)[idx] = pte;
                     return Ok(());

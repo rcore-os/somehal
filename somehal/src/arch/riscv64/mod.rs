@@ -6,7 +6,12 @@ use riscv::{
 use crate::ArchIf;
 
 mod boot;
+mod context;
 mod entry;
+#[macro_use]
+mod macros;
+mod trap;
+
 pub(crate) mod paging;
 
 pub struct Arch;

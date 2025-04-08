@@ -25,7 +25,9 @@ SECTIONS
    
     data : ALIGN(4K) {
         *(.data*)
-        *(.sdata .sdata.*)
+        . = ALIGN(4K);
+        __global_pointer$ = . + 0x800;
+        *(.sdata.*)
     }
 
     percpu : ALIGN(4K) {

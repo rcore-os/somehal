@@ -69,9 +69,11 @@ mod _m {
             PTEFlags::from_bits_truncate(self.0).intersects(PTEFlags::R | PTEFlags::W | PTEFlags::X)
         }
 
-        fn set_is_block(&mut self, is_block: bool) {
-            if !is_block {
-                self.0 &= !(PTEFlags::R | PTEFlags::W | PTEFlags::X).bits();
+        fn set_is_block(&mut self, b: bool) {
+            if !b {
+                self.0 &= !0xff;
+                self.0 |= 1;
+                // self.0 &= !(PTEFlags::R | PTEFlags::W | PTEFlags::X).bits();
             }
         }
     }
