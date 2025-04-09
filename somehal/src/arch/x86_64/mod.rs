@@ -49,4 +49,8 @@ impl ArchIf for Arch {
     fn init_debugcon() {
         todo!()
     }
+
+    fn cpu_id() -> crate::platform::CpuId {
+        todo!()
+    }
 }
