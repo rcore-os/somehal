@@ -1,3 +1,12 @@
 [target.'cfg(all(target_os = "none"))']
 runner = "ostool cargo-test"
-rustflags = ["-C", "link-arg=-Map=target/output.map", "-C", "link-arg=-znostart-stop-gc"]
+rustflags = [
+    "-C",
+    "link-arg=-Map=target/kernel.map",
+    "-C",
+    "link-arg=-znostart-stop-gc",
+    "-C",
+    "link-arg=-Tlink.x",
+    "-C",
+    "link-arg=-no-pie",
+]
