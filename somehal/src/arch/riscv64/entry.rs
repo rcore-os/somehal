@@ -4,7 +4,6 @@ use kmem::region::STACK_TOP;
 use riscv::register::satp;
 
 use crate::{
-    arch::paging::set_page_table,
     fdt, handle_err,
     mem::{
         boot::{kcode_offset, kernal_load_addr},

@@ -8,11 +8,11 @@ use kmem::{IntAlign, region::MemRegionKind};
 
 use crate::{
     mem::{PhysMemory, PhysMemoryArray, main_memory_alloc, page::page_size},
-    platform::{CpuId, CpuIdx},
+    platform::CpuId,
 };
 
 use crate::{dbgln, early_err};
-use kmem::region::{AccessFlags, CacheConfig, MemConfig, OFFSET_LINER};
+use kmem::region::*;
 
 use crate::mem::{MemRegion, boot::kcode_offset};
 

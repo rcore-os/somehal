@@ -3,7 +3,7 @@ use kmem::region::{CacheConfig, STACK_TOP, region_phys_to_virt, region_virt_to_p
 pub use kmem::*;
 use page::page_size;
 
-use somehal_macros::{fn_link_section, percpu_data};
+use somehal_macros::fn_link_section;
 
 pub(crate) mod boot;
 pub mod page;
