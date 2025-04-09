@@ -1,4 +1,5 @@
 pub use crate::mem::{PhysAddr, VirtAddr};
+use crate::platform::CpuId;
 pub use kmem::paging::*;
 use kmem::region::MemConfig;
 
@@ -20,4 +21,6 @@ pub trait ArchIf {
     fn wait_for_event();
 
     fn init_debugcon();
+
+    fn cpu_id() -> CpuId;
 }

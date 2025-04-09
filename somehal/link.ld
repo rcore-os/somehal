@@ -22,8 +22,9 @@ SECTIONS
         *(.rodata .rodata.*)
         *(.got .got.*)
     } 
-   
-    data : ALIGN(4K) {
+    
+    .data : ALIGN(4K) {
+        __srwdata = .;
         *(.data*)
         . = ALIGN(4K);
         __global_pointer$ = . + 0x800;
@@ -31,11 +32,11 @@ SECTIONS
     }
 
     percpu : ALIGN(4K) {
-        *(.percpu .percpu*)
-    }
+        __kernel_load_size = . - __start_BootText;
+        __erwdata = .;
 
-    __ekernel_load = .;
-    __kernel_size = . - __start_BootText;
+        *(.percpu*)
+    }
 
     bss (NOLOAD) : ALIGN(4K)  {
         *(.bss .bss.*)
@@ -45,6 +46,7 @@ SECTIONS
     }
 
     __stack_bottom = .;
+
 	/DISCARD/ : {
         *(.comment) *(.gnu*) *(.note*) *(.eh_frame*)
     }

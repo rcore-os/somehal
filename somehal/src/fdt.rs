@@ -6,7 +6,10 @@ use core::{
 use fdt_parser::{Fdt, FdtError};
 use kmem::{IntAlign, region::MemRegionKind};
 
-use crate::mem::{PhysMemory, PhysMemoryArray, main_memory_alloc, page::page_size};
+use crate::{
+    mem::{PhysMemory, PhysMemoryArray, main_memory_alloc, page::page_size},
+    platform::{CpuId, CpuIdx},
+};
 
 use crate::{dbgln, early_err};
 use kmem::region::{AccessFlags, CacheConfig, MemConfig, OFFSET_LINER};
@@ -63,6 +66,19 @@ pub fn cpu_count() -> Result<usize, FdtError<'static>> {
     let fdt = get_fdt().ok_or(FdtError::BadPtr)?;
     let nodes = fdt.find_nodes("/cpus/cpu");
     Ok(nodes.count())
+}
+
+pub fn cpu_list() -> Result<impl Iterator<Item = CpuId>, FdtError<'static>> {
+    let fdt = get_fdt().ok_or(FdtError::BadPtr)?;
+    let nodes = fdt.find_nodes("/cpus/cpu");
+    Ok(nodes.map(|node| {
+        let reg = node
+            .reg()
+            .expect("cpu reg not found")
+            .next()
+            .expect("cpu reg 0 not found");
+        (reg.address as usize).into()
+    }))
 }
 
 #[cfg(not(target_arch = "riscv64"))]

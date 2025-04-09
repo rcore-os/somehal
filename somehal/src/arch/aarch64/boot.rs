@@ -17,7 +17,7 @@ pub unsafe extern "C" fn _start() -> ! {
             // text_offset
             ".quad 0",
             // image_size
-            ".quad __kernel_size",
+            ".quad __kernel_load_size",
             // flags
             ".quad {flags}",
             // Reserved fields

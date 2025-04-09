@@ -3,7 +3,7 @@ use riscv::{
     register::satp,
 };
 
-use crate::ArchIf;
+use crate::{ArchIf, platform::CpuId};
 
 mod boot;
 mod entry;
@@ -62,4 +62,8 @@ impl ArchIf for Arch {
     }
 
     fn init_debugcon() {}
+
+    fn cpu_id() -> CpuId {
+        boot::hartid().into()
+    }
 }

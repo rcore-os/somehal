@@ -60,7 +60,7 @@ fn phys_sp_entry() -> ! {
         let _ = rsv.try_push(r);
     }
 
-    setup_memory_regions(rsv);
+    setup_memory_regions(rsv, fdt::cpu_list().unwrap());
 
     println!("Memory regions setup done!");
 

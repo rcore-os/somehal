@@ -3,10 +3,11 @@ use kmem::region::{CacheConfig, STACK_TOP, region_phys_to_virt, region_virt_to_p
 pub use kmem::*;
 use page::page_size;
 
-use somehal_macros::fn_link_section;
+use somehal_macros::{fn_link_section, percpu_data};
 
 pub(crate) mod boot;
 pub mod page;
+mod percpu;
 
 #[derive(Debug, Clone)]
 pub struct PhysMemory {
@@ -16,7 +17,12 @@ pub struct PhysMemory {
 
 use core::alloc::Layout;
 
-use crate::{consts::KERNEL_STACK_SIZE, dbgln, println};
+use crate::{
+    consts::KERNEL_STACK_SIZE,
+    dbgln,
+    platform::{CpuId, CpuIdx},
+    println,
+};
 pub use kmem::region::MemRegion;
 use kmem::region::{AccessFlags, MemConfig, MemRegionKind, OFFSET_LINER};
 
@@ -28,7 +34,16 @@ static MEMORY_MAIN: OnceStatic<PhysMemory> = OnceStatic::new();
 static mut CPU_COUNT: usize = 1;
 static MEM_REGIONS: OnceStatic<ArrayVec<MemRegion, 32>> = OnceStatic::new();
 static STACK_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
-static PERCPU_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
+// 除主CPU 外，其他CPU的独占Data
+static PERCPU_OTHER_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
+
+pub fn cpu_idx() -> CpuIdx {
+    unsafe { percpu::CPU_IDX }
+}
+
+pub fn cpu_id() -> CpuId {
+    unsafe { percpu::CPU_ID }
+}
 
 pub(crate) fn stack_top_cpu0() -> PhysAddr {
     STACK_ALL.addr + KERNEL_STACK_SIZE
@@ -36,7 +51,9 @@ pub(crate) fn stack_top_cpu0() -> PhysAddr {
 
 pub(crate) fn setup_memory_main(memories: impl Iterator<Item = PhysMemory>, cpu_count: usize) {
     detect_link_space();
-    unsafe { CPU_COUNT = cpu_count };
+    unsafe {
+        CPU_COUNT = cpu_count;
+    };
     for m in memories {
         let mut phys_start = m.addr;
         let phys_raw = phys_start.raw();
@@ -96,24 +113,39 @@ pub(crate) fn setup_memory_main(memories: impl Iterator<Item = PhysMemory>, cpu_
     });
 }
 
-pub(crate) fn setup_memory_regions(rsv: impl Iterator<Item = MemRegion>) {
-    let percpu_size = percpu().len().align_up(page_size()) * unsafe { CPU_COUNT };
+pub(crate) fn setup_memory_regions(
+    rsv: impl Iterator<Item = MemRegion>,
+    cpu_list: impl Iterator<Item = CpuId>,
+) {
+    let percpu_one_size = percpu().len().align_up(page_size());
+    let percpu_cpu0_start = percpu().as_ptr() as usize - kcode_offset();
 
-    let percpu_start =
-        main_memory_alloc(Layout::from_size_align(percpu_size, page_size()).unwrap());
+    let cpu_other_count = unsafe { CPU_COUNT - 1 };
 
-    let percpu_all = PhysMemory {
-        addr: percpu_start,
-        size: percpu_size,
+    let percpu_all = if cpu_other_count > 0 {
+        let percpu_other_all_size = percpu_one_size * cpu_other_count;
+
+        let percpu_start =
+            main_memory_alloc(Layout::from_size_align(percpu_other_all_size, page_size()).unwrap());
+
+        PhysMemory {
+            addr: percpu_start,
+            size: percpu_other_all_size,
+        }
+    } else {
+        PhysMemory {
+            addr: 0usize.into(),
+            size: 0,
+        }
     };
 
-    unsafe {
-        (*PERCPU_ALL.get()).replace(percpu_all);
-    }
+    unsafe { (*PERCPU_OTHER_ALL.get()).replace(percpu_all) };
+    percpu::init(cpu_list);
+
     mem_region_add(MemRegion {
         virt_start: percpu().as_ptr().into(),
-        size: percpu_size,
-        phys_start: percpu_start,
+        size: percpu_one_size,
+        phys_start: percpu_cpu0_start.into(),
         name: ".percpu",
         config: MemConfig {
             access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
@@ -219,7 +251,7 @@ fn detect_link_space() {
     ));
     mem_region_add(link_section_to_kspace(
         ".data",
-        data(),
+        rwdata(),
         MemConfig {
             access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
             cache: CacheConfig::Normal,
@@ -253,10 +285,24 @@ fn link_section_to_kspace(name: &'static str, section: &[u8], config: MemConfig)
 fn_link_section!(BootText);
 fn_link_section!(BootData);
 fn_link_section!(text);
-fn_link_section!(data);
 fn_link_section!(rodata);
 fn_link_section!(bss);
 fn_link_section!(percpu);
+
+#[inline(always)]
+fn rwdata() -> &'static [u8] {
+    unsafe extern "C" {
+        fn __srwdata();
+
+        fn __erwdata();
+
+    }
+    unsafe {
+        let start = __srwdata as usize;
+        let stop = __erwdata as usize;
+        core::slice::from_raw_parts(start as *const u8, stop - start)
+    }
+}
 
 /// Returns an iterator over all physical memory regions.
 pub fn memory_regions() -> impl Iterator<Item = MemRegion> {

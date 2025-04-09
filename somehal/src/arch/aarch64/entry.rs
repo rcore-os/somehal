@@ -56,7 +56,7 @@ fn phys_sp_entry() -> ! {
 
     let _ = rsv.try_push(super::debug::MEM_REGION_DEBUG_CON.clone());
 
-    setup_memory_regions(rsv);
+    setup_memory_regions(rsv, fdt::cpu_list().unwrap());
 
     println!("Memory regions setup done!");
 

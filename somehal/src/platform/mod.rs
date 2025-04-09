@@ -1,6 +1,7 @@
 macro_rules! def_id {
     ($id:ident, $t:ty) => {
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+        #[repr(transparent)]
+        #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
         pub struct $id($t);
 
         impl From<$t> for $id {
@@ -24,8 +25,14 @@ macro_rules! def_id {
                 self.0
             }
         }
+
+        impl core::fmt::Debug for $id {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, "{:#X}", self.0)
+            }
+        }
     };
 }
 
-def_id!(CpuHardId, usize);
+def_id!(CpuIdx, usize);
 def_id!(CpuId, usize);

@@ -1,7 +1,7 @@
 use aarch64_cpu::asm::wfe;
 use kmem::paging::TableGeneric;
 
-use crate::ArchIf;
+use crate::{ArchIf, platform::CpuId};
 
 mod boot;
 mod context;
@@ -14,6 +14,7 @@ pub struct Arch;
 
 #[link_boot::link_boot]
 mod _m {
+    use aarch64_cpu::registers::*;
 
     impl ArchIf for Arch {
         fn early_debug_put(b: u8) {
@@ -58,6 +59,10 @@ mod _m {
 
         fn init_debugcon() {
             debug::init();
+        }
+
+        fn cpu_id() -> CpuId {
+            ((MPIDR_EL1.get() & 0xffffff) as usize).into()
         }
     }
 }
