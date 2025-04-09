@@ -10,10 +10,6 @@ impl ArchIf for Arch {
         todo!()
     }
 
-    fn is_mmu_enabled() -> bool {
-        todo!()
-    }
-
     type PageTable = paging::Table;
 
     fn new_pte_with_config(
