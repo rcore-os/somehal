@@ -25,12 +25,6 @@ mod _m {
         mem::boot::{kcode_offset, new_boot_table},
     };
 
-    static mut IS_MMU_ENABLED: bool = false;
-
-    pub fn is_mmu_enabled() -> bool {
-        unsafe { IS_MMU_ENABLED }
-    }
-
     pub fn enable_mmu(hartid: usize) -> ! {
         unsafe {
             let table = new_boot_table(fdt_size());
@@ -41,7 +35,6 @@ mod _m {
 
             set_page_table(table);
 
-            IS_MMU_ENABLED = true;
             asm!("mv   t1,  {}", in(reg) hartid);
             asm!(
                 "la    a1, __global_pointer$",

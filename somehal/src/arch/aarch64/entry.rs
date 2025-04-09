@@ -13,8 +13,8 @@ use crate::{
     fdt::{self, save_fdt},
     handle_err,
     mem::{
-        boot::kernal_load_addr, page::new_mapped_table, setup_memory_main, setup_memory_regions,
-        stack_top_cpu0,
+        boot::kcode_offset, kernal_load_start_link_addr, page::new_mapped_table, setup_memory_main,
+        setup_memory_regions, stack_top_cpu0,
     },
     println,
     vec::ArrayVec,
@@ -23,7 +23,11 @@ use crate::{
 pub fn mmu_entry() -> ! {
     debug::init();
     println!("MMU ready!");
-    println!("{:<12}: {:?}", "Kernel LMA", kernal_load_addr());
+    println!(
+        "{:<12}: {:#X}",
+        "Kernel LMA",
+        kernal_load_start_link_addr() - kcode_offset()
+    );
     println!("{:<12}: {}", "Current EL", CurrentEL.read(CurrentEL::EL));
 
     let cpu_count = handle_err!(fdt::cpu_count(), "could not get cpu count");

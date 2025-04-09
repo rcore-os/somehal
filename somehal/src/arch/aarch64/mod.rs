@@ -21,10 +21,6 @@ mod _m {
             debug::write_byte(b);
         }
 
-        fn is_mmu_enabled() -> bool {
-            paging::is_mmu_enabled()
-        }
-
         type PageTable = paging::Table;
 
         fn new_pte_with_config(

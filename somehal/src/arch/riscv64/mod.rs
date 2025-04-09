@@ -18,11 +18,6 @@ impl ArchIf for Arch {
         sbi_rt::console_write_byte(byte);
     }
 
-    #[inline(always)]
-    fn is_mmu_enabled() -> bool {
-        paging::is_mmu_enabled()
-    }
-
     type PageTable = paging::Table;
 
     #[inline(always)]

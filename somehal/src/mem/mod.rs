@@ -1,4 +1,4 @@
-use boot::{kcode_offset, link_section_end};
+use boot::kcode_offset;
 use kmem::region::{CacheConfig, STACK_TOP, region_phys_to_virt, region_virt_to_phys};
 pub use kmem::*;
 use page::page_size;
@@ -59,7 +59,7 @@ pub(crate) fn setup_memory_main(memories: impl Iterator<Item = PhysMemory>, cpu_
         let phys_raw = phys_start.raw();
         let size = m.size;
         let mut phys_end = phys_start + size;
-        let kcode_end = link_section_end();
+        let kcode_end = PhysAddr::from(link_section_end() as usize - kcode_offset());
 
         if phys_raw < kcode_end.raw() && kcode_end.raw() < phys_raw + m.size {
             phys_start = kcode_end;
@@ -75,9 +75,7 @@ pub(crate) fn setup_memory_main(memories: impl Iterator<Item = PhysMemory>, cpu_
 
             unsafe {
                 (*STACK_ALL.get()).replace(stack_all);
-            }
 
-            unsafe {
                 (*MEMORY_MAIN.get()).replace(PhysMemory {
                     addr: phys_start,
                     size: phys_end.raw() - phys_start.raw(),
@@ -170,6 +168,10 @@ pub(crate) fn setup_memory_regions(
     for r in rsv {
         mem_region_add(r);
     }
+}
+
+pub(crate) fn kernal_load_start_link_addr() -> usize {
+    BootText().as_ptr() as _
 }
 
 pub(crate) fn main_memory_alloc(layout: Layout) -> PhysAddr {
@@ -289,6 +291,14 @@ fn_link_section!(text);
 fn_link_section!(rodata);
 fn_link_section!(bss);
 fn_link_section!(percpu);
+
+#[inline(always)]
+pub(crate) fn link_section_end() -> *const u8 {
+    unsafe extern "C" {
+        fn __stack_bottom();
+    }
+    __stack_bottom as _
+}
 
 #[inline(always)]
 fn rwdata() -> &'static [u8] {

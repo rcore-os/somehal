@@ -45,6 +45,7 @@ mod _m {
     use crate::consts::KERNEL_STACK_SIZE;
     use crate::dbgln;
     use crate::fdt::set_fdt_ptr;
+    use crate::mem::kernal_load_start_link_addr;
 
     #[naked]
     /// The entry point of the kernel.
@@ -88,7 +89,7 @@ mod _m {
             #[cfg(feature = "early-debug")]
             super::debug::init();
             dbgln!("Booting up");
-            dbgln!("Entry      : {}", kernal_load_addr().raw());
+            dbgln!("Entry      : {}", kernal_load_start_link_addr());
             dbgln!("Code offset: {}", kcode_offset());
             dbgln!("Current EL : {}", CurrentEL.read(CurrentEL::EL));
             dbgln!("fdt        : {}", fdt);

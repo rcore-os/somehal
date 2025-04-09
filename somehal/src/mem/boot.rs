@@ -6,7 +6,7 @@ use kmem::{
     region::{AccessFlags, CacheConfig, MemConfig},
 };
 
-use super::{BootText, PhysMemory};
+use super::{PhysMemory, kernal_load_start_link_addr, link_section_end};
 use crate::{
     ArchIf,
     arch::Arch,
@@ -18,7 +18,6 @@ use crate::{
 
 #[link_boot::link_boot]
 mod _m {
-    use core::ptr::addr_of_mut;
 
     static mut KCODE_VA_OFFSET: usize = 0;
     static BOOT_TABLE: OnceStatic<PhysMemory> = OnceStatic::new();
@@ -83,7 +82,9 @@ mod _m {
 
         dbgln!("Rsv space: {}", rsv_space);
 
-        let start = (link_section_end() + KERNEL_STACK_SIZE + rsv_space).align_up(page_size());
+        let code_end_phys = PhysAddr::from(link_section_end() as usize);
+
+        let start = (code_end_phys + KERNEL_STACK_SIZE + rsv_space).align_up(page_size());
 
         let mut tmp_alloc = LineAllocator::new(start, GB);
 
@@ -99,9 +100,9 @@ mod _m {
         unsafe {
             let align = 2 * MB;
 
-            let code_start_phys = kernal_load_addr().align_down(align).raw();
+            let code_start_phys = kernal_load_start_link_addr().align_down(align);
             let code_start = code_start_phys + kcode_offset();
-            let code_end: usize = (link_section_end() + kcode_offset()).align_up(align).raw();
+            let code_end: usize = (code_end_phys + kcode_offset()).align_up(align).raw();
 
             let size = (code_end - code_start).max(align);
 
@@ -154,30 +155,6 @@ mod _m {
         dbgln!("Table size: {}", BOOT_TABLE.size);
 
         table.paddr()
-    }
-
-    pub fn kernal_load_addr() -> PhysAddr {
-        let mut addr = BootText().as_ptr() as usize;
-
-        if Arch::is_mmu_enabled() {
-            addr -= kcode_offset();
-        }
-
-        addr.into()
-    }
-
-    pub fn link_section_end() -> PhysAddr {
-        unsafe extern "C" {
-            static mut __stack_bottom: u8;
-        }
-        let addr = addr_of_mut!(__stack_bottom) as usize;
-
-        if Arch::is_mmu_enabled() {
-            addr - kcode_offset()
-        } else {
-            addr
-        }
-        .into()
     }
 
     fn bss_mut() -> &'static mut [u8] {

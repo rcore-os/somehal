@@ -6,9 +6,8 @@ use riscv::register::satp;
 use crate::{
     fdt, handle_err,
     mem::{
-        boot::{kcode_offset, kernal_load_addr},
-        page::new_mapped_table,
-        setup_memory_main, setup_memory_regions, stack_top_cpu0,
+        boot::kcode_offset, kernal_load_start_link_addr, page::new_mapped_table, setup_memory_main,
+        setup_memory_regions, stack_top_cpu0,
     },
     println,
     vec::ArrayVec,
@@ -25,7 +24,12 @@ pub fn mmu_entry(_: usize, hartid: usize) -> ! {
         );
     }
 
-    println!("{:<12}: {:?}", "Kernel LMA", kernal_load_addr());
+    println!(
+        "{:<12}: {:#X}",
+        "Kernel LMA",
+        kernal_load_start_link_addr() - kcode_offset()
+    );
+
     println!("{:<12}: {:?}", "Hart", hartid);
 
     let cpu_count = handle_err!(fdt::cpu_count(), "could not get cpu count");

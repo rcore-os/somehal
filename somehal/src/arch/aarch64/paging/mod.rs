@@ -58,16 +58,4 @@ mod _m {
             )
         }
     }
-
-    #[inline(always)]
-    pub fn is_mmu_enabled() -> bool {
-        cfg_match! {
-            feature = "vm" => {
-                SCTLR_EL2.is_set(SCTLR_EL2::M)
-            }
-            _ =>{
-                SCTLR_EL1.is_set(SCTLR_EL1::M)
-            }
-        }
-    }
 }
