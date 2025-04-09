@@ -5,7 +5,11 @@ use kmem::region::STACK_TOP;
 
 use super::debug;
 use crate::{
-    arch::paging::{set_kernel_table, set_user_table},
+    ArchIf,
+    arch::{
+        Arch,
+        paging::{set_kernel_table, set_user_table},
+    },
     fdt::{self, save_fdt},
     handle_err,
     mem::{
@@ -56,7 +60,7 @@ fn phys_sp_entry() -> ! {
 
     let _ = rsv.try_push(super::debug::MEM_REGION_DEBUG_CON.clone());
 
-    setup_memory_regions(rsv, fdt::cpu_list().unwrap());
+    setup_memory_regions(Arch::cpu_id(), rsv, fdt::cpu_list().unwrap());
 
     println!("Memory regions setup done!");
 

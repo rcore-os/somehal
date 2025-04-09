@@ -38,14 +38,11 @@ unsafe extern "C" fn _start() -> ! {
 mod _m {
     use crate::{arch::paging::enable_mmu, dbgln};
 
-    static mut HART_ID: usize = 0;
-
     fn boot_entry(hartid: usize, fdt: *mut u8, kcode_va: usize) -> ! {
         unsafe {
             clean_bss();
             set_kcode_va_offset(kcode_va);
             set_fdt_ptr(fdt);
-            HART_ID = hartid;
 
             dbgln!("Booting up");
             dbgln!("Entry      : {}", KERNEL_ENTRY_VADDR - kcode_va);
@@ -53,12 +50,7 @@ mod _m {
             dbgln!("fdt        : {}", fdt);
             dbgln!("fdt size   : {}", crate::fdt::fdt_size());
 
-            enable_mmu()
+            enable_mmu(hartid)
         }
     }
-}
-
-#[inline(always)]
-pub fn hartid() -> usize {
-    unsafe { HART_ID }
 }

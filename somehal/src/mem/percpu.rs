@@ -1,8 +1,6 @@
 use core::ptr::addr_of;
 
 use crate::{
-    ArchIf,
-    arch::Arch,
     mem::{boot::kcode_offset, page::page_size, percpu},
     platform::{CpuId, CpuIdx},
     println,
@@ -17,7 +15,7 @@ pub static mut CPU_IDX: CpuIdx = CpuIdx::new(0);
 #[percpu_data]
 pub static mut CPU_ID: CpuId = CpuId::new(0);
 
-pub fn init(cpu_list: impl Iterator<Item = CpuId>) {
+pub fn init(cpu0_id: CpuId, cpu_list: impl Iterator<Item = CpuId>) {
     println!("Init percpu data");
 
     let len = percpu().len().align_up(page_size());
@@ -34,13 +32,11 @@ pub fn init(cpu_list: impl Iterator<Item = CpuId>) {
         let idx_ptr = cpu0_start.add(idx_offset) as *mut CpuIdx;
         let id_ptr = cpu0_start.add(id_offset) as *mut CpuId;
 
-        let main_cpu = Arch::cpu_id();
-
         let mut idx = 0;
         idx_ptr.write_volatile(0.into());
-        id_ptr.write_volatile(main_cpu);
+        id_ptr.write_volatile(cpu0_id);
 
-        println!("cpu{:>6} {:?} init phys: {:p}", idx, main_cpu, cpu0_start);
+        println!("cpu{:>6} {:?} init phys: {:p}", idx, cpu0_id, cpu0_start);
 
         if PERCPU_OTHER_ALL.size > 0 {
             let start = PERCPU_OTHER_ALL.addr.raw();
@@ -48,7 +44,7 @@ pub fn init(cpu_list: impl Iterator<Item = CpuId>) {
             idx += 1;
 
             for id in cpu_list {
-                if id == Arch::cpu_id() {
+                if id == cpu0_id {
                     continue;
                 }
                 println!("cpu{:>6} {:?} init phys: {:#X}", idx, id, phys_iter);

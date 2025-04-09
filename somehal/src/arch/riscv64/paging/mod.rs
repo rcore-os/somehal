@@ -31,7 +31,7 @@ mod _m {
         unsafe { IS_MMU_ENABLED }
     }
 
-    pub fn enable_mmu() -> ! {
+    pub fn enable_mmu(hartid: usize) -> ! {
         unsafe {
             let table = new_boot_table(fdt_size());
             let entry = mmu_entry as *const u8 as usize + kcode_offset();
@@ -42,12 +42,14 @@ mod _m {
             set_page_table(table);
 
             IS_MMU_ENABLED = true;
-
+            asm!("mv   t1,  {}", in(reg) hartid);
             asm!(
-                "la a1, __global_pointer$",
-                "mv  gp, a1",
-                "mv ra,  {entry}",
-                "ret",
+                "la    a1, __global_pointer$",
+                "mv    gp,  a1",
+                "mv    a1,  t1", //TODO 赋值a0会跑飞，待查原因
+                "mv    a2,  {entry}",
+                "jalr  a2",
+                "j .",
                 entry = in(reg) entry,
                 options(nostack, noreturn)
             )

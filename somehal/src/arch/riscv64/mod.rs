@@ -3,7 +3,7 @@ use riscv::{
     register::satp,
 };
 
-use crate::{ArchIf, platform::CpuId};
+use crate::{ArchIf, mem, platform::CpuId};
 
 mod boot;
 mod entry;
@@ -64,6 +64,6 @@ impl ArchIf for Arch {
     fn init_debugcon() {}
 
     fn cpu_id() -> CpuId {
-        boot::hartid().into()
+        mem::cpu_id()
     }
 }

@@ -14,7 +14,7 @@ use crate::{
     vec::ArrayVec,
 };
 
-pub fn mmu_entry() -> ! {
+pub fn mmu_entry(_: usize, hartid: usize) -> ! {
     println!("MMU ready!");
     let offset = kcode_offset();
     unsafe {
@@ -26,6 +26,7 @@ pub fn mmu_entry() -> ! {
     }
 
     println!("{:<12}: {:?}", "Kernel LMA", kernal_load_addr());
+    println!("{:<12}: {:?}", "Hart", hartid);
 
     let cpu_count = handle_err!(fdt::cpu_count(), "could not get cpu count");
 
@@ -41,8 +42,10 @@ pub fn mmu_entry() -> ! {
 
     // SP 移动到物理地址正确位置
     unsafe {
+        asm!("mv  t1, {}", in(reg) hartid);
         asm!(
             "mv  sp, {sp}",
+            "mv  a0, t1",
             "call   {fix_sp}",
             sp = in(reg) sp.raw(),
             fix_sp = sym phys_sp_entry,
@@ -51,7 +54,7 @@ pub fn mmu_entry() -> ! {
     }
 }
 
-fn phys_sp_entry() -> ! {
+fn phys_sp_entry(hartid: usize) -> ! {
     println!("SP moved");
     let mut rsv = ArrayVec::<_, 4>::new();
 
@@ -59,7 +62,7 @@ fn phys_sp_entry() -> ! {
         let _ = rsv.try_push(r);
     }
 
-    setup_memory_regions(rsv, fdt::cpu_list().unwrap());
+    setup_memory_regions(hartid.into(), rsv, fdt::cpu_list().unwrap());
 
     println!("Memory regions setup done!");
 

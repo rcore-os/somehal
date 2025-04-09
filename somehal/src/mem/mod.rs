@@ -114,6 +114,7 @@ pub(crate) fn setup_memory_main(memories: impl Iterator<Item = PhysMemory>, cpu_
 }
 
 pub(crate) fn setup_memory_regions(
+    cpu0_id: CpuId,
     rsv: impl Iterator<Item = MemRegion>,
     cpu_list: impl Iterator<Item = CpuId>,
 ) {
@@ -140,7 +141,7 @@ pub(crate) fn setup_memory_regions(
     };
 
     unsafe { (*PERCPU_OTHER_ALL.get()).replace(percpu_all) };
-    percpu::init(cpu_list);
+    percpu::init(cpu0_id, cpu_list);
 
     mem_region_add(MemRegion {
         virt_start: percpu().as_ptr().into(),
