@@ -121,8 +121,8 @@ mod _m {
                 );
                 unsafe {
                     asm!(
-                    "adr      x2, {}",
-                    "msr elr_el3, x2",
+                    "adr    x2, {}",
+                    "msr    elr_el3, x2",
                      sym primary_entry
                         );
                 }
