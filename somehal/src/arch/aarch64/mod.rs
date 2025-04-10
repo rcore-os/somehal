@@ -4,6 +4,7 @@ use kmem::paging::TableGeneric;
 use crate::{ArchIf, platform::CpuId};
 
 mod boot;
+mod cache;
 mod context;
 pub mod debug;
 mod entry;

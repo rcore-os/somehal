@@ -41,6 +41,7 @@ mod _m {
 
     use aarch64_cpu::{asm::barrier, registers::*};
 
+    use crate::arch::cache::{DcacheOp, dcache_all};
     use crate::arch::paging::enable_mmu;
     use crate::consts::KERNEL_STACK_SIZE;
     use crate::dbgln;
@@ -81,6 +82,7 @@ mod _m {
 
     fn rust_boot(kcode_va: usize, fdt: *mut u8) -> ! {
         unsafe {
+            dcache_all(DcacheOp::CleanAndInvalidate);
             clean_bss();
             enable_fp();
             set_kcode_va_offset(kcode_va);
