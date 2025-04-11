@@ -22,6 +22,10 @@ use crate::{
 
 pub fn mmu_entry() -> ! {
     debug::init();
+
+    let c = pie_boot::add3333(1, 3);
+    println!("c = {}", c);
+
     println!("MMU ready!");
     println!(
         "{:<12}: {:#X}",

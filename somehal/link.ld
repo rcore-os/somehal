@@ -8,10 +8,12 @@ SECTIONS
     BootText : {
         KEEP(*(.text.boot.header))
         KEEP(*(.text.boot*))
+        *pie_boot-*.o(.text*)
     }
     BootData : ALIGN(4K) {
         KEEP(*(.data.boot.table))
         KEEP(*(.data.boot*))
+        *pie_boot-*.o(.data*)
     }
 
     text : ALIGN(4K) {
