@@ -36,6 +36,8 @@ unsafe extern "C" fn _start() -> ! {
 
 #[link_boot::link_boot]
 mod _m {
+    use core::arch::asm;
+
     use crate::{arch::paging::enable_mmu, dbgln};
 
     fn boot_entry(hartid: usize, fdt: *mut u8, kcode_va: usize) -> ! {
@@ -43,6 +45,18 @@ mod _m {
             clean_bss();
             set_kcode_va_offset(kcode_va);
             set_fdt_ptr(fdt);
+
+            let start_vma: usize;
+            asm!("
+            .option pic
+            la  {0}, __start_BootText", out(reg) start_vma);
+            dbgln!("Start      : {}", start_vma);
+            let start_lma: usize;
+            asm!("
+            la  {0}, __start_BootText", out(reg) start_lma);
+            dbgln!("Start LMA  : {}", start_lma);
+
+
 
             dbgln!("Booting up");
             dbgln!("Entry      : {}", KERNEL_ENTRY_VADDR - kcode_va);

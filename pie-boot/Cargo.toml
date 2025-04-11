@@ -9,5 +9,14 @@ keywords.workspace = true
 license.workspace = true
 repository.workspace = true
 
+[features]
+vm = []
+early-debug = ["any-uart", "fdt-parser"]
+
+
 [dependencies]
 
+[target.'cfg(target_arch = "aarch64")'.dependencies]
+aarch64-cpu = "10.0"
+any-uart = { version = "0.2", optional = true }
+fdt-parser = { version = "0.4", optional = true }

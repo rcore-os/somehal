@@ -20,11 +20,11 @@ use crate::{
     vec::ArrayVec,
 };
 
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn __vma_relocate_entry(kcode_offset: usize, dtb: *mut u8) {}
+
 pub fn mmu_entry() -> ! {
     debug::init();
-
-    let c = pie_boot::add3333(1, 3);
-    println!("c = {}", c);
 
     println!("MMU ready!");
     println!(

@@ -85,6 +85,7 @@ mod _m {
             dcache_all(DcacheOp::CleanAndInvalidate);
             clean_bss();
             enable_fp();
+
             set_kcode_va_offset(kcode_va);
             set_fdt_ptr(fdt);
 
@@ -96,6 +97,7 @@ mod _m {
             dbgln!("Current EL : {}", CurrentEL.read(CurrentEL::EL));
             dbgln!("fdt        : {}", fdt);
             dbgln!("fdt size   : {}", crate::fdt::fdt_size());
+
         }
         enable_mmu()
     }
