@@ -13,7 +13,7 @@ SECTIONS
     BootData : ALIGN(4K) {
         KEEP(*(.data.boot.table))
         KEEP(*(.data.boot*))
-        *pie_boot-*.o(.data*)
+        *pie_boot-*.o(.data* .bss* .sbss* COMMON)
     }
 
     text : ALIGN(4K) {
