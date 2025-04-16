@@ -16,24 +16,7 @@ use kmem::region::*;
 
 use crate::mem::{MemRegion, boot::kcode_offset};
 
-#[link_boot::link_boot]
-mod _m {
-    use fdt_parser::FdtHeader;
-
-    static mut FDT_ADDR: usize = 0;
-
-    pub(crate) fn fdt_size() -> usize {
-        let ptr = if let Some(ptr) = NonNull::new(fdt_ptr()) {
-            ptr
-        } else {
-            return 0;
-        };
-
-        let header = early_err!(FdtHeader::from_ptr(ptr));
-
-        header.total_size()
-    }
-}
+static mut FDT_ADDR: usize = 0;
 
 pub fn find_memory() -> Result<PhysMemoryArray, FdtError<'static>> {
     let mut mems = PhysMemoryArray::new();

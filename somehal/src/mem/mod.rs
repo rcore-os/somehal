@@ -295,9 +295,9 @@ fn_link_section!(percpu);
 #[inline(always)]
 pub(crate) fn link_section_end() -> *const u8 {
     unsafe extern "C" {
-        fn __stack_bottom();
+        fn __boot_stack_bottom();
     }
-    __stack_bottom as _
+    __boot_stack_bottom as _
 }
 
 #[inline(always)]

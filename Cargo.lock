@@ -341,23 +341,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
 
 [[package]]
-name = "page-table-arm"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2ce2c42338660c47a35e7b2940dcccbe6612a4a0aa0485ecdf4e23aa8a2a1158"
-dependencies = [
- "aarch64-cpu",
- "bitflags 2.9.0",
- "log",
-]
-
-[[package]]
 name = "page-table-generic"
 version = "0.6.0"
 dependencies = [
  "bitflags 2.9.0",
  "env_logger",
- "link-boot",
  "log",
  "num-align 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
@@ -369,6 +357,24 @@ name = "paste"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
+
+[[package]]
+name = "pie-boot"
+version = "0.1.0"
+dependencies = [
+ "aarch64-cpu",
+ "any-uart",
+ "bitflags 2.9.0",
+ "fdt-parser",
+ "kmem",
+ "page-table-generic",
+ "prettyplease",
+ "quote",
+ "riscv",
+ "sbi-rt",
+ "somehal-macros",
+ "syn",
+]
 
 [[package]]
 name = "platform-test"
@@ -577,7 +583,7 @@ dependencies = [
  "kmem",
  "link-boot",
  "log",
- "page-table-arm",
+ "pie-boot",
  "prettyplease",
  "quote",
  "riscv",

@@ -12,7 +12,8 @@
             "program": "${workspaceFolder}/target/kernel.elf",
             "miDebuggerPath": "gdb-multiarch",
             "cwd": "${workspaceRoot}",
-            "preLaunchTask": "qemu debug aarch64"
+            "preLaunchTask": "qemu debug aarch64",
+            "stopAtConnect": true
         },
         {
             "type": "cppdbg",
