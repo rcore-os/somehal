@@ -13,10 +13,20 @@ repository.workspace = true
 vm = []
 early-debug = ["any-uart", "fdt-parser"]
 
-
 [dependencies]
+page-table-generic = { version = "0.6", path = "../page-table-generic" }
+somehal-macros = { version = "0.1", path = "../somehal-macros" }
+bitflags = "2.9"
+kmem = { version = "0.1", path = "../kmem" }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "10.0"
 any-uart = { version = "0.2", optional = true }
 fdt-parser = { version = "0.4", optional = true }
+
+
+
+[build-dependencies]
+prettyplease = "0.2"
+quote = "1.0"
+syn = "2.0"

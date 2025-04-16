@@ -4,8 +4,8 @@ version.workspace = true
 edition.workspace = true
 
 [features]
-vm = []
-early-debug = []
+vm = ["pie-boot/vm"]
+early-debug = ["pie-boot/early-debug"]
 
 [dependencies]
 somehal-macros = { path = "../somehal-macros" }

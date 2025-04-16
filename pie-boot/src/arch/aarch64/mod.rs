@@ -1,39 +1,75 @@
 use core::arch::{asm, naked_asm};
 
-use aarch64_cpu::{asm::barrier, registers::*};
+use crate::dbgln;
+use aarch64_cpu::{
+    asm::{barrier, wfe},
+    registers::*,
+};
+use mmu::enable_mmu;
+use page_table_generic::TableGeneric;
 
-use crate::clean_bss;
+use crate::{archif::ArchIf, clean_bss};
 
 mod mmu;
-#[cfg(feature="early-debug")]
-mod debug;
+
+pub use mmu::Table;
 
 #[naked]
 /// The entry point of the kernel.
-pub extern "C" fn primary_entry(_fdt_addr: *mut u8) -> usize {
+pub extern "C" fn primary_entry(_fdt_addr: *mut u8) -> ! {
     unsafe {
         naked_asm!(
             "MOV      x19, x0",
+            "ADRP     x1,  __boot_stack_bottom",
+            "ADD      x1, x1, :lo12:__boot_stack_bottom",
+            "ADD      x1, x1, {stack_size}",
+            "MOV      sp, x1",
             "BL       {switch_to_elx}",
-            "LDR      x0,  =__vma_relocate_entry",
-            "ADRP     x1,  __vma_relocate_entry",
-            "ADD      x1, x1, :lo12:__vma_relocate_entry",
-            "SUB      x0, x0, x1",
-            "MOV      x1,  x19",
+            "MOV      x0,  x19",
             "BL       {entry}",
+            "B        .",
+            stack_size = const crate::config::STACK_SIZE,
             switch_to_elx = sym switch_to_elx,
             entry = sym rust_boot,
         )
     }
 }
 
-fn rust_boot(kcode_offset: usize, fdt_addr: *mut u8) -> ! {
+fn rust_boot(fdt_addr: *mut u8) -> ! {
     unsafe {
         clean_bss();
         enable_fp();
 
-        asm!("", options(noreturn))
+        #[cfg(early_debug)]
+        crate::debug::fdt::init_debugcon(fdt_addr);
+
+        let lma = entry_lma();
+        let vma = entry_vma();
+        let kcode_offset = vma - lma;
+
+        dbgln!("Booting up");
+        dbgln!("Entry  LMA : {}", lma);
+        dbgln!("Entry  VMA : {}", vma);
+        dbgln!("Code offset: {}", kcode_offset);
+        dbgln!("Current EL : {}", CurrentEL.read(CurrentEL::EL));
+        dbgln!("fdt        : {}", fdt_addr);
+
+        enable_mmu(kcode_offset, fdt_addr)
     }
+}
+#[naked]
+extern "C" fn entry_lma() -> usize {
+    unsafe {
+        naked_asm!(
+            "ADRP     x0,  __vma_relocate_entry",
+            "ADD      x0, x0, :lo12:__vma_relocate_entry",
+            "ret"
+        )
+    }
+}
+#[naked]
+extern "C" fn entry_vma() -> usize {
+    unsafe { naked_asm!("LDR      x0,  =__vma_relocate_entry", "ret") }
 }
 
 /// Switch to EL1.
@@ -133,4 +169,25 @@ fn switch_to_elx() {
 fn enable_fp() {
     CPACR_EL1.write(CPACR_EL1::FPEN::TrapNothing);
     barrier::isb(barrier::SY);
+}
+
+pub struct Arch;
+
+impl ArchIf for Arch {
+    fn early_debug_put(byte: u8) {
+        #[cfg(early_debug)]
+        crate::debug::write_byte(byte);
+    }
+
+    fn wait_for_event() {
+        wfe();
+    }
+
+    type PageTable = Table;
+
+    fn new_pte_with_config(
+        config: kmem::region::MemConfig,
+    ) -> <Self::PageTable as TableGeneric>::PTE {
+        mmu::new_pte_with_config(config)
+    }
 }

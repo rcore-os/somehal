@@ -16,13 +16,19 @@ mod arch;
 #[path = "arch/riscv64/mod.rs"]
 mod arch;
 
-#[cfg(feature = "early-debug")]
-mod early_debug;
+#[macro_use]
+pub(crate) mod console;
+#[cfg(early_debug)]
+pub(crate) mod debug;
+
+mod archif;
+mod config;
+mod mem;
 mod once_static;
 
 pub use arch::*;
 
-fn bss_mut() -> &'static mut [u8] {
+unsafe fn clean_bss() {
     unsafe extern "C" {
         fn __start_bss();
         fn __stop_bss();
@@ -30,11 +36,18 @@ fn bss_mut() -> &'static mut [u8] {
     unsafe {
         let start = __start_bss as *mut u8;
         let end = __stop_bss as *mut u8;
-
-        core::slice::from_raw_parts_mut(start, end as usize - start as usize)
+        let len = end as usize - start as usize;
+        for i in 0..len {
+            start.add(i).write(0);
+        }
     }
 }
 
-unsafe fn clean_bss() {
-    bss_mut().fill(0);
+#[cfg(early_debug)]
+pub(crate) use somehal_macros::dbgln;
+
+#[cfg(not(early_debug))]
+#[macro_export]
+macro_rules! dbgln {
+    ($($arg:tt)*) => {};
 }

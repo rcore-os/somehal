@@ -21,7 +21,14 @@ use crate::{
 };
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn __vma_relocate_entry(kcode_offset: usize, dtb: *mut u8) {}
+pub unsafe extern "C" fn __vma_relocate_entry(kcode_offset: usize, dtb: *mut u8) {
+    unsafe {
+        fdt::set_fdt_ptr(dtb);
+    }
+    debug::init();
+
+    println!("MMU ready!");
+}
 
 pub fn mmu_entry() -> ! {
     debug::init();

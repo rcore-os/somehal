@@ -365,7 +365,14 @@ version = "0.1.0"
 dependencies = [
  "aarch64-cpu",
  "any-uart",
+ "bitflags 2.9.0",
  "fdt-parser",
+ "kmem",
+ "page-table-generic",
+ "prettyplease",
+ "quote",
+ "somehal-macros",
+ "syn",
 ]
 
 [[package]]

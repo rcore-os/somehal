@@ -2,6 +2,9 @@ use core::cell::UnsafeCell;
 
 use any_uart::Sender;
 
+#[cfg(fdt)]
+pub mod fdt;
+
 static UART: UartWapper = UartWapper(UnsafeCell::new(None));
 
 struct UartWapper(UnsafeCell<Option<Sender>>);
@@ -19,13 +22,6 @@ impl UartWapper {
     #[allow(clippy::mut_from_ref)]
     fn get(&self) -> &mut Sender {
         unsafe { &mut *self.0.get().as_mut().unwrap().as_mut().unwrap() }
-    }
-}
-
-pub(crate) fn init() {
-    unsafe {
-        let (uart, debug_region) = fdt_parser::init_debugcon().unwrap();
-        set_uart(uart);
     }
 }
 

@@ -47,7 +47,7 @@ SECTIONS
         . = ALIGN(4K);
     }
 
-    __stack_bottom = .;
+    __boot_stack_bottom = .;
 
 	/DISCARD/ : {
         *(.comment) *(.gnu*) *(.note*) *(.eh_frame*)
