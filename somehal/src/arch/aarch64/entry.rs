@@ -13,9 +13,7 @@ use crate::{
     fdt::{self, save_fdt},
     handle_err,
     mem::{
-        boot::{kcode_offset, set_kcode_va_offset},
-        kernal_load_start_link_addr,
-        page::new_mapped_table,
+        boot::set_kcode_va_offset, kernal_load_start_link_addr, page::new_mapped_table,
         setup_memory_main, setup_memory_regions, stack_top_cpu0,
     },
     println,
@@ -38,41 +36,6 @@ pub unsafe extern "C" fn __vma_relocate_entry(kcode_offset: usize, dtb: *mut u8)
         kernal_load_start_link_addr() - kcode_offset
     );
 
-    println!("{:<12}: {}", "Current EL", CurrentEL.read(CurrentEL::EL));
-
-    let cpu_count = handle_err!(fdt::cpu_count(), "could not get cpu count");
-
-    println!("{:<12}: {}", "CPU count", cpu_count);
-
-    let memories = handle_err!(fdt::find_memory(), "could not get memories");
-
-    setup_memory_main(memories, cpu_count);
-
-    let sp = stack_top_cpu0();
-
-    println!("{:<12}: {:?}", "Stack top", sp);
-
-    // SP 移动到物理地址正确位置
-    unsafe {
-        asm!(
-            "MOV SP, {sp}",
-            "B   {fix_sp}",
-            sp = in(reg) sp.raw(),
-            fix_sp = sym phys_sp_entry,
-            options(noreturn, nostack),
-        )
-    }
-}
-
-pub fn mmu_entry() -> ! {
-    debug::init();
-
-    println!("MMU ready!");
-    println!(
-        "{:<12}: {:#X}",
-        "Kernel LMA",
-        kernal_load_start_link_addr() - kcode_offset()
-    );
     println!("{:<12}: {}", "Current EL", CurrentEL.read(CurrentEL::EL));
 
     let cpu_count = handle_err!(fdt::cpu_count(), "could not get cpu count");
