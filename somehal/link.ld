@@ -7,16 +7,18 @@ SECTIONS
     . = %KERNEL_VADDR% ;
     BootText : {
         KEEP(*(.text.boot.header))
-        KEEP(*(.text.boot*))
+        /* KEEP(*(.text.boot*)) */
         *pie_boot-*.o(.text*)
     }
     BootData : ALIGN(4K) {
-        KEEP(*(.data.boot.table))
-        KEEP(*(.data.boot*))
+        /* KEEP(*(.data.boot.table)) */
+        /* KEEP(*(.data.boot*)) */
         *pie_boot-*.o(.rodata* .got* .data* .sdata* .bss* .sbss* COMMON)
     }
 
     text : ALIGN(4K) {
+        *any_uart-*.o(.text*)
+        *page_table_generic-*.o(.text*)
         *(.text .text.*)
     } 
 

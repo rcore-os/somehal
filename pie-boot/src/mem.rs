@@ -100,7 +100,7 @@ pub fn new_boot_table(mut rsv_space: usize, kcode_offset: usize) -> PhysAddr {
         ));
     }
 
-    dbgln!("Table size: {}", tmp_alloc.iter.raw());
+    dbgln!("Table size: {}", tmp_alloc.used());
 
     table.paddr()
 }
@@ -129,6 +129,10 @@ impl LineAllocator {
         self.iter += layout.size().align_up(layout.align());
 
         Some(start)
+    }
+
+    pub fn used(&self) -> usize {
+        self.iter - self.start
     }
 }
 

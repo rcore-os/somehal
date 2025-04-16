@@ -24,7 +24,6 @@ pub(crate) mod debug;
 mod archif;
 mod config;
 mod mem;
-mod once_static;
 
 pub use arch::*;
 

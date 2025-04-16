@@ -4,6 +4,66 @@ use aarch64_cpu::registers::*;
 use kmem::region::AccessFlags;
 use page_table_generic::{PTEGeneric, PhysAddr, TableGeneric, VirtAddr};
 
+use super::primary_entry;
+
+pub fn switch_to_elx() {
+    use core::arch::asm;
+
+    SPSel.write(SPSel::SP::ELx);
+    SP_EL0.set(0);
+    let current_el = CurrentEL.read(CurrentEL::EL);
+    if current_el >= 2 {
+        if current_el == 3 {
+            // Set EL2 to 64bit and enable the HVC instruction.
+            SCR_EL3.write(
+                SCR_EL3::NS::NonSecure + SCR_EL3::HCE::HvcEnabled + SCR_EL3::RW::NextELIsAarch64,
+            );
+            // Set the return address and exception level.
+            SPSR_EL3.write(
+                SPSR_EL3::M::EL1h
+                    + SPSR_EL3::D::Masked
+                    + SPSR_EL3::A::Masked
+                    + SPSR_EL3::I::Masked
+                    + SPSR_EL3::F::Masked,
+            );
+            unsafe {
+                asm!(
+                "adr    x2, {}",
+                "mov    x0, x19",
+                "msr    elr_el3, x2",
+                 sym primary_entry
+                    );
+            }
+        }
+        // Disable EL1 timer traps and the timer offset.
+        CNTHCTL_EL2.modify(CNTHCTL_EL2::EL1PCEN::SET + CNTHCTL_EL2::EL1PCTEN::SET);
+        CNTVOFF_EL2.set(0);
+        // Set EL1 to 64bit.
+        HCR_EL2.write(HCR_EL2::RW::EL1IsAarch64);
+        // Set the return address and exception level.
+        SPSR_EL2.write(
+            SPSR_EL2::M::EL1h
+                + SPSR_EL2::D::Masked
+                + SPSR_EL2::A::Masked
+                + SPSR_EL2::I::Masked
+                + SPSR_EL2::F::Masked,
+        );
+        unsafe {
+            asm!(
+                "
+            mov     x8, sp
+            msr     sp_el1, x8
+            MOV     x0, x19
+            adr     x2, {}
+            msr     elr_el2, x2
+            eret
+            " , 
+            sym primary_entry
+            )
+        };
+    }
+}
+
 #[inline(always)]
 pub fn flush_tlb(vaddr: Option<VirtAddr>) {
     match vaddr {
@@ -118,10 +178,12 @@ impl Pte {
     const PHYS_ADDR_MASK: usize = 0x0000_ffff_ffff_f000; // bits 12..48
     const MAIR_MASK: usize = 0b111 << 2;
 
+    #[inline(always)]
     fn as_flags(&self) -> PteFlags {
         PteFlags::from_bits_truncate(self.0)
     }
 
+    #[inline(always)]
     fn set_mair_idx(&mut self, idx: usize) {
         self.0 &= !Self::MAIR_MASK;
         self.0 |= idx << 2;
@@ -129,19 +191,23 @@ impl Pte {
 }
 
 impl PTEGeneric for Pte {
+    #[inline(always)]
     fn valid(&self) -> bool {
         self.as_flags().contains(PteFlags::VALID)
     }
 
+    #[inline(always)]
     fn paddr(&self) -> PhysAddr {
         (self.0 & Self::PHYS_ADDR_MASK).into()
     }
 
+    #[inline(always)]
     fn set_paddr(&mut self, paddr: PhysAddr) {
         self.0 &= !Self::PHYS_ADDR_MASK;
         self.0 |= paddr.raw() & Self::PHYS_ADDR_MASK;
     }
 
+    #[inline(always)]
     fn set_valid(&mut self, valid: bool) {
         if valid {
             self.0 |= PteFlags::VALID.bits();
@@ -150,10 +216,12 @@ impl PTEGeneric for Pte {
         }
     }
 
+    #[inline(always)]
     fn is_huge(&self) -> bool {
         !self.as_flags().contains(PteFlags::NON_BLOCK)
     }
 
+    #[inline(always)]
     fn set_is_huge(&mut self, is_block: bool) {
         if is_block {
             self.0 &= !PteFlags::NON_BLOCK.bits();

@@ -346,7 +346,6 @@ version = "0.6.0"
 dependencies = [
  "bitflags 2.9.0",
  "env_logger",
- "link-boot",
  "log",
  "num-align 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
