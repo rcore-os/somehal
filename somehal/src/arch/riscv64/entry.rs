@@ -6,31 +6,39 @@ use riscv::register::satp;
 use crate::{
     fdt, handle_err,
     mem::{
-        boot::kcode_offset, kernal_load_start_link_addr, page::new_mapped_table, setup_memory_main,
-        setup_memory_regions, stack_top_cpu0,
+        boot::set_kcode_va_offset, kernal_load_start_link_addr, page::new_mapped_table,
+        setup_memory_main, setup_memory_regions, stack_top_cpu0,
     },
     println,
     vec::ArrayVec,
 };
-
-pub fn mmu_entry(_: usize, hartid: usize) -> ! {
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn __vma_relocate_entry(
+    _: usize,
+    hartid: usize,
+    kcode_offset: usize,
+    dtb: *mut u8,
+) {
     println!("MMU ready!");
-    let offset = kcode_offset();
     unsafe {
         asm!(
             "add  gp, gp, {offset}",
-            offset = in(reg) offset,
+            offset = in(reg) kcode_offset,
             options(nostack)
         );
+        set_kcode_va_offset(kcode_offset);
+        fdt::set_fdt_ptr(dtb);
     }
 
     println!(
         "{:<12}: {:#X}",
         "Kernel LMA",
-        kernal_load_start_link_addr() - kcode_offset()
+        kernal_load_start_link_addr() - kcode_offset
     );
 
     println!("{:<12}: {:?}", "Hart", hartid);
+
+    println!("{:<12}: {:?}", "FDT", dtb);
 
     let cpu_count = handle_err!(fdt::cpu_count(), "could not get cpu count");
 

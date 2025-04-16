@@ -18,8 +18,11 @@ mod arch;
 
 #[macro_use]
 pub(crate) mod console;
-#[cfg(early_debug)]
+#[cfg(early_uart)]
 pub(crate) mod debug;
+
+#[cfg(fdt)]
+pub(crate) mod fdt;
 
 mod archif;
 mod config;

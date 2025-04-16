@@ -370,6 +370,8 @@ dependencies = [
  "page-table-generic",
  "prettyplease",
  "quote",
+ "riscv",
+ "sbi-rt",
  "somehal-macros",
  "syn",
 ]

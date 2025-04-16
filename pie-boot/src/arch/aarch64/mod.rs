@@ -73,7 +73,7 @@ fn rust_boot(fdt_addr: *mut u8) -> ! {
 fn enable_mmu(va: usize, fdt: *mut u8) -> ! {
     setup_table_regs();
     #[cfg(fdt)]
-    let fdt_size = crate::debug::fdt::fdt_size(fdt);
+    let fdt_size = crate::fdt::fdt_size(fdt);
     #[cfg(not(fdt))]
     let fdt_size = 0;
 

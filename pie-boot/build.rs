@@ -12,27 +12,29 @@ const DEFALUT_PAGE_SIZE: usize = 0x1000;
 fn main() {
     println!("cargo::rustc-check-cfg=cfg(fdt)");
     println!("cargo::rustc-check-cfg=cfg(early_debug)");
+    println!("cargo::rustc-check-cfg=cfg(early_uart)");
     println!("cargo::rustc-check-cfg=cfg(hard_float)");
 
     let target = std::env::var("TARGET").unwrap();
 
     let mut need_fdt = false;
+    let mut early_uart = false;
 
-    match target.as_str() {
-        "aarch64-unknown-none" => {
-            println!("cargo::rustc-cfg=hard_float");
-        }
-        _ => panic!("unsupported target"),
+    if target.as_str() == "aarch64-unknown-none" {
+        println!("cargo::rustc-cfg=hard_float");
     }
 
-    let mut early_debug = std::env::var("CARGO_FEATURE_EARLY_DEBUG").is_ok();
+    let early_debug = std::env::var("CARGO_FEATURE_EARLY_DEBUG").is_ok();
 
     if target.contains("riscv") {
-        early_debug = false;
+        need_fdt = true;
     }
 
     if target.contains("aarch64-") && early_debug {
         need_fdt = true;
+        if early_debug {
+            early_uart = true;
+        }
     }
 
     if early_debug {
@@ -41,6 +43,10 @@ fn main() {
 
     if need_fdt {
         println!("cargo::rustc-cfg=fdt");
+    }
+
+    if early_uart {
+        println!("cargo::rustc-cfg=early_uart");
     }
 
     let stack_size = if let Ok(s) = std::env::var("KERNEL_STACK_SIZE") {
