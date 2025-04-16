@@ -58,19 +58,23 @@ pub struct PageTableRef<'a, T: TableGeneric> {
 }
 
 impl<'a, T: TableGeneric> PageTableRef<'a, T> {
+    #[inline(always)]
     /// Creates a new page table reference.
     pub fn create_empty(access: &mut impl Access) -> PagingResult<Self> {
         Self::new_with_level(T::LEVEL, access)
     }
+
     /// New page table and returns a reference to it.
     ///
     /// `level` is level of this page, should from 1 to up.
+    #[inline(always)]
     pub fn new_with_level(level: usize, access: &mut impl Access) -> PagingResult<Self> {
         assert!(level > 0);
         let addr = unsafe { Self::alloc_table(access)? };
         Ok(PageTableRef::from_addr(addr, level))
     }
 
+    #[inline(always)]
     pub fn from_addr(addr: PhysAddr, level: usize) -> Self {
         let walk = PageWalk::new(level);
         Self {
@@ -274,6 +278,7 @@ impl<'a, T: TableGeneric> PageTableRef<'a, T> {
         s[idx]
     }
 
+    #[inline(always)]
     unsafe fn alloc_table(access: &mut impl Access) -> PagingResult<PhysAddr> {
         let page_size = T::PAGE_SIZE;
         let layout = unsafe { Layout::from_size_align_unchecked(page_size, page_size) };

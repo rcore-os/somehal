@@ -32,7 +32,7 @@ fn kernal_kcode_start() -> usize {
 pub fn new_boot_table(mut rsv_space: usize, kcode_offset: usize) -> PhysAddr {
     rsv_space = rsv_space.align_up(PAGE_SIZE);
 
-    dbgln!("Rsv space: {}", rsv_space);
+    dbgln!("Rsv space      : {}", rsv_space);
 
     let code_end_phys = PhysAddr::from(link_section_end() as usize);
 
@@ -59,7 +59,7 @@ pub fn new_boot_table(mut rsv_space: usize, kcode_offset: usize) -> PhysAddr {
         let size = (code_end - code_start).max(align);
 
         dbgln!(
-            "code : [{}, {}) -> [{}, {})",
+            "code           : [{}, {}) -> [{}, {})",
             code_start,
             code_start + size,
             code_start_phys,
@@ -83,7 +83,7 @@ pub fn new_boot_table(mut rsv_space: usize, kcode_offset: usize) -> PhysAddr {
 
         let size = table.entry_size() * 12;
 
-        dbgln!("eq   : [{}, {})", 0usize, size);
+        dbgln!("eq             : [{}, {})", 0usize, size);
         early_err!(table.map(
             MapConfig {
                 vaddr: 0.into(),
@@ -100,7 +100,7 @@ pub fn new_boot_table(mut rsv_space: usize, kcode_offset: usize) -> PhysAddr {
         ));
     }
 
-    dbgln!("Table size: {}", tmp_alloc.used());
+    dbgln!("Table size     : {}", tmp_alloc.used());
 
     table.paddr()
 }

@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(not(all(test, target_os = "none")), no_std)]
 #![feature(naked_functions)]
 #![feature(concat_idents)]
 #![feature(used_with_arg)]

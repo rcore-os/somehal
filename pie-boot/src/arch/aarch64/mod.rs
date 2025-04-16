@@ -60,11 +60,11 @@ fn rust_boot(fdt_addr: *mut u8) -> ! {
         let kcode_offset = vma - lma;
 
         dbgln!("Booting up");
-        dbgln!("Entry  LMA : {}", lma);
-        dbgln!("Entry  VMA : {}", vma);
-        dbgln!("Code offset: {}", kcode_offset);
-        dbgln!("Current EL : {}", CurrentEL.read(CurrentEL::EL));
-        dbgln!("fdt        : {}", fdt_addr);
+        dbgln!("Entry  LMA     : {}", lma);
+        dbgln!("Entry  VMA     : {}", vma);
+        dbgln!("Code offset    : {}", kcode_offset);
+        dbgln!("Current EL     : {}", CurrentEL.read(CurrentEL::EL));
+        dbgln!("Fdt            : {}", fdt_addr);
 
         enable_mmu(kcode_offset, fdt_addr)
     }
