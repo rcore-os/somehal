@@ -35,7 +35,7 @@ pub extern "C" fn __header() -> ! {
 
 global_asm!(
     include_str!("boot.asm"),
-    // entry = sym primary_entry,
+    entry = sym primary_entry,
 );
 
 /// The entry point of the kernel.
