@@ -2,19 +2,20 @@ use quote::quote;
 use std::{io::Write, path::PathBuf};
 
 const MB: usize = 1024 * 1024;
+const GB: usize = 1024 * MB;
 
 // 2MiB stack size per hart
 const DEFAULT_KERNEL_STACK_SIZE: usize = 2 * MB;
 
 // const ENTRY_VADDR: u64 = 0x40200000;
 const ENTRY_VADDR: u64 = 0xffff_e000_0000_0000;
-// const ENTRY_VADDR_RISCV64: u64 = 0xffff_ffc0_0000_0000;
-const ENTRY_VADDR_RISCV64: u64 = 0xffff_e000_0000_0000;
+// const ENTRY_VADDR_SV39: u64 = 0xffff_ffc0_0000_0000;
 // const ENTRY_VADDR_RISCV64: u64 = 0x80200000;
 
 struct Config {
     entry_vaddr: u64,
     stack_size: usize,
+    addr_bits: usize,
 }
 
 fn main() {
@@ -24,6 +25,7 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rustc-link-search={}", out_dir().display());
 
+    println!("cargo::rustc-check-cfg=cfg(addr_bits, values(\"39\", \"48\", \"57\", \"64\"))");
     println!("cargo::rustc-check-cfg=cfg(hard_float)");
 
     if std::env::var("TARGET").unwrap() == "aarch64-unknown-none" {
@@ -33,13 +35,20 @@ fn main() {
     let mut config = Config {
         entry_vaddr: ENTRY_VADDR,
         stack_size: DEFAULT_KERNEL_STACK_SIZE,
+        addr_bits: 48,
     };
 
-    let arch = Arch::default();
-
-    if matches!(arch, Arch::Riscv64) {
-        config.entry_vaddr = ENTRY_VADDR_RISCV64;
+    if std::env::var("CARGO_FEATURE_SV39").is_ok() {
+        println!("cargo::rustc-cfg=addr_bits=\"39\"");
+        config.addr_bits = 39;
+    } else {
+        println!("cargo::rustc-cfg=addr_bits=\"48\"");
     }
+
+    let addr_base: usize = !((1 << config.addr_bits) - 1);
+    config.entry_vaddr = (addr_base + (1 << config.addr_bits) / 16 * 14) as _;
+
+    let arch = Arch::default();
 
     gen_const(&config);
 
@@ -93,12 +102,10 @@ impl Arch {
 }
 
 fn gen_const(config: &Config) {
-    let entry_vaddr = config.entry_vaddr as usize;
     let stack_size = config.stack_size;
 
     let const_content = quote! {
         pub const KERNEL_STACK_SIZE: usize = #stack_size;
-        pub const KERNEL_ENTRY_VADDR: usize = #entry_vaddr;
     };
 
     let mut file =

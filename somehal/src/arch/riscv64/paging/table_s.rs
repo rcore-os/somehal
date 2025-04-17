@@ -88,9 +88,13 @@ mod _m {
 
     impl TableGeneric for Table {
         type PTE = Pte;
-        // const LEVEL: usize = 3;
+
+        #[cfg(addr_bits = "39")]
+        const LEVEL: usize = 3;
+        #[cfg(addr_bits = "39")]
+        const VALID_BITS: usize = 39;
+
         const MAX_BLOCK_LEVEL: usize = 3;
-        // const VALID_BITS: usize = 39;
 
         fn flush(vaddr: Option<VirtAddr>) {
             Arch::flush_tlb(vaddr);

@@ -1,6 +1,9 @@
 use core::arch::asm;
 
-use kmem::{VirtAddr, region::AccessFlags};
+use kmem::{
+    VirtAddr,
+    region::{ADDR_BITS, AccessFlags, PAGE_LEVELS},
+};
 use page_table_generic::*;
 use riscv::{
     asm::{sfence_vma, sfence_vma_all},
@@ -20,7 +23,15 @@ fn flush_tlb(vaddr: Option<kmem::VirtAddr>) {
 }
 #[inline(always)]
 fn set_page_table(addr: PhysAddr) {
-    unsafe { satp::set(satp::Mode::Sv48, 0, addr.raw() >> 12) };
+    let mode = if ADDR_BITS == 39 {
+        satp::Mode::Sv39
+    } else {
+        satp::Mode::Sv48
+    };
+
+    unsafe { satp::set(mode, 0, addr.raw() >> 12) };
+
+    dbgln!("satp ok");
     flush_tlb(None);
 }
 
@@ -30,8 +41,14 @@ pub fn enable_mmu(hartid: usize, fdt: *mut u8, kcode_offset: usize) -> ! {
 
         let entry = entry_vma();
 
+        let sp: usize;
+        asm!(
+            "mv {0}, sp",
+            out(reg) sp,
+        );
+
         dbgln!("Set kernel table {}", table.raw());
-        dbgln!("Jump to {}", entry);
+        dbgln!("Jump to {}, sp {}", entry, sp);
 
         set_page_table(table);
 
@@ -129,10 +146,10 @@ pub struct Table;
 
 impl TableGeneric for Table {
     type PTE = Pte;
-    // const LEVEL: usize = 3;
-    const MAX_BLOCK_LEVEL: usize = 3;
-    // const VALID_BITS: usize = 39;
+    const LEVEL: usize = PAGE_LEVELS;
+    const VALID_BITS: usize = ADDR_BITS;
 
+    const MAX_BLOCK_LEVEL: usize = 3;
     fn flush(vaddr: Option<VirtAddr>) {
         flush_tlb(vaddr);
     }

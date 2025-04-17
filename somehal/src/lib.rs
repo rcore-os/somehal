@@ -3,6 +3,7 @@
 #![feature(concat_idents)]
 #![feature(used_with_arg)]
 #![feature(cfg_match)]
+#![feature(fn_align)]
 
 #[cfg(target_arch = "aarch64")]
 #[path = "arch/aarch64/mod.rs"]

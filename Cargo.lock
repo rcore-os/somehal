@@ -284,6 +284,9 @@ dependencies = [
  "bitflags 2.9.0",
  "link-boot",
  "page-table-generic",
+ "prettyplease",
+ "quote",
+ "syn",
 ]
 
 [[package]]

@@ -12,6 +12,8 @@ use crate::{
     println,
     vec::ArrayVec,
 };
+
+#[repr(align(0x10))]
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn __vma_relocate_entry(
     _: usize,

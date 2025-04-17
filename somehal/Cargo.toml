@@ -6,6 +6,7 @@ edition.workspace = true
 [features]
 vm = ["pie-boot/vm"]
 early-debug = ["pie-boot/early-debug"]
+sv39 = ["kmem/sv39"]
 
 [dependencies]
 somehal-macros = { path = "../somehal-macros" }

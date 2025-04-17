@@ -1,9 +1,16 @@
+#![allow(unused)]
+
 use core::fmt::Debug;
 
 use crate::{PhysAddr, VirtAddr};
 
-pub const OFFSET_LINER: usize = 0xffff_8000_0000_0000;
-pub const STACK_TOP: usize = 0xffff_f000_0000_0000;
+include!(concat!(env!("OUT_DIR"), "/constant.rs"));
+
+const ADDR_BASE: usize = !((1 << ADDR_BITS) - 1);
+const REGION_ONE: usize = (1 << ADDR_BITS) / 16;
+
+pub const OFFSET_LINER: usize = ADDR_BASE + REGION_ONE * 8;
+pub const STACK_TOP: usize = ADDR_BASE + REGION_ONE * 15;
 
 bitflags::bitflags! {
     #[repr(transparent)]
