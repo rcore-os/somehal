@@ -21,7 +21,6 @@ struct Config {
 fn main() {
     println!("cargo::rustc-link-arg=-Tlink.x");
     println!("cargo::rustc-link-arg=-no-pie");
-    println!("cargo:rerun-if-changed=link.ld");
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rustc-link-search={}", out_dir().display());
 
@@ -84,7 +83,10 @@ fn out_dir() -> PathBuf {
 
 impl Arch {
     fn gen_linker_script(&self, config: &Config) {
+        let mut script = "link.ld";
+
         let output_arch = if matches!(self, Arch::X86_64) {
+            script = "src/arch/x86_64/link.ld";
             "i386:x86-64".to_string()
         } else if matches!(self, Arch::Riscv64) {
             "riscv".to_string() // OUTPUT_ARCH of both riscv32/riscv64 is "riscv"
@@ -92,7 +94,8 @@ impl Arch {
             format!("{:?}", self)
         };
 
-        let ld_content = std::fs::read_to_string("link.ld").unwrap();
+        println!("cargo:rerun-if-changed={}", script);
+        let ld_content = std::fs::read_to_string(script).unwrap();
         let ld_content = ld_content.replace("%ARCH%", &output_arch);
         let ld_content =
             ld_content.replace("%KERNEL_VADDR%", &format!("{:#x}", config.entry_vaddr));
@@ -103,9 +106,11 @@ impl Arch {
 
 fn gen_const(config: &Config) {
     let stack_size = config.stack_size;
+    let entry = config.entry_vaddr as usize;
 
     let const_content = quote! {
         pub const KERNEL_STACK_SIZE: usize = #stack_size;
+        pub const KERNEL_ENTRY_VADDR: usize = #entry;
     };
 
     let mut file =
