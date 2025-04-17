@@ -33,7 +33,8 @@
             "program": "${workspaceFolder}/target/kernel.elf",
             "miDebuggerPath": "gdb-multiarch",
             "cwd": "${workspaceRoot}",
-            "preLaunchTask": "qemu debug riscv64"
+            "preLaunchTask": "qemu debug riscv64",
+            "stopAtConnect": true
         },
     ]
 }

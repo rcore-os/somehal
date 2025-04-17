@@ -58,12 +58,15 @@ pub fn enable_mmu(hartid: usize, fdt: *mut u8, kcode_offset: usize) -> ! {
         asm!(
             "la    a1, __global_pointer$",
             "mv    gp,  a1",
+            // "mv    a0,  zero",
             "mv    a1,  t0", //TODO 赋值a0会跑飞，待查原因
             "mv    a2,  t1",
             "mv    a3,  t2",
-            "mv    t1,  {entry}",
-            "jalr  t1",
-            "j .",
+            "mv    t0,  {entry}",
+            "mv    ra,  t0",
+            "ret",
+            // "jalr  t1",
+            // "j .",
             entry = in(reg) entry,
             options(nostack, noreturn)
         )
@@ -129,7 +132,7 @@ impl PTEGeneric for Pte {
 
     fn set_is_huge(&mut self, b: bool) {
         if !b {
-            self.0 &= !0xff;
+            self.0 &= !((1 << 10) - 1);
             self.0 |= 1;
         }
     }

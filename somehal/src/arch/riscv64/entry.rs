@@ -1,4 +1,4 @@
-use core::arch::asm;
+use core::arch::{asm, naked_asm};
 
 use kmem::region::STACK_TOP;
 use riscv::register::satp;
@@ -13,7 +13,6 @@ use crate::{
     vec::ArrayVec,
 };
 
-#[repr(align(0x10))]
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn __vma_relocate_entry(
     _: usize,
@@ -21,8 +20,8 @@ pub unsafe extern "C" fn __vma_relocate_entry(
     kcode_offset: usize,
     dtb: *mut u8,
 ) {
-    println!("MMU ready!");
     unsafe {
+        println!("MMU ready!");
         asm!(
             "add  gp, gp, {offset}",
             offset = in(reg) kcode_offset,
@@ -38,6 +37,7 @@ pub unsafe extern "C" fn __vma_relocate_entry(
         kernal_load_start_link_addr() - kcode_offset
     );
 
+    println!("{:<12}: {:#X}", "Code offst", kcode_offset);
     println!("{:<12}: {:?}", "Hart", hartid);
 
     println!("{:<12}: {:?}", "FDT", dtb);
