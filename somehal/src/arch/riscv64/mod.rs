@@ -42,7 +42,7 @@ impl ArchIf for Arch {
         paging::new_pte_with_config(config)
     }
 
-    fn set_kernel_table(addr: kmem::PhysAddr) {
+    fn set_kernel_table(_addr: kmem::PhysAddr) {
         todo!()
     }
 
@@ -50,7 +50,7 @@ impl ArchIf for Arch {
         (satp::read().ppn() << 12).into()
     }
 
-    fn set_user_table(addr: kmem::PhysAddr) {
+    fn set_user_table(_addr: kmem::PhysAddr) {
         todo!()
     }
 
