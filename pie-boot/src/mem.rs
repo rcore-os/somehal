@@ -51,6 +51,7 @@ pub fn new_boot_table(mut rsv_space: usize, kcode_offset: usize) -> PhysAddr {
     let mut table = early_err!(Table::create_empty(access));
     unsafe {
         let align = 2 * MB;
+        let align = GB;
 
         let code_start_phys = kernal_kcode_start().align_down(align);
         let code_start = code_start_phys + kcode_offset;
