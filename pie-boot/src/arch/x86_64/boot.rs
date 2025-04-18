@@ -1,5 +1,6 @@
 use core::arch::global_asm;
 
+use kmem::region::KERNEL_START_VADDR;
 use somehal_macros::dbgln;
 use x86_64::registers::control::{Cr0Flags, Cr4Flags};
 use x86_64::registers::model_specific::EferFlags;
@@ -17,7 +18,7 @@ const MULTIBOOT_HEADER_FLAGS: usize = 0x0001_0002;
 /// The magic field should contain this.
 const MULTIBOOT_HEADER_MAGIC: usize = 0x1BADB002;
 
-const KCODE_OFFSET: usize = 0xffff_8000_0000_0000;
+const KCODE_OFFSET: usize = KERNEL_START_VADDR - 0x200000;
 
 /// This should be in EAX.
 pub(super) const MULTIBOOT_BOOTLOADER_MAGIC: usize = 0x2BADB002;

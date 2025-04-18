@@ -2,20 +2,31 @@ use std::{io::Write, path::PathBuf};
 
 use quote::quote;
 
+const MB: usize = 1024 * 1024;
+const DEFAULT_KERNEL_STACK_SIZE: usize = 2 * MB;
+
 fn main() {
     println!("cargo::rustc-check-cfg=cfg(addr_bits, values(\"39\", \"48\", \"57\", \"64\"))");
 
     let mut addr_bits = 48usize;
     let mut page_levels = 4usize;
+    let page_size = 0x1000usize;
+    let stack_size = DEFAULT_KERNEL_STACK_SIZE;
 
     if std::env::var("CARGO_FEATURE_SV39").is_ok() {
         addr_bits = 39;
         page_levels = 3;
     }
 
+    let addr_base: usize = !((1 << addr_bits) - 1);
+    let kernel_start_vaddr = addr_base + (1 << addr_bits) / 16 * 14 + 0x200000;
+
     let const_content = quote! {
         pub const ADDR_BITS: usize = #addr_bits;
         pub const PAGE_LEVELS: usize = #page_levels;
+        pub const KERNEL_START_VADDR: usize = #kernel_start_vaddr;
+        pub const PAGE_SIZE: usize = #page_size;
+        pub const STACK_SIZE: usize = #stack_size;
     };
 
     let mut file =

@@ -45,10 +45,7 @@ fn main() {
     }
 
     let addr_base: usize = !((1 << config.addr_bits) - 1);
-    config.entry_vaddr = (addr_base + (1 << config.addr_bits) / 16 * 14) as _;
-
-    config.entry_vaddr = 0xffff_8000_0020_0000;
-
+    config.entry_vaddr = (addr_base + (1 << config.addr_bits) / 16 * 14 + 0x200000) as _;
 
     let arch = Arch::default();
 

@@ -55,3 +55,4 @@ SECTIONS
         *(.comment) *(.gnu*) *(.note*) *(.eh_frame*)
     }
 }
+

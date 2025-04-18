@@ -1,15 +1,10 @@
 use kmem::{
-    region::{AccessFlags, CacheConfig, MemConfig},
+    region::{AccessFlags, CacheConfig, MemConfig, PAGE_SIZE, STACK_SIZE},
     *,
 };
 use page_table_generic::*;
 
-use crate::{
-    Arch,
-    archif::ArchIf,
-    config::{PAGE_SIZE, STACK_SIZE},
-    dbgln,
-};
+use crate::{Arch, archif::ArchIf, dbgln};
 
 type Table<'a> = PageTableRef<'a, <Arch as ArchIf>::PageTable>;
 
