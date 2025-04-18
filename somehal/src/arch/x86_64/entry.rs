@@ -1,4 +1,4 @@
-use multiboot::information::{MemoryManagement, Multiboot, MultibootInfo};
+use multiboot::information::{MemoryManagement, Multiboot};
 
 use crate::{
     ArchIf,
