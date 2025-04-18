@@ -2,7 +2,7 @@ use core::arch::naked_asm;
 
 use riscv::register::stvec::{self, Stvec};
 
-use crate::{clean_bss, dbgln};
+use crate::{arch::debug_init, clean_bss, dbgln};
 
 use super::mmu::init_mmu;
 
@@ -21,8 +21,8 @@ pub extern "C" fn primary_entry(_hart_id: usize, _fdt_addr: *mut u8) -> ! {
 
             "mv      a0, s0",
             "mv      a1, s1",
-            "call    {get_kcode_va}",
-            "mv      s2, a0",    // kcode offset
+            "call    {setup}",
+            "mv      s2, a0",    // return kcode offset
 
             "mv      a0, s1",
             "mv      a1, s2",
@@ -40,18 +40,17 @@ pub extern "C" fn primary_entry(_hart_id: usize, _fdt_addr: *mut u8) -> ! {
             "jalr    t0",
             "j       .",
             stack_size = const crate::config::STACK_SIZE,
-            get_kcode_va = sym get_kcode_va,
+            setup = sym setup,
             init_mmu = sym init_mmu,
 
             entry_vma = sym entry_vma,
         )
     }
 }
-
-fn get_kcode_va(hartid: usize, fdt: *mut u8) -> usize {
+fn setup(hartid: usize, fdt: *mut u8) -> usize {
     unsafe {
         clean_bss();
-
+        debug_init();
         let lma = entry_lma();
         let vma = entry_vma();
         let kcode_offset = vma - lma;
@@ -74,6 +73,7 @@ fn get_kcode_va(hartid: usize, fdt: *mut u8) -> usize {
         kcode_offset
     }
 }
+
 
 #[naked]
 extern "C" fn entry_lma() -> usize {

@@ -1,12 +1,10 @@
-use core::{
-    arch::{asm, naked_asm},
-    ptr::null_mut,
-};
+use core::arch::asm;
 
 use kmem::region::STACK_TOP;
 use riscv::register::satp;
 
 use crate::{
+    arch::debug_init,
     fdt, handle_err,
     mem::{
         boot::set_kcode_va_offset, kernal_load_start_link_addr, page::new_mapped_table,
@@ -18,6 +16,7 @@ use crate::{
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn __vma_relocate_entry(hartid: usize, kcode_offset: usize, dtb: *mut u8) {
+    debug_init();
     unsafe {
         println!("MMU ready!");
 
