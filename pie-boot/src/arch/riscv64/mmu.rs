@@ -30,12 +30,11 @@ fn set_page_table(addr: PhysAddr) {
     };
 
     unsafe { satp::set(mode, 0, addr.raw() >> 12) };
-
-    dbgln!("satp ok");
     flush_tlb(None);
+    dbgln!("satp ok");
 }
 
-pub fn enable_mmu(hartid: usize, fdt: *mut u8, kcode_offset: usize) -> ! {
+pub fn init_mmu(fdt: *mut u8, kcode_offset: usize) {
     unsafe {
         let table = new_boot_table(fdt_size(fdt), kcode_offset);
 
@@ -51,24 +50,6 @@ pub fn enable_mmu(hartid: usize, fdt: *mut u8, kcode_offset: usize) -> ! {
         dbgln!("Jump to {}, sp {}", entry, sp);
 
         set_page_table(table);
-
-        asm!("mv   t0,  {}", in(reg) hartid);
-        asm!("mv   t1,  {}", in(reg) kcode_offset);
-        asm!("mv   t2,  {}", in(reg) fdt);
-        asm!(
-            "la    a1, __global_pointer$",
-            "mv    gp,  a1",
-            // "mv    a0,  zero",
-            "mv    a1,  t0", //TODO 赋值a0会跑飞，待查原因
-            "mv    a2,  t1",
-            "mv    a3,  t2",
-            "mv    t0,  {entry}",
-            "mv    ra,  t0",
-            "ret",
-
-            entry = in(reg) entry,
-            options(nostack, noreturn)
-        )
     }
 }
 

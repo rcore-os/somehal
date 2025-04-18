@@ -2,7 +2,7 @@ use quote::quote;
 use std::{io::Write, path::PathBuf};
 
 const MB: usize = 1024 * 1024;
-const GB: usize = 1024 * MB;
+// const GB: usize = 1024 * MB;
 
 // 2MiB stack size per hart
 const DEFAULT_KERNEL_STACK_SIZE: usize = 2 * MB;
