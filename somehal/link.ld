@@ -2,6 +2,7 @@ OUTPUT_ARCH(%ARCH%)
 
 ENTRY(_start)
 
+/* from kmem crate */
 INCLUDE memory.x
 
 SECTIONS
@@ -56,5 +57,4 @@ SECTIONS
 	/DISCARD/ : {
         *(.comment) *(.gnu*) *(.note*) *(.eh_frame*)
     }
-}
-
+} 
