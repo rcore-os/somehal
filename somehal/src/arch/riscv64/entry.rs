@@ -15,7 +15,6 @@ use crate::{
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn __vma_relocate_entry(
-    _: usize,
     hartid: usize,
     kcode_offset: usize,
     dtb: *mut u8,
