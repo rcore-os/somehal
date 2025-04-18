@@ -1,5 +1,7 @@
 use core::arch::naked_asm;
 
+use riscv::register::stvec::{self, Stvec};
+
 use crate::{clean_bss, dbgln};
 
 use super::mmu::init_mmu;
@@ -56,6 +58,22 @@ fn get_kcode_va(hartid: usize, fdt: *mut u8) -> usize {
         dbgln!("Code offset    : {}", kcode_offset);
         dbgln!("Hart           : {}", hartid);
         dbgln!("fdt            : {}", fdt);
+
+        unsafe extern "C" {
+            fn trap_vector_base();
+        }
+        let mut vec = Stvec::from_bits(0);
+        vec.set_address(trap_vector_base as usize);
+        vec.set_trap_mode(stvec::TrapMode::Direct);
+        stvec::write(vec);
+
+        unsafe extern "C" {
+            fn trap_vector_base();
+        }
+        let mut vec = Stvec::from_bits(0);
+        vec.set_address(trap_vector_base as usize);
+        vec.set_trap_mode(stvec::TrapMode::Direct);
+        stvec::write(vec);
 
         kcode_offset
     }

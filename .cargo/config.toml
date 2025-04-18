@@ -1,4 +1,4 @@
-[target.'cfg(all(target_os = "none"))']
+[target.'cfg(target_os = "none")']
 runner = "ostool cargo-test"
 rustflags = [
     "-C",
