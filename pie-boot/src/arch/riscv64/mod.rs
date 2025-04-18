@@ -1,7 +1,12 @@
 use crate::archif::ArchIf;
 
+#[macro_use]
+mod macros;
+
 mod boot;
+mod context;
 mod mmu;
+mod trap;
 
 pub use boot::*;
 use mmu::new_pte_with_config;

@@ -1,5 +1,7 @@
 use core::arch::naked_asm;
 
+use riscv::register::stvec::{self, Stvec};
+
 use crate::{clean_bss, dbgln};
 
 use super::mmu::enable_mmu;
@@ -37,6 +39,14 @@ fn rust_boot(hartid: usize, fdt: *mut u8) -> ! {
         dbgln!("Entry  VMA     : {}", vma);
         dbgln!("Code offset    : {}", kcode_offset);
         dbgln!("fdt            : {}", fdt);
+
+        unsafe extern "C" {
+            fn trap_vector_base();
+        }
+        let mut vec = Stvec::from_bits(0);
+        vec.set_address(trap_vector_base as usize);
+        vec.set_trap_mode(stvec::TrapMode::Direct);
+        stvec::write(vec);
 
         enable_mmu(hartid, fdt, kcode_offset)
     }
