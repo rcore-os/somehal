@@ -16,9 +16,9 @@ multiboot_header:
     .int    {mb_hdr_flags}                      # flags
     .int    -({mb_hdr_magic} + {mb_hdr_flags})  # checksum
     .int    multiboot_header - {offset}         # header_addr
-    .int    __start_BootText - {offset}                 # load_addr
-    .int    __start_percpu - {offset}                   # load_end
-    .int    __stop_bss - {offset}                    # bss_end_addr
+    .int    __start_BootText - {offset}         # load_addr
+    .int    __start_percpu - {offset}           # load_end
+    .int    __stop_bss - {offset}               # bss_end_addr
     .int    _start - {offset}                   # entry_addr
 
 # Common code in 32-bit, prepare states to enter 64-bit.
@@ -61,9 +61,7 @@ multiboot_header:
     mov     gs, ax
 .endm
 
-.code32
-setup_tmp_pdpt_high:
-    
+
 
 
 .code32
@@ -128,14 +126,10 @@ ap_entry64:
 .Ltmp_pml4:
     # 0x0000_0000 ~ 0xffff_ffff
     .quad .Ltmp_pdpt_low - {offset} + 0x3   # PRESENT | WRITABLE | paddr(tmp_pdpt)
-    # .zero 8 * 255
-    # # 0xffff_8000_0000_0000 ~ 0xffff_8000_ffff_ffff
-    # .quad .Ltmp_pdpt_high - {offset} + 0x3  # PRESENT | WRITABLE | paddr(tmp_pdpt)
-    # .zero 8 * 255
-    .zero 8 * 447
-    # 0xffff_e000_0000_0000 ~ 0xffff_e000_ffff_ffff
+    .zero 8 * {pt_idx}
+    
     .quad .Ltmp_pdpt_high - {offset} + 0x3  # PRESENT | WRITABLE | paddr(tmp_pdpt)
-    .zero 8 * 63
+    .zero 8 * (510 - {pt_idx})
 
 # FIXME: may not work on macOS using hvf as the CPU does not support 1GB page (pdpe1gb)
 .Ltmp_pdpt_low:

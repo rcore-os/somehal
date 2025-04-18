@@ -1,12 +1,11 @@
 use core::arch::global_asm;
 
-use kmem::region::KERNEL_START_VADDR;
-use somehal_macros::dbgln;
+use kmem::region::*;
 use x86_64::registers::control::{Cr0Flags, Cr4Flags};
 use x86_64::registers::model_specific::EferFlags;
 
 use crate::clean_bss;
-use crate::config::STACK_SIZE;
+use crate::dbgln;
 
 const EFER_MSR: u32 = x86::msr::IA32_EFER;
 
@@ -18,7 +17,11 @@ const MULTIBOOT_HEADER_FLAGS: usize = 0x0001_0002;
 /// The magic field should contain this.
 const MULTIBOOT_HEADER_MAGIC: usize = 0x1BADB002;
 
-const KCODE_OFFSET: usize = KERNEL_START_VADDR - 0x200000;
+const KERNEL_LOAD_PADDR: usize = 0x200000;
+const KCODE_OFFSET: usize = KERNEL_LOAD_VADDR - KERNEL_LOAD_PADDR;
+
+const PT_SIZE: usize = 1 << (ADDR_BITS - 9);
+const PT_INDEX: usize = (KERNEL_LOAD_VADDR - 0xFFFF_0000_0000_0000) / PT_SIZE - 1;
 
 /// This should be in EAX.
 pub(super) const MULTIBOOT_BOOTLOADER_MAGIC: usize = 0x2BADB002;
@@ -47,6 +50,7 @@ global_asm!(
     cr4 = const CR4,
     efer_msr = const EFER_MSR,
     efer = const EFER,
+    pt_idx = const PT_INDEX,
 );
 
 fn rust_entry(magic: usize, mbi: usize) {

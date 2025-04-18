@@ -79,14 +79,6 @@ impl Uart16550 {
         while !self.line_sts().contains(LineStsFlags::OUTPUT_EMPTY) {}
         unsafe { self.data.write(c) };
     }
-
-    fn getchar(&mut self) -> Option<u8> {
-        if self.line_sts().contains(LineStsFlags::INPUT_FULL) {
-            unsafe { Some(self.data.read()) }
-        } else {
-            None
-        }
-    }
 }
 
 /// Writes a byte to the console.

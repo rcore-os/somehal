@@ -19,12 +19,12 @@ fn main() {
     }
 
     let addr_base: usize = !((1 << addr_bits) - 1);
-    let kernel_start_vaddr = addr_base + (1 << addr_bits) / 16 * 14 + 0x200000;
+    let kernel_load_vaddr = addr_base + (1 << addr_bits) / 16 * 14 + 0x200000;
 
     let const_content = quote! {
         pub const ADDR_BITS: usize = #addr_bits;
         pub const PAGE_LEVELS: usize = #page_levels;
-        pub const KERNEL_START_VADDR: usize = #kernel_start_vaddr;
+        pub const KERNEL_LOAD_VADDR: usize = #kernel_load_vaddr;
         pub const PAGE_SIZE: usize = #page_size;
         pub const STACK_SIZE: usize = #stack_size;
     };
