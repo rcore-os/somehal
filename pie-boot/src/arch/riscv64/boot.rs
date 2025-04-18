@@ -74,7 +74,6 @@ fn setup(hartid: usize, fdt: *mut u8) -> usize {
     }
 }
 
-
 #[naked]
 extern "C" fn entry_lma() -> usize {
     unsafe {
