@@ -1,89 +1,70 @@
-use core::arch::{global_asm, naked_asm};
+use core::arch::global_asm;
 
-use crate::{clean_bss, dbgln};
+use somehal_macros::dbgln;
+use x86_64::registers::control::{Cr0Flags, Cr4Flags};
+use x86_64::registers::model_specific::EferFlags;
 
-use super::mmu::enable_mmu;
+use crate::clean_bss;
+use crate::config::STACK_SIZE;
 
-const BOOT_STACK_SIZE: usize = 0x4000;
+const EFER_MSR: u32 = x86::msr::IA32_EFER;
 
-const MAGIC: i32 = 0x1BADB002;
+/// Flags set in the ’flags’ member of the multiboot header.
+///
+/// (bits 1, 16: memory information, address fields in header)
+const MULTIBOOT_HEADER_FLAGS: usize = 0x0001_0002;
 
-const MODULEALIGN: i32 = 1 << 0;
-const MEMINFO: i32 = 1 << 1;
-const FLAGS: i32 = MODULEALIGN | MEMINFO;
-const CHECKSUM: i32 = -(MAGIC + FLAGS);
+/// The magic field should contain this.
+const MULTIBOOT_HEADER_MAGIC: usize = 0x1BADB002;
 
-#[naked]
-#[unsafe(no_mangle)]
-#[repr(align(4))]
-#[unsafe(link_section = ".text.boot.header")]
-pub extern "C" fn __header() -> ! {
-    unsafe {
-        naked_asm!(
-            "
-.code32
-.int  {magic}
-.int  {flags}
-.int  {checksum}
-        ",
-        magic = const MAGIC,
-        flags = const FLAGS,
-        checksum = const CHECKSUM,
-        )
-    }
-}
+const KCODE_OFFSET: usize = 0xffff_8000_0000_0000;
+
+/// This should be in EAX.
+pub(super) const MULTIBOOT_BOOTLOADER_MAGIC: usize = 0x2BADB002;
+
+const CR0: u64 = Cr0Flags::PROTECTED_MODE_ENABLE.bits()
+    | Cr0Flags::MONITOR_COPROCESSOR.bits()
+    | Cr0Flags::NUMERIC_ERROR.bits()
+    | Cr0Flags::WRITE_PROTECT.bits()
+    | Cr0Flags::PAGING.bits();
+const CR4: u64 = Cr4Flags::PHYSICAL_ADDRESS_EXTENSION.bits()
+    | Cr4Flags::PAGE_GLOBAL.bits()
+    | Cr4Flags::OSFXSR.bits()
+    | Cr4Flags::OSXMMEXCPT_ENABLE.bits();
+const EFER: u64 = EferFlags::LONG_MODE_ENABLE.bits() | EferFlags::NO_EXECUTE_ENABLE.bits();
 
 global_asm!(
-    include_str!("boot.asm"),
-    // entry = sym primary_entry,
+    include_str!("multiboot.S"),
+    mb_magic = const MULTIBOOT_BOOTLOADER_MAGIC,
+    mb_hdr_magic = const MULTIBOOT_HEADER_MAGIC,
+    mb_hdr_flags = const MULTIBOOT_HEADER_FLAGS,
+    entry = sym rust_entry,
+    entry_secondary = sym rust_entry_secondary,
+    boot_stack_size = const STACK_SIZE,
+    offset = const KCODE_OFFSET,
+    cr0 = const CR0,
+    cr4 = const CR4,
+    efer_msr = const EFER_MSR,
+    efer = const EFER,
 );
 
-/// The entry point of the kernel.
-pub extern "C" fn primary_entry() -> ! {
-    unsafe extern "C" {
-        fn __vma_relocate_entry() -> !;
-    }
-
+fn rust_entry(magic: usize, mbi: usize) {
     unsafe {
         clean_bss();
-        __vma_relocate_entry()
-    }
-}
-#[naked]
-/// The entry point of the kernel.
-pub extern "C" fn secondary_entry(_hart_id: usize, _fdt_addr: *mut u8) -> ! {
-    unsafe {
-        naked_asm!(
-            "",
-            // stack_size = const crate::config::STACK_SIZE,
-            // entry = sym rust_boot,
-        )
-    }
-}
+        super::uart16550::init();
 
-fn rust_boot(hartid: usize, fdt: *mut u8) -> ! {
-    unsafe {
-        clean_bss();
+        dbgln!("\r\nBooting up");
 
-        let lma = entry_lma();
-        let vma = entry_vma();
-        let kcode_offset = vma - lma;
+        if magic == MULTIBOOT_BOOTLOADER_MAGIC {
+            dbgln!("Multiboot {}", mbi);
 
-        dbgln!("Booting up");
-        dbgln!("Entry  LMA     : {}", lma);
-        dbgln!("Entry  VMA     : {}", vma);
-        dbgln!("Code offset    : {}", kcode_offset);
-        dbgln!("fdt            : {}", fdt);
+            unsafe extern "C" {
+                fn __vma_relocate_entry(kcode_offset: usize, mbi: usize);
+            }
 
-        enable_mmu(hartid, fdt, kcode_offset)
+            __vma_relocate_entry(KCODE_OFFSET, mbi);
+        }
     }
 }
 
-#[naked]
-extern "C" fn entry_lma() -> usize {
-    unsafe { naked_asm!("") }
-}
-#[naked]
-pub extern "C" fn entry_vma() -> usize {
-    unsafe { naked_asm!("") }
-}
+fn rust_entry_secondary() {}

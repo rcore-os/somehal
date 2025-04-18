@@ -8,7 +8,7 @@ use page_table_generic::*;
 
 use somehal_macros::dbgln;
 
-use crate::{arch::boot::entry_vma, mem::new_boot_table};
+use crate::mem::new_boot_table;
 
 #[inline(always)]
 fn flush_tlb(vaddr: Option<kmem::VirtAddr>) {
@@ -25,7 +25,7 @@ pub fn enable_mmu(hartid: usize, fdt: *mut u8, kcode_offset: usize) -> ! {
     unsafe {
         let table = new_boot_table(0, kcode_offset);
 
-        let entry = entry_vma();
+        // let entry = entry_vma();
         asm!("", options(nostack, noreturn))
     }
 }

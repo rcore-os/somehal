@@ -47,6 +47,9 @@ fn main() {
     let addr_base: usize = !((1 << config.addr_bits) - 1);
     config.entry_vaddr = (addr_base + (1 << config.addr_bits) / 16 * 14) as _;
 
+    config.entry_vaddr = 0xffff_8000_0020_0000;
+
+
     let arch = Arch::default();
 
     gen_const(&config);
@@ -86,7 +89,7 @@ impl Arch {
         let mut script = "link.ld";
 
         let output_arch = if matches!(self, Arch::X86_64) {
-            script = "src/arch/x86_64/link.ld";
+            // script = "src/arch/x86_64/link.ld";
             "i386:x86-64".to_string()
         } else if matches!(self, Arch::Riscv64) {
             "riscv".to_string() // OUTPUT_ARCH of both riscv32/riscv64 is "riscv"
