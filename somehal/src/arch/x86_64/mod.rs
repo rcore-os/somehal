@@ -1,7 +1,10 @@
 use crate::ArchIf;
 
-mod boot;
+mod entry;
+mod multiboot1;
 pub(crate) mod paging;
+
+extern crate pie_boot;
 
 pub struct Arch;
 

@@ -5,51 +5,28 @@ use kmem::{
     region::{ADDR_BITS, AccessFlags, PAGE_LEVELS},
 };
 use page_table_generic::*;
-use riscv::{
-    asm::{sfence_vma, sfence_vma_all},
-    register::satp,
-};
+
 use somehal_macros::dbgln;
 
-use crate::{arch::boot::entry_vma, fdt::fdt_size, mem::new_boot_table};
+use crate::{arch::boot::entry_vma, mem::new_boot_table};
 
 #[inline(always)]
 fn flush_tlb(vaddr: Option<kmem::VirtAddr>) {
     if let Some(vaddr) = vaddr {
-        sfence_vma(0, vaddr.raw())
     } else {
-        sfence_vma_all();
     }
 }
 #[inline(always)]
 fn set_page_table(addr: PhysAddr) {
-    let mode = if ADDR_BITS == 39 {
-        satp::Mode::Sv39
-    } else {
-        satp::Mode::Sv48
-    };
-
-    unsafe { satp::set(mode, 0, addr.raw() >> 12) };
     flush_tlb(None);
-    dbgln!("satp ok");
 }
 
-pub fn init_mmu(fdt: *mut u8, kcode_offset: usize) {
+pub fn enable_mmu(hartid: usize, fdt: *mut u8, kcode_offset: usize) -> ! {
     unsafe {
-        let table = new_boot_table(fdt_size(fdt), kcode_offset);
+        let table = new_boot_table(0, kcode_offset);
 
         let entry = entry_vma();
-
-        let sp: usize;
-        asm!(
-            "mv {0}, sp",
-            out(reg) sp,
-        );
-
-        dbgln!("Set kernel table {}", table.raw());
-        dbgln!("Jump to {}, sp {}", entry, sp);
-
-        set_page_table(table);
+        asm!("", options(nostack, noreturn))
     }
 }
 

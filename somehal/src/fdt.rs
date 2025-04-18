@@ -3,15 +3,16 @@ use core::{
     ptr::{NonNull, slice_from_raw_parts_mut},
 };
 
-use fdt_parser::{Fdt, FdtError};
+use fdt_parser::{Fdt, FdtError, Status};
 use kmem::{IntAlign, region::MemRegionKind};
 
 use crate::{
     mem::{PhysMemory, PhysMemoryArray, main_memory_alloc, page::page_size},
     platform::CpuId,
+    println,
 };
 
-use crate::{dbgln, early_err};
+// use crate::{dbgln,};
 use kmem::region::*;
 
 use crate::mem::{MemRegion, boot::kcode_offset};
@@ -36,7 +37,7 @@ pub fn find_memory() -> Result<PhysMemoryArray, FdtError<'static>> {
                 })
                 .is_err()
             {
-                dbgln!("too many phys memory regions");
+                println!("too many phys memory regions");
                 panic!();
             };
         }
@@ -46,22 +47,23 @@ pub fn find_memory() -> Result<PhysMemoryArray, FdtError<'static>> {
 }
 
 pub fn cpu_count() -> Result<usize, FdtError<'static>> {
-    let fdt = get_fdt().ok_or(FdtError::BadPtr)?;
-    let nodes = fdt.find_nodes("/cpus/cpu");
-    Ok(nodes.count())
+    Ok(cpu_list()?.count())
 }
 
 pub fn cpu_list() -> Result<impl Iterator<Item = CpuId>, FdtError<'static>> {
     let fdt = get_fdt().ok_or(FdtError::BadPtr)?;
     let nodes = fdt.find_nodes("/cpus/cpu");
-    Ok(nodes.map(|node| {
-        let reg = node
-            .reg()
-            .expect("cpu reg not found")
-            .next()
-            .expect("cpu reg 0 not found");
-        (reg.address as usize).into()
-    }))
+    Ok(nodes
+        .filter(|node| node.name().contains("cpu@"))
+        .filter(|node| !matches!(node.status(), Some(Status::Disabled)))
+        .map(|node| {
+            let reg = node
+                .reg()
+                .unwrap_or_else(|| panic!("cpu {} reg not found", node.name()))
+                .next()
+                .expect("cpu reg 0 not found");
+            (reg.address as usize).into()
+        }))
 }
 
 #[cfg(not(target_arch = "riscv64"))]
@@ -108,7 +110,7 @@ fn get_fdt<'a>() -> Option<Fdt<'a>> {
 
 pub(crate) fn save_fdt() -> Option<MemRegion> {
     let ptr_src = fdt_ptr();
-    let fdt = early_err!(Fdt::from_ptr(NonNull::new(ptr_src)?));
+    let fdt = Fdt::from_ptr(NonNull::new(ptr_src)?).expect("invalid fdt");
     let size = fdt.total_size().align_up(page_size());
 
     let ptr_dst =

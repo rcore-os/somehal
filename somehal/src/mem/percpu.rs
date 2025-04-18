@@ -63,4 +63,6 @@ pub fn init(cpu0_id: CpuId, cpu_list: impl Iterator<Item = CpuId>) {
             }
         }
     }
+
+    println!("alloc percpu space ok");
 }
