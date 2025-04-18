@@ -49,9 +49,6 @@ fn main() {
 
     let arch = Arch::default();
 
-
-    config.entry_vaddr = 0xffff_ffc0_4020_0000;
-
     gen_const(&config);
 
     println!("cargo::rustc-check-cfg=cfg(use_fdt)");

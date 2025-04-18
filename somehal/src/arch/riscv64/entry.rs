@@ -1,4 +1,7 @@
-use core::arch::{asm, naked_asm};
+use core::{
+    arch::{asm, naked_asm},
+    ptr::null_mut,
+};
 
 use kmem::region::STACK_TOP;
 use riscv::register::satp;
@@ -14,13 +17,10 @@ use crate::{
 };
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn __vma_relocate_entry(
-    hartid: usize,
-    kcode_offset: usize,
-    dtb: *mut u8,
-) {
+pub unsafe extern "C" fn __vma_relocate_entry(hartid: usize, kcode_offset: usize, dtb: *mut u8) {
     unsafe {
         println!("MMU ready!");
+
         asm!(
             "add  gp, gp, {offset}",
             offset = in(reg) kcode_offset,

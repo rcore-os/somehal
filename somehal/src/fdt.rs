@@ -7,11 +7,11 @@ use fdt_parser::{Fdt, FdtError};
 use kmem::{IntAlign, region::MemRegionKind};
 
 use crate::{
-    mem::{PhysMemory, PhysMemoryArray, main_memory_alloc, page::page_size},
-    platform::CpuId,
+    mem::{main_memory_alloc, page::page_size, PhysMemory, PhysMemoryArray},
+    platform::CpuId, println,
 };
 
-use crate::{dbgln, early_err};
+// use crate::{dbgln,};
 use kmem::region::*;
 
 use crate::mem::{MemRegion, boot::kcode_offset};
@@ -36,7 +36,7 @@ pub fn find_memory() -> Result<PhysMemoryArray, FdtError<'static>> {
                 })
                 .is_err()
             {
-                dbgln!("too many phys memory regions");
+                println!("too many phys memory regions");
                 panic!();
             };
         }
@@ -108,7 +108,7 @@ fn get_fdt<'a>() -> Option<Fdt<'a>> {
 
 pub(crate) fn save_fdt() -> Option<MemRegion> {
     let ptr_src = fdt_ptr();
-    let fdt = early_err!(Fdt::from_ptr(NonNull::new(ptr_src)?));
+    let fdt = Fdt::from_ptr(NonNull::new(ptr_src)?).expect("invalid fdt");
     let size = fdt.total_size().align_up(page_size());
 
     let ptr_dst =

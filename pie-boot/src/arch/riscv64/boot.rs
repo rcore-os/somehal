@@ -31,14 +31,18 @@ pub extern "C" fn primary_entry(_hart_id: usize, _fdt_addr: *mut u8) -> ! {
             "call    {entry_vma}",
             "mv      t0, a0",
 
+            "mv      gp, zero",
+
             "mv      a0, s0",  // hartid
             "mv      a1, s2",  // kcode offset
             "mv      a2, s1",  // fdt addr
+
             "jalr    t0",
             "j       .",
             stack_size = const crate::config::STACK_SIZE,
             get_kcode_va = sym get_kcode_va,
             init_mmu = sym init_mmu,
+
             entry_vma = sym entry_vma,
         )
     }
@@ -70,24 +74,6 @@ fn get_kcode_va(hartid: usize, fdt: *mut u8) -> usize {
         kcode_offset
     }
 }
-
-// fn rust_boot(hartid: usize, fdt: *mut u8) -> ! {
-//     unsafe {
-//         clean_bss();
-
-//         let lma = entry_lma();
-//         let vma = entry_vma();
-//         let kcode_offset = vma - lma;
-
-//         dbgln!("Booting up");
-//         dbgln!("Entry  LMA     : {}", lma);
-//         dbgln!("Entry  VMA     : {}", vma);
-//         dbgln!("Code offset    : {}", kcode_offset);
-//         dbgln!("fdt            : {}", fdt);
-
-//         init_mmu(hartid, fdt, kcode_offset)
-//     }
-// }
 
 #[naked]
 extern "C" fn entry_lma() -> usize {
