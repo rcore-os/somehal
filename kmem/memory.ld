@@ -1,0 +1,4 @@
+MEMORY
+{
+  VCODE  : ORIGIN = ${VCODE}, LENGTH = 512M
+}

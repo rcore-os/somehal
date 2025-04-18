@@ -1,5 +1,5 @@
 use boot::kcode_offset;
-use kmem::region::{CacheConfig, STACK_TOP, region_phys_to_virt, region_virt_to_phys};
+use kmem::region::{CacheConfig, STACK_SIZE, STACK_TOP, region_phys_to_virt, region_virt_to_phys};
 pub use kmem::*;
 use page::page_size;
 
@@ -18,7 +18,6 @@ pub struct PhysMemory {
 use core::alloc::Layout;
 
 use crate::{
-    consts::KERNEL_STACK_SIZE,
     dbgln,
     platform::{CpuId, CpuIdx},
     println,
@@ -46,7 +45,7 @@ pub fn cpu_id() -> CpuId {
 }
 
 pub(crate) fn stack_top_cpu0() -> PhysAddr {
-    STACK_ALL.addr + KERNEL_STACK_SIZE
+    STACK_ALL.addr + STACK_SIZE
 }
 
 pub(crate) fn setup_memory_main(memories: impl Iterator<Item = PhysMemory>, cpu_count: usize) {
@@ -64,7 +63,7 @@ pub(crate) fn setup_memory_main(memories: impl Iterator<Item = PhysMemory>, cpu_
         if phys_raw < kcode_end.raw() && kcode_end.raw() < phys_raw + m.size {
             phys_start = kcode_end;
 
-            let stack_all_size = cpu_count * KERNEL_STACK_SIZE;
+            let stack_all_size = cpu_count * STACK_SIZE;
 
             phys_end = phys_end - stack_all_size;
 
@@ -96,11 +95,11 @@ pub(crate) fn setup_memory_main(memories: impl Iterator<Item = PhysMemory>, cpu_
         }
     }
 
-    let stack_start = STACK_ALL.addr + STACK_ALL.size - KERNEL_STACK_SIZE;
+    let stack_start = STACK_ALL.addr + STACK_ALL.size - STACK_SIZE;
 
     mem_region_add(MemRegion {
-        virt_start: (STACK_TOP - KERNEL_STACK_SIZE).into(),
-        size: KERNEL_STACK_SIZE,
+        virt_start: (STACK_TOP - STACK_SIZE).into(),
+        size: STACK_SIZE,
         phys_start: stack_start,
         name: "stack",
         config: MemConfig {

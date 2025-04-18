@@ -1,8 +1,9 @@
+use core::arch::asm;
+
 use crate::archif::ArchIf;
 
 mod boot;
 mod mmu;
-mod uart16550;
 
 use mmu::new_pte_with_config;
 use page_table_generic::TableGeneric;
@@ -10,14 +11,12 @@ use page_table_generic::TableGeneric;
 pub struct Arch;
 
 impl ArchIf for Arch {
-    #[inline(always)]
-    #[allow(deprecated)]
     fn early_debug_put(byte: u8) {
-        uart16550::write_bytes(&[byte]);
+        todo!()
     }
 
     fn wait_for_event() {
-        loop {}
+        unsafe { asm!("hlt") }
     }
 
     type PageTable = mmu::Table;

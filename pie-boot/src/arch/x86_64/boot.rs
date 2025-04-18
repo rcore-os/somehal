@@ -56,13 +56,8 @@ global_asm!(
 fn rust_entry(magic: usize, mbi: usize) {
     unsafe {
         clean_bss();
-        super::uart16550::init();
-
-        dbgln!("\r\nBooting up");
 
         if magic == MULTIBOOT_BOOTLOADER_MAGIC {
-            dbgln!("Multiboot {}", mbi);
-
             unsafe extern "C" {
                 fn __vma_relocate_entry(kcode_offset: usize, mbi: usize);
             }

@@ -34,6 +34,19 @@ fn main() {
     let syntax_tree = syn::parse2(const_content).unwrap();
     let formatted = prettyplease::unparse(&syntax_tree);
     file.write_all(formatted.as_bytes()).unwrap();
+
+    println!("cargo:rerun-if-changed=memory.ld");
+    println!("cargo:rustc-link-search={}", out_dir().display());
+
+    let content = include_str!("memory.ld");
+
+    let content = content.replace("${VCODE}", &format!("{:#x}", kernel_load_vaddr));
+
+    let mut file =
+        std::fs::File::create(out_dir().join("memory.x")).expect("memory.x create failed");
+
+    file.write_all(content.as_bytes())
+        .expect("memory.x write failed");
 }
 
 fn out_dir() -> PathBuf {

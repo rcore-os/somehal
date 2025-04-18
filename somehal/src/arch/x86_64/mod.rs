@@ -1,7 +1,8 @@
+use core::arch::asm;
+
 use crate::ArchIf;
 
 mod entry;
-mod multiboot1;
 pub(crate) mod paging;
 mod uart16550;
 
@@ -43,7 +44,7 @@ impl ArchIf for Arch {
     }
 
     fn wait_for_event() {
-        todo!()
+        unsafe { asm!("hlt") }
     }
 
     fn init_debugcon() {

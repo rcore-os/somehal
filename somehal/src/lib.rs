@@ -19,7 +19,6 @@ pub mod arch;
 
 mod archif;
 pub mod console;
-mod consts;
 pub mod mem;
 pub(crate) mod once_static;
 pub(crate) mod platform;

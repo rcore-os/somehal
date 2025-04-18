@@ -18,6 +18,7 @@ log = "0.4"
 bitflags = "2.9"
 pie-boot = { path = "../pie-boot" }
 
+
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "10.0"
 smccc = "0.2"
@@ -29,6 +30,7 @@ fdt-parser = "0.4"
 x86 = "0.52"
 x86_64 = "0.15"
 any-uart = "0.2"
+multiboot = "0.8"
 
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
 riscv = "0.13"

@@ -1,20 +1,12 @@
 use quote::quote;
 use std::{io::Write, path::PathBuf};
 
-const MB: usize = 1024 * 1024;
-// const GB: usize = 1024 * MB;
-
-// 2MiB stack size per hart
-const DEFAULT_KERNEL_STACK_SIZE: usize = 2 * MB;
 
 // const ENTRY_VADDR: u64 = 0x40200000;
-const ENTRY_VADDR: u64 = 0xffff_e000_0000_0000;
 // const ENTRY_VADDR_SV39: u64 = 0xffff_ffc0_0000_0000;
 // const ENTRY_VADDR_RISCV64: u64 = 0x80200000;
 
 struct Config {
-    entry_vaddr: u64,
-    stack_size: usize,
     addr_bits: usize,
 }
 
@@ -31,11 +23,7 @@ fn main() {
         println!("cargo::rustc-cfg=hard_float");
     }
 
-    let mut config = Config {
-        entry_vaddr: ENTRY_VADDR,
-        stack_size: DEFAULT_KERNEL_STACK_SIZE,
-        addr_bits: 48,
-    };
+    let mut config = Config { addr_bits: 48 };
 
     if std::env::var("CARGO_FEATURE_SV39").is_ok() {
         println!("cargo::rustc-cfg=addr_bits=\"39\"");
@@ -44,12 +32,7 @@ fn main() {
         println!("cargo::rustc-cfg=addr_bits=\"48\"");
     }
 
-    let addr_base: usize = !((1 << config.addr_bits) - 1);
-    config.entry_vaddr = (addr_base + (1 << config.addr_bits) / 16 * 14 + 0x200000) as _;
-
     let arch = Arch::default();
-
-    gen_const(&config);
 
     println!("cargo::rustc-check-cfg=cfg(use_fdt)");
     if matches!(arch, Arch::Aarch64 | Arch::Riscv64) {
@@ -97,25 +80,7 @@ impl Arch {
         println!("cargo:rerun-if-changed={}", script);
         let ld_content = std::fs::read_to_string(script).unwrap();
         let ld_content = ld_content.replace("%ARCH%", &output_arch);
-        let ld_content =
-            ld_content.replace("%KERNEL_VADDR%", &format!("{:#x}", config.entry_vaddr));
 
         std::fs::write(out_dir().join("link.x"), ld_content).expect("link.x write failed");
     }
-}
-
-fn gen_const(config: &Config) {
-    let stack_size = config.stack_size;
-    let entry = config.entry_vaddr as usize;
-
-    let const_content = quote! {
-        pub const KERNEL_STACK_SIZE: usize = #stack_size;
-        pub const KERNEL_ENTRY_VADDR: usize = #entry;
-    };
-
-    let mut file =
-        std::fs::File::create(out_dir().join("constant.rs")).expect("constant.rs create failed");
-    let syntax_tree = syn::parse2(const_content).unwrap();
-    let formatted = prettyplease::unparse(&syntax_tree);
-    file.write_all(formatted.as_bytes()).unwrap();
 }
