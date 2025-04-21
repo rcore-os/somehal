@@ -11,7 +11,7 @@ use riscv::{
 };
 use somehal_macros::dbgln;
 
-use crate::{arch::boot::entry_vma, fdt::fdt_size, mem::new_boot_table};
+use crate::{arch::boot::entry_vma, mem::new_boot_table};
 
 #[inline(always)]
 fn flush_tlb(vaddr: Option<kmem::VirtAddr>) {
@@ -34,9 +34,9 @@ fn set_page_table(addr: PhysAddr) {
     dbgln!("satp ok");
 }
 
-pub fn init_mmu(fdt: *mut u8, kcode_offset: usize) {
+pub fn init_mmu(kcode_offset: usize) {
     unsafe {
-        let table = new_boot_table(fdt_size(fdt), kcode_offset);
+        let table = new_boot_table(kcode_offset);
 
         let entry = entry_vma();
 

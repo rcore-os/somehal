@@ -3,7 +3,7 @@ use core::ptr::NonNull;
 macro_rules! def_addr {
     ($name:ident, $t:ty) => {
         #[repr(transparent)]
-        #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
         pub struct $name($t);
 
         impl From<$t> for $name {

@@ -21,7 +21,6 @@ pub struct PhysMemory {
 use core::alloc::Layout;
 
 use crate::{
-    dbgln,
     platform::{CpuId, CpuIdx},
     println,
 };
@@ -51,7 +50,11 @@ pub(crate) fn stack_top_cpu0() -> PhysAddr {
     STACK_ALL.addr + STACK_SIZE
 }
 
-pub(crate) fn setup_memory_main(memories: impl Iterator<Item = PhysMemory>, cpu_count: usize) {
+pub(crate) fn setup_memory_main(
+    main_memory_start: PhysAddr,
+    memories: impl Iterator<Item = PhysMemory>,
+    cpu_count: usize,
+) {
     detect_link_space();
     unsafe {
         CPU_COUNT = cpu_count;
@@ -61,10 +64,9 @@ pub(crate) fn setup_memory_main(memories: impl Iterator<Item = PhysMemory>, cpu_
         let phys_raw = phys_start.raw();
         let size = m.size;
         let mut phys_end = phys_start + size;
-        let kcode_end = PhysAddr::from(link_section_end() as usize - kcode_offset());
 
-        if phys_raw < kcode_end.raw() && kcode_end.raw() < phys_raw + m.size {
-            phys_start = kcode_end;
+        if phys_raw < main_memory_start.raw() && main_memory_start.raw() < phys_raw + m.size {
+            phys_start = main_memory_start;
 
             let stack_all_size = cpu_count * STACK_SIZE;
 
@@ -211,7 +213,6 @@ fn mem_region_add(mut region: MemRegion) {
         .try_push(region)
         .is_err()
     {
-        dbgln!("MemRegion is full");
         panic!();
     }
 }

@@ -4,6 +4,7 @@
 #![feature(used_with_arg)]
 #![feature(cfg_match)]
 #![feature(fn_align)]
+#![feature(allocator_api)]
 
 #[cfg(target_arch = "aarch64")]
 #[path = "arch/aarch64/mod.rs"]
@@ -28,15 +29,6 @@ pub(crate) mod vec;
 pub(crate) mod fdt;
 
 pub(crate) use archif::ArchIf;
-
-#[cfg(feature = "early-debug")]
-pub(crate) use somehal_macros::dbgln;
-
-#[cfg(not(feature = "early-debug"))]
-#[macro_export]
-macro_rules! dbgln {
-    ($($arg:tt)*) => {};
-}
 
 pub use somehal_macros::entry;
 

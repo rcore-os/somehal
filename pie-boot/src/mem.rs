@@ -1,12 +1,60 @@
+use core::{cell::UnsafeCell, mem::MaybeUninit, ops::Deref};
+
 use kmem::{
+    alloc::LineAllocator,
     region::{AccessFlags, CacheConfig, MemConfig, PAGE_SIZE, STACK_SIZE},
     *,
 };
 use page_table_generic::*;
 
-use crate::{Arch, archif::ArchIf, dbgln};
+use crate::{Arch, BootInfo, archif::ArchIf, dbgln};
 
 type Table<'a> = PageTableRef<'a, <Arch as ArchIf>::PageTable>;
+
+struct StaticCell<T>(UnsafeCell<T>);
+
+unsafe impl<T> Sync for StaticCell<T> {}
+unsafe impl<T> Send for StaticCell<T> {}
+
+impl<T> StaticCell<T> {
+    pub const fn new() -> Self {
+        let a = MaybeUninit::zeroed();
+        let a = unsafe { a.assume_init() };
+        Self(UnsafeCell::new(a))
+    }
+}
+
+static BOOT_INFO: StaticCell<BootInfo> = StaticCell::new();
+static PHYS_ALLOCATOR: StaticCell<LineAllocator> = StaticCell::new();
+static mut BOOT_TABLE: usize = 0;
+
+impl<T> Deref for StaticCell<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*self.0.get() }
+    }
+}
+
+pub(crate) unsafe fn edit_boot_info(f: impl FnOnce(&mut BootInfo)) {
+    unsafe {
+        let info = &mut *BOOT_INFO.0.get();
+        info.main_memory_free_start = PHYS_ALLOCATOR.highest_address();
+
+        f(info);
+    }
+}
+
+pub(crate) fn boot_info_addr() -> *const BootInfo {
+    BOOT_INFO.0.get()
+}
+
+pub(crate) fn init_phys_allocator() {
+    unsafe {
+        *PHYS_ALLOCATOR.0.get() =
+            LineAllocator::new(PhysAddr::from(link_section_end() as usize), GB);
+    }
+}
 
 #[inline(always)]
 fn link_section_end() -> *const u8 {
@@ -24,28 +72,20 @@ fn kernal_kcode_start() -> usize {
 }
 
 /// `rsv_space` 在 `boot stack` 之后保留的空间到校
-pub fn new_boot_table(mut rsv_space: usize, kcode_offset: usize) -> PhysAddr {
-    rsv_space = rsv_space.align_up(PAGE_SIZE);
-
-    dbgln!("Rsv space      : {}", rsv_space);
-
+pub fn new_boot_table(kcode_offset: usize) -> PhysAddr {
     let code_end_phys = PhysAddr::from(link_section_end() as usize);
 
-    let start = (code_end_phys + STACK_SIZE + rsv_space).align_up(PAGE_SIZE);
-
-    let mut tmp_alloc = LineAllocator::new(start, GB);
+    let access = unsafe { &mut *PHYS_ALLOCATOR.0.get() };
 
     dbgln!(
         "Tmp Table space: [{}, {})",
-        tmp_alloc.iter.raw(),
-        tmp_alloc.end.raw()
+        access.start.raw(),
+        access.end.raw()
     );
-
-    let access = &mut tmp_alloc;
 
     let mut table = early_err!(Table::create_empty(access));
     unsafe {
-        let align = 2 * MB;
+        let align = GB;
 
         let code_start_phys = kernal_kcode_start().align_down(align);
         let code_start = code_start_phys + kcode_offset;
@@ -76,7 +116,11 @@ pub fn new_boot_table(mut rsv_space: usize, kcode_offset: usize) -> PhysAddr {
             access,
         ));
 
-        let size = table.entry_size() * 12;
+        let size = if table.entry_size() == table.max_block_size() {
+            table.entry_size() * 256
+        } else {
+            table.max_block_size() * 512
+        };
 
         dbgln!("eq             : [{}, {})", 0usize, size);
         early_err!(table.map(
@@ -95,50 +139,16 @@ pub fn new_boot_table(mut rsv_space: usize, kcode_offset: usize) -> PhysAddr {
         ));
     }
 
-    dbgln!("Table size     : {}", tmp_alloc.used());
+    dbgln!(
+        "Table size     : {}",
+        access.highest_address().raw() - access.start.raw()
+    );
 
-    table.paddr()
-}
+    let addr = table.paddr();
 
-pub struct LineAllocator {
-    pub start: PhysAddr,
-    iter: PhysAddr,
-    pub end: PhysAddr,
-}
-
-impl LineAllocator {
-    pub fn new(start: PhysAddr, size: usize) -> Self {
-        Self {
-            start,
-            iter: start,
-            end: start + size,
-        }
+    unsafe {
+        BOOT_TABLE = addr.raw();
     }
 
-    pub fn alloc(&mut self, layout: core::alloc::Layout) -> Option<PhysAddr> {
-        let start = self.iter.align_up(layout.align());
-        if start + layout.size() > self.end {
-            return None;
-        }
-
-        self.iter += layout.size().align_up(layout.align());
-
-        Some(start)
-    }
-
-    pub fn used(&self) -> usize {
-        self.iter - self.start
-    }
-}
-
-impl Access for LineAllocator {
-    unsafe fn alloc(&mut self, layout: core::alloc::Layout) -> Option<PhysAddr> {
-        LineAllocator::alloc(self, layout)
-    }
-
-    unsafe fn dealloc(&mut self, _ptr: PhysAddr, _layout: core::alloc::Layout) {}
-
-    fn phys_to_mut(&self, phys: PhysAddr) -> *mut u8 {
-        phys.raw() as _
-    }
+    addr
 }

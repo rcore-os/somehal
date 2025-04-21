@@ -1,6 +1,7 @@
-use core::arch::asm;
+use core::{arch::asm, ptr::null_mut};
 
 use kmem::region::STACK_TOP;
+use pie_boot::BootInfo;
 use riscv::register::satp;
 
 use crate::{
@@ -15,7 +16,12 @@ use crate::{
 };
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn __vma_relocate_entry(hartid: usize, kcode_offset: usize, dtb: *mut u8) {
+pub unsafe extern "C" fn __vma_relocate_entry(boot_info: *const BootInfo) {
+    let boot_info = unsafe { &*boot_info };
+    let hartid = boot_info.cpu_id;
+    let kcode_offset = boot_info.kcode_offset;
+    let dtb = boot_info.fdt.map(|t| t.as_ptr()).unwrap_or(null_mut());
+
     debug_init();
     unsafe {
         println!("MMU ready!");
@@ -43,10 +49,14 @@ pub unsafe extern "C" fn __vma_relocate_entry(hartid: usize, kcode_offset: usize
     let cpu_count = handle_err!(fdt::cpu_count(), "could not get cpu count");
 
     println!("{:<12}: {}", "CPU count", cpu_count);
+    println!(
+        "{:<12}: {:?}",
+        "Memory start", boot_info.main_memory_free_start
+    );
 
     let memories = handle_err!(fdt::find_memory(), "could not get memories");
 
-    setup_memory_main(memories, cpu_count);
+    setup_memory_main(boot_info.main_memory_free_start, memories, cpu_count);
 
     let sp = stack_top_cpu0();
 

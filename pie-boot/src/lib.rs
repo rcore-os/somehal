@@ -29,6 +29,8 @@ mod archif;
 mod config;
 mod mem;
 
+use core::ptr::NonNull;
+
 pub use arch::*;
 
 unsafe fn clean_bss() {
@@ -46,6 +48,7 @@ unsafe fn clean_bss() {
     }
 }
 
+use kmem::PhysAddr;
 #[cfg(early_debug)]
 pub(crate) use somehal_macros::dbgln;
 
@@ -53,4 +56,23 @@ pub(crate) use somehal_macros::dbgln;
 #[macro_export]
 macro_rules! dbgln {
     ($($arg:tt)*) => {};
+}
+
+#[derive(Default, Clone)]
+pub struct BootInfo {
+    pub cpu_id: usize,
+    pub kcode_offset: usize,
+    pub fdt: Option<NonNull<u8>>,
+    pub main_memory_free_start: PhysAddr,
+}
+
+impl BootInfo {
+    pub const fn new() -> Self {
+        Self {
+            cpu_id: 0,
+            kcode_offset: 0,
+            fdt: None,
+            main_memory_free_start: PhysAddr::new(0),
+        }
+    }
 }

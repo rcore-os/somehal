@@ -40,7 +40,6 @@ pub unsafe extern "C" fn _start() -> ! {
             flags = const FLAG_LE ,
             version = const HEADER_VERSION,
             entry = sym pie_boot::primary_entry,
-            // entry = sym entry,
         )
     }
 }
