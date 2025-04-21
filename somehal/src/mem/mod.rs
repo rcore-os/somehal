@@ -1,33 +1,30 @@
-use boot::kcode_offset;
-use kmem::region::{CacheConfig, STACK_SIZE, STACK_TOP, region_phys_to_virt, region_virt_to_phys};
-pub use kmem::*;
-use page::page_size;
+use core::alloc::Layout;
 
+use crate::{
+    once_static::OnceStatic,
+    platform::{CpuId, CpuIdx},
+    println,
+    vec::ArrayVec,
+};
+use kmem::region::{
+    AccessFlags, CacheConfig, MemConfig, MemRegionKind, OFFSET_LINER, STACK_SIZE, STACK_TOP,
+    region_phys_to_virt, region_virt_to_phys,
+};
+pub use kmem::{region::MemRegion, *};
 use somehal_macros::fn_link_section;
 
-pub(crate) mod alloc;
 pub(crate) mod boot;
 pub mod page;
 mod percpu;
 
-pub(crate) use alloc::HEAP;
+use boot::kcode_offset;
+use page::page_size;
 
 #[derive(Debug, Clone)]
 pub struct PhysMemory {
     pub addr: PhysAddr,
     pub size: usize,
 }
-
-use core::alloc::Layout;
-
-use crate::{
-    platform::{CpuId, CpuIdx},
-    println,
-};
-pub use kmem::region::MemRegion;
-use kmem::region::{AccessFlags, MemConfig, MemRegionKind, OFFSET_LINER};
-
-use crate::{once_static::OnceStatic, vec::ArrayVec};
 
 pub type PhysMemoryArray = ArrayVec<PhysMemory, 12>;
 
@@ -294,14 +291,6 @@ fn_link_section!(text);
 fn_link_section!(rodata);
 fn_link_section!(bss);
 fn_link_section!(percpu);
-
-#[inline(always)]
-pub(crate) fn link_section_end() -> *const u8 {
-    unsafe extern "C" {
-        fn __boot_stack_bottom();
-    }
-    __boot_stack_bottom as _
-}
 
 #[inline(always)]
 fn rwdata() -> &'static [u8] {
