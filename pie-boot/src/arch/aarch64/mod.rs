@@ -31,26 +31,27 @@ cfg_match! {
 
 #[unsafe(naked)]
 /// The entry point of the kernel.
-pub extern "C" fn primary_entry(_fdt_addr: *mut u8) -> ! {
-    unsafe {
-        naked_asm!(
-            // Save dtb address.
-            "MOV      x19, x0",
-            // Set the stack pointer.
-            "ADRP     x1,  __boot_stack_bottom",
-            "ADD      x1, x1, :lo12:__boot_stack_bottom",
-            "ADD      x1, x1, {stack_size}",
-            "MOV      sp, x1",
+/// # Safety
+///
+/// The entry point of the kernel.
+pub unsafe extern "C" fn primary_entry(_fdt_addr: *mut u8) -> ! {
+    naked_asm!(
+        // Save dtb address.
+        "MOV      x19, x0",
+        // Set the stack pointer.
+        "ADRP     x1,  __boot_stack_bottom",
+        "ADD      x1, x1, :lo12:__boot_stack_bottom",
+        "ADD      x1, x1, {stack_size}",
+        "MOV      sp, x1",
 
-            "BL       {switch_to_elx}",
-            "MOV      x0,  x19",
-            "BL       {entry}",
-            "B        .",
-            stack_size = const crate::config::STACK_SIZE,
-            switch_to_elx = sym switch_to_elx,
-            entry = sym rust_boot,
-        )
-    }
+        "BL       {switch_to_elx}",
+        "MOV      x0,  x19",
+        "BL       {entry}",
+        "B        .",
+        stack_size = const crate::config::STACK_SIZE,
+        switch_to_elx = sym switch_to_elx,
+        entry = sym rust_boot,
+    )
 }
 
 fn rust_boot(fdt_addr: *mut u8) -> ! {
@@ -115,18 +116,17 @@ fn enable_mmu(va: usize) -> ! {
 }
 
 #[unsafe(naked)]
-extern "C" fn entry_lma() -> usize {
-    unsafe {
-        naked_asm!(
-            "ADRP     x0,  __vma_relocate_entry",
-            "ADD      x0, x0, :lo12:__vma_relocate_entry",
-            "ret"
-        )
-    }
+unsafe extern "C" fn entry_lma() -> usize {
+    naked_asm!(
+        "ADRP     x0,  __vma_relocate_entry",
+        "ADD      x0, x0, :lo12:__vma_relocate_entry",
+        "ret"
+    )
 }
+
 #[unsafe(naked)]
-extern "C" fn entry_vma() -> usize {
-    unsafe { naked_asm!("LDR      x0,  =__vma_relocate_entry", "ret") }
+unsafe extern "C" fn entry_vma() -> usize {
+    naked_asm!("LDR      x0,  =__vma_relocate_entry", "ret")
 }
 
 fn enable_fp() {
