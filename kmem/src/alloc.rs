@@ -33,6 +33,11 @@ impl LineAllocator {
     pub fn highest_address(&self) -> PhysAddr {
         self.iter
     }
+
+    #[inline(always)]
+    pub fn used(&self) -> usize {
+        self.iter - self.start
+    }
 }
 
 impl Access for LineAllocator {
