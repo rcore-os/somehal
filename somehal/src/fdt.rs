@@ -7,12 +7,11 @@ use fdt_parser::{Fdt, FdtError, Status};
 use kmem::{IntAlign, region::MemRegionKind};
 
 use crate::{
-    mem::{PhysMemory, PhysMemoryArray, main_memory_alloc, page::page_size},
+    mem::{PhysMemory, PhysMemoryArray, main_memory, page::page_size},
     platform::CpuId,
     println,
 };
 
-// use crate::{dbgln,};
 use kmem::region::*;
 
 use crate::mem::{MemRegion, boot::kcode_offset};
@@ -114,7 +113,7 @@ pub(crate) fn save_fdt() -> Option<MemRegion> {
     let size = fdt.total_size().align_up(page_size());
 
     let ptr_dst =
-        main_memory_alloc(Layout::from_size_align(size, page_size()).unwrap()).raw() as *mut u8;
+        main_memory::alloc(Layout::from_size_align(size, page_size()).unwrap()).raw() as *mut u8;
 
     unsafe {
         let src = &mut *slice_from_raw_parts_mut(ptr_src, size);

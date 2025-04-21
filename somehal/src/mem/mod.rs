@@ -16,6 +16,7 @@ use somehal_macros::fn_link_section;
 
 pub(crate) mod boot;
 pub(crate) mod heap;
+pub(crate) mod main_memory;
 pub mod page;
 mod percpu;
 
@@ -91,13 +92,13 @@ pub(crate) fn setup_memory_main(
             unsafe {
                 (*STACK_ALL.get()).replace(stack_all);
 
+                main_memory::init(phys_start, phys_end);
                 let memory_main = PhysMemory {
                     addr: phys_start,
                     size: phys_end.raw() - phys_start.raw(),
                 };
 
                 (*MEMORY_MAIN.get()).replace(memory_main);
-
                 init_heap();
             }
         } else {
@@ -143,8 +144,9 @@ pub(crate) fn setup_memory_regions(
     let percpu_all = if cpu_other_count > 0 {
         let percpu_other_all_size = percpu_one_size * cpu_other_count;
 
-        let percpu_start =
-            main_memory_alloc(Layout::from_size_align(percpu_other_all_size, page_size()).unwrap());
+        let percpu_start = main_memory::alloc(
+            Layout::from_size_align(percpu_other_all_size, page_size()).unwrap(),
+        );
 
         PhysMemory {
             addr: percpu_start,
@@ -191,17 +193,6 @@ pub(crate) fn setup_memory_regions(
 
 pub(crate) fn kernal_load_start_link_addr() -> usize {
     BootText().as_ptr() as _
-}
-
-pub(crate) fn main_memory_alloc(layout: Layout) -> PhysAddr {
-    unsafe {
-        let end = MEMORY_MAIN.addr + MEMORY_MAIN.size;
-        let ptr = MEMORY_MAIN.addr.align_up(layout.align());
-        let start = ptr + layout.size();
-        let size = end.raw() - start.raw();
-        (*MEMORY_MAIN.get()).replace(PhysMemory { addr: start, size });
-        ptr
-    }
 }
 
 fn mem_region_add(mut region: MemRegion) {

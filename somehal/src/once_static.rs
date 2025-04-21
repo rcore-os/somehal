@@ -21,6 +21,10 @@ impl<T> OnceStatic<T> {
             (*self.0.get()).replace(val);
         }
     }
+
+    pub fn is_init(&self) -> bool {
+        unsafe { (*self.0.get()).is_some() }
+    }
 }
 
 impl<T> Deref for OnceStatic<T> {
