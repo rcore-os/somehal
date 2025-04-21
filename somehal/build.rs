@@ -1,9 +1,4 @@
-use quote::quote;
-use std::{io::Write, path::PathBuf};
-
-// const ENTRY_VADDR: u64 = 0x40200000;
-// const ENTRY_VADDR_SV39: u64 = 0xffff_ffc0_0000_0000;
-// const ENTRY_VADDR_RISCV64: u64 = 0x80200000;
+use std::path::PathBuf;
 
 struct Config {
     addr_bits: usize,

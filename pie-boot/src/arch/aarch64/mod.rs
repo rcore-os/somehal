@@ -29,7 +29,7 @@ cfg_match! {
     }
 }
 
-#[naked]
+#[unsafe(naked)]
 /// The entry point of the kernel.
 pub extern "C" fn primary_entry(_fdt_addr: *mut u8) -> ! {
     unsafe {
@@ -114,7 +114,7 @@ fn enable_mmu(va: usize) -> ! {
     }
 }
 
-#[naked]
+#[unsafe(naked)]
 extern "C" fn entry_lma() -> usize {
     unsafe {
         naked_asm!(
@@ -124,7 +124,7 @@ extern "C" fn entry_lma() -> usize {
         )
     }
 }
-#[naked]
+#[unsafe(naked)]
 extern "C" fn entry_vma() -> usize {
     unsafe { naked_asm!("LDR      x0,  =__vma_relocate_entry", "ret") }
 }

@@ -6,6 +6,7 @@ use crate::{
     println,
     vec::ArrayVec,
 };
+use heap::HEAP;
 use kmem::region::{
     AccessFlags, CacheConfig, MemConfig, MemRegionKind, OFFSET_LINER, STACK_SIZE, STACK_TOP,
     region_phys_to_virt, region_virt_to_phys,
@@ -14,6 +15,7 @@ pub use kmem::{region::MemRegion, *};
 use somehal_macros::fn_link_section;
 
 pub(crate) mod boot;
+pub(crate) mod heap;
 pub mod page;
 mod percpu;
 
@@ -47,6 +49,18 @@ pub(crate) fn stack_top_cpu0() -> PhysAddr {
     STACK_ALL.addr + STACK_SIZE
 }
 
+pub(crate) fn init_heap() {
+    let mut h = HEAP.lock();
+    if h.size() == 0 {
+        let size = MEMORY_MAIN.size / 2;
+        let start = MEMORY_MAIN.addr + size;
+        println!("Tmp heap [{:?}, {:?})", start, start + size);
+        unsafe {
+            h.init(start.raw() as _, size);
+        }
+    }
+}
+
 pub(crate) fn setup_memory_main(
     main_memory_start: PhysAddr,
     memories: impl Iterator<Item = PhysMemory>,
@@ -77,10 +91,14 @@ pub(crate) fn setup_memory_main(
             unsafe {
                 (*STACK_ALL.get()).replace(stack_all);
 
-                (*MEMORY_MAIN.get()).replace(PhysMemory {
+                let memory_main = PhysMemory {
                     addr: phys_start,
                     size: phys_end.raw() - phys_start.raw(),
-                });
+                };
+
+                (*MEMORY_MAIN.get()).replace(memory_main);
+
+                init_heap();
             }
         } else {
             mem_region_add(MemRegion {

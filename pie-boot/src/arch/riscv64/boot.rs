@@ -11,7 +11,7 @@ use crate::{
 
 use super::mmu::init_mmu;
 
-#[naked]
+#[unsafe(naked)]
 /// The entry point of the kernel.
 pub extern "C" fn primary_entry(_hart_id: usize, _fdt_addr: *mut u8) -> ! {
     unsafe {
@@ -93,7 +93,7 @@ fn setup_boot_info(hartid: usize, kcode_offset: usize, fdt: *mut u8) -> *const B
     boot_info_addr()
 }
 
-#[naked]
+#[unsafe(naked)]
 extern "C" fn entry_lma() -> usize {
     unsafe {
         naked_asm!(
@@ -103,7 +103,7 @@ extern "C" fn entry_lma() -> usize {
         )
     }
 }
-#[naked]
+#[unsafe(naked)]
 pub extern "C" fn entry_vma() -> usize {
     unsafe {
         naked_asm!(
