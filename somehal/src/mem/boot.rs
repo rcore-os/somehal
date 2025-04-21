@@ -1,10 +1,3 @@
-use kmem::{
-    IntAlign,
-    paging::{Access, PhysAddr},
-};
-
-use super::PhysMemory;
-
 static mut KCODE_VA_OFFSET: usize = 0;
 
 pub unsafe fn set_kcode_va_offset(offset: usize) {

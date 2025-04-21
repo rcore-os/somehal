@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 #[repr(usize)]
 pub enum DcacheOp {
     CleanAndInvalidate = 0,
