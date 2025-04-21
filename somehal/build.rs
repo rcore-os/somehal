@@ -1,7 +1,6 @@
 use quote::quote;
 use std::{io::Write, path::PathBuf};
 
-
 // const ENTRY_VADDR: u64 = 0x40200000;
 // const ENTRY_VADDR_SV39: u64 = 0xffff_ffc0_0000_0000;
 // const ENTRY_VADDR_RISCV64: u64 = 0x80200000;
@@ -37,6 +36,10 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(use_fdt)");
     if matches!(arch, Arch::Aarch64 | Arch::Riscv64) {
         println!("cargo::rustc-cfg=use_fdt");
+    }
+    println!("cargo::rustc-check-cfg=cfg(use_acpi)");
+    if matches!(arch, Arch::X86_64) {
+        println!("cargo::rustc-cfg=use_acpi");
     }
 
     arch.gen_linker_script(&config);

@@ -1,3 +1,10 @@
+cfg_if::cfg_if! {
+    if #[cfg(use_acpi)]{
+        mod acpi;
+        pub use acpi::*;
+    }
+}
+
 macro_rules! def_id {
     ($id:ident, $t:ty) => {
         #[repr(transparent)]

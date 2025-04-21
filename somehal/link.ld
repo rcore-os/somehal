@@ -16,6 +16,7 @@ SECTIONS
     BootData : ALIGN(4K) {
         /* KEEP(*(.data.boot.table)) */
         /* KEEP(*(.data.boot*)) */
+        /* *pie_boot-*.o* */
         *pie_boot-*.o(.rodata* .got* .data* .sdata* .bss* .sbss* COMMON)
     } > VCODE
 
@@ -50,9 +51,10 @@ SECTIONS
         *(.sbss .sbss.*)
         *(COMMON)
         . = ALIGN(4K);
+
+        __boot_stack_bottom = .;
     } > VCODE
 
-    __boot_stack_bottom = .;
 
 	/DISCARD/ : {
         *(.comment) *(.gnu*) *(.note*) *(.eh_frame*)

@@ -4,7 +4,7 @@ use crate::{
     ArchIf,
     arch::{Arch, uart16550},
     mem::boot::set_kcode_va_offset,
-    println,
+    platform, println,
 };
 
 #[unsafe(no_mangle)]
@@ -14,6 +14,8 @@ pub unsafe extern "C" fn __vma_relocate_entry(kcode_offset: usize, mbi: usize) -
         uart16550::init();
 
         println!("\r\nMMU ready");
+
+        platform::init();
 
         let mut memory = Memory {};
 
@@ -31,6 +33,8 @@ pub unsafe extern "C" fn __vma_relocate_entry(kcode_offset: usize, mbi: usize) -
                 );
             }
         }
+
+        platform::cpu_list();
 
         Arch::wait_for_event();
         unreachable!()

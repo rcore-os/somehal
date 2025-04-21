@@ -5,9 +5,12 @@ use page::page_size;
 
 use somehal_macros::fn_link_section;
 
+pub(crate) mod alloc;
 pub(crate) mod boot;
 pub mod page;
 mod percpu;
+
+pub(crate) use alloc::HEAP;
 
 #[derive(Debug, Clone)]
 pub struct PhysMemory {
