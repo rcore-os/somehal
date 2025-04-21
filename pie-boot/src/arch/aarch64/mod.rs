@@ -1,6 +1,12 @@
-use core::arch::{asm, naked_asm};
+use core::{
+    arch::{asm, naked_asm},
+    ptr::NonNull,
+};
 
-use crate::{dbgln, mem::new_boot_table};
+use crate::{
+    dbgln,
+    mem::{boot_info_addr, edit_boot_info, init_phys_allocator, new_boot_table},
+};
 use aarch64_cpu::{
     asm::{
         barrier::{self, SY, isb},
@@ -66,18 +72,22 @@ fn rust_boot(fdt_addr: *mut u8) -> ! {
         dbgln!("Current EL     : {}", CurrentEL.read(CurrentEL::EL));
         dbgln!("Fdt            : {}", fdt_addr);
 
-        enable_mmu(kcode_offset, fdt_addr)
+        init_phys_allocator();
+
+        edit_boot_info(|info| {
+            info.cpu_id = (MPIDR_EL1.get() as usize) & 0xffffff;
+            info.kcode_offset = kcode_offset;
+            info.fdt = NonNull::new(fdt_addr);
+        });
+
+        enable_mmu(kcode_offset)
     }
 }
 
-fn enable_mmu(va: usize, fdt: *mut u8) -> ! {
+fn enable_mmu(va: usize) -> ! {
     setup_table_regs();
-    #[cfg(fdt)]
-    let fdt_size = crate::fdt::fdt_size(fdt);
-    #[cfg(not(fdt))]
-    let fdt_size = 0;
 
-    let table = new_boot_table(fdt_size, va);
+    let table = new_boot_table(va);
 
     dbgln!("Set kernel table {}", table.raw());
     set_table(table);
@@ -93,13 +103,11 @@ fn enable_mmu(va: usize, fdt: *mut u8) -> ! {
         setup_sctlr();
         isb(SY);
         asm!(
-            "MOV      x0,  {kcode_va}",
-            "MOV      x1,  {fdt}",
+            "BL       {boot_addr}",
             "MOV      x8,  {jump}",
             "BLR      x8",
             "B       .",
-            kcode_va = in(reg) va,
-            fdt = in(reg) fdt,
+            boot_addr = sym boot_info_addr,
             jump = in(reg) jump_to,
             options(nostack, noreturn)
         )

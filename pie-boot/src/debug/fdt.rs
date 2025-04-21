@@ -1,7 +1,5 @@
 use core::ptr::NonNull;
 
-use fdt_parser::Fdt;
-
 pub fn init_debugcon(fdt: *mut u8) -> Option<()> {
     fn phys_to_virt(p: usize) -> *mut u8 {
         p as _

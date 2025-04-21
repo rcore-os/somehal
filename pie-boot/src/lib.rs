@@ -22,9 +22,6 @@ pub(crate) mod console;
 #[cfg(early_uart)]
 pub(crate) mod debug;
 
-#[cfg(fdt)]
-pub(crate) mod fdt;
-
 mod archif;
 mod config;
 mod mem;

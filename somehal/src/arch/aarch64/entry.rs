@@ -2,6 +2,7 @@ use core::arch::asm;
 
 use aarch64_cpu::registers::*;
 use kmem::region::STACK_TOP;
+use pie_boot::BootInfo;
 
 use super::debug;
 use crate::{
@@ -21,37 +22,38 @@ use crate::{
 };
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn __vma_relocate_entry(kcode_offset: usize, dtb: *mut u8) {
+// pub unsafe extern "C" fn __vma_relocate_entry(kcode_offset: usize, dtb: *mut u8) {
+pub unsafe extern "C" fn __vma_relocate_entry(boot_info: *const BootInfo) {
     unsafe {
-        set_kcode_va_offset(kcode_offset);
-        fdt::set_fdt_ptr(dtb);
-    }
-    debug::init();
+        let boot_info = &*boot_info;
 
-    println!("MMU ready!");
+        set_kcode_va_offset(boot_info.kcode_offset);
+        fdt::set_fdt_ptr(boot_info.fdt.unwrap().as_ptr());
+        debug::init();
 
-    println!(
-        "{:<12}: {:#X}",
-        "Kernel LMA",
-        kernal_load_start_link_addr() - kcode_offset
-    );
+        println!("MMU ready!");
 
-    println!("{:<12}: {}", "Current EL", CurrentEL.read(CurrentEL::EL));
+        println!(
+            "{:<12}: {:#X}",
+            "Kernel LMA",
+            kernal_load_start_link_addr() - boot_info.kcode_offset
+        );
 
-    let cpu_count = handle_err!(fdt::cpu_count(), "could not get cpu count");
+        println!("{:<12}: {}", "Current EL", CurrentEL.read(CurrentEL::EL));
 
-    println!("{:<12}: {}", "CPU count", cpu_count);
+        let cpu_count = handle_err!(fdt::cpu_count(), "could not get cpu count");
 
-    let memories = handle_err!(fdt::find_memory(), "could not get memories");
+        println!("{:<12}: {}", "CPU count", cpu_count);
 
-    setup_memory_main(memories, cpu_count);
+        let memories = handle_err!(fdt::find_memory(), "could not get memories");
 
-    let sp = stack_top_cpu0();
+        setup_memory_main(boot_info.main_memory_free_start, memories, cpu_count);
 
-    println!("{:<12}: {:?}", "Stack top", sp);
+        let sp = stack_top_cpu0();
 
-    // SP 移动到物理地址正确位置
-    unsafe {
+        println!("{:<12}: {:?}", "Stack top", sp);
+
+        // SP 移动到物理地址正确位置
         asm!(
             "MOV SP, {sp}",
             "B   {fix_sp}",

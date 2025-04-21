@@ -2,7 +2,7 @@ use core::{cell::UnsafeCell, mem::MaybeUninit, ops::Deref};
 
 use kmem::{
     alloc::LineAllocator,
-    region::{AccessFlags, CacheConfig, MemConfig, PAGE_SIZE, STACK_SIZE},
+    region::{AccessFlags, CacheConfig, MemConfig},
     *,
 };
 use page_table_generic::*;
@@ -71,6 +71,10 @@ fn kernal_kcode_start() -> usize {
     __start_BootText as _
 }
 
+fn table_len() -> usize {
+    <<Arch as ArchIf>::PageTable as TableGeneric>::TABLE_LEN
+}
+
 /// `rsv_space` 在 `boot stack` 之后保留的空间到校
 pub fn new_boot_table(kcode_offset: usize) -> PhysAddr {
     let code_end_phys = PhysAddr::from(link_section_end() as usize);
@@ -117,9 +121,9 @@ pub fn new_boot_table(kcode_offset: usize) -> PhysAddr {
         ));
 
         let size = if table.entry_size() == table.max_block_size() {
-            table.entry_size() * 256
+            table.entry_size() * (table_len() / 2)
         } else {
-            table.max_block_size() * 512
+            table.max_block_size() * table_len()
         };
 
         dbgln!("eq             : [{}, {})", 0usize, size);
@@ -147,6 +151,7 @@ pub fn new_boot_table(kcode_offset: usize) -> PhysAddr {
     let addr = table.paddr();
 
     unsafe {
+        edit_boot_info(|_f| {});
         BOOT_TABLE = addr.raw();
     }
 
