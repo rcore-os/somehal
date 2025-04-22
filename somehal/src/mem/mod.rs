@@ -3,7 +3,7 @@ use core::alloc::Layout;
 use crate::{
     once_static::OnceStatic,
     platform::{CpuId, CpuIdx},
-    println,
+    printkv, println,
     vec::ArrayVec,
 };
 use heap::HEAP;
@@ -53,7 +53,7 @@ pub(crate) fn init_heap() {
     if h.size() == 0 {
         let size = MEMORY_MAIN.size / 2;
         let start = MEMORY_MAIN.addr + size;
-        println!("Tmp heap [{:?}, {:?})", start, start + size);
+        printkv!("Tmp heap", "[{:?}, {:?})", start, start + size);
         unsafe {
             h.init(start.raw() as _, size);
         }
@@ -97,7 +97,12 @@ pub(crate) fn setup_memory_main(
                 };
 
                 (*MEMORY_MAIN.get()).replace(memory_main);
-                init_heap();
+                printkv!(
+                    "Found main memory",
+                    "[{:?}, {:?})",
+                    MEMORY_MAIN.addr,
+                    MEMORY_MAIN.addr + MEMORY_MAIN.size
+                );
             }
         } else {
             mem_region_add(MemRegion {
@@ -114,12 +119,10 @@ pub(crate) fn setup_memory_main(
         }
     }
 
-    let stack_start = STACK_ALL.addr + STACK_ALL.size - STACK_SIZE;
-
     mem_region_add(MemRegion {
         virt_start: (STACK_TOP - STACK_SIZE).into(),
         size: STACK_SIZE,
-        phys_start: stack_start,
+        phys_start: stack_top_cpu0() - STACK_SIZE,
         name: "stack",
         config: MemConfig {
             access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
@@ -198,7 +201,7 @@ fn mem_region_add(mut region: MemRegion) {
     region.size = size;
 
     println!(
-        "region {:<12}: [{:?}, {:?}) -> [{:?}, {:?}) {:?} {:?} {}",
+        "region {:<17}: [{:?}, {:?}) -> [{:?}, {:?}) {:?} {:?} {}",
         region.name,
         region.virt_start,
         region.virt_start + region.size,

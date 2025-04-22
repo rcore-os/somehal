@@ -12,7 +12,7 @@ use super::debug;
 use crate::{
     ArchIf,
     arch::{
-        Arch,
+        Arch, cache,
         paging::{set_kernel_table, set_user_table},
     },
     handle_err,
@@ -21,13 +21,14 @@ use crate::{
         setup_memory_main, setup_memory_regions, stack_top_cpu0,
     },
     platform::*,
-    println,
+    printkv, println,
 };
 
 #[unsafe(no_mangle)]
 // pub unsafe extern "C" fn __vma_relocate_entry(kcode_offset: usize, dtb: *mut u8) {
 pub unsafe extern "C" fn __vma_relocate_entry(boot_info: *const BootInfo) {
     unsafe {
+        cache::dcache_all(cache::DcacheOp::CleanAndInvalidate);
         let boot_info = &*boot_info;
 
         set_kcode_va_offset(boot_info.kcode_offset);
@@ -36,17 +37,17 @@ pub unsafe extern "C" fn __vma_relocate_entry(boot_info: *const BootInfo) {
 
         println!("MMU ready!");
 
-        println!(
-            "{:<12}: {:#X}",
+        printkv!(
             "Kernel LMA",
+            "{:#X}",
             kernal_load_start_link_addr() - boot_info.kcode_offset
         );
 
-        println!("{:<12}: {}", "Current EL", CurrentEL.read(CurrentEL::EL));
+        printkv!("Current EL", "{}", CurrentEL.read(CurrentEL::EL));
 
         let cpu_count = handle_err!(cpu_count(), "could not get cpu count");
 
-        println!("{:<12}: {}", "CPU count", cpu_count);
+        printkv!("CPU count", "{}", cpu_count);
 
         let memories = handle_err!(find_memory(), "could not get memories");
 
@@ -54,7 +55,7 @@ pub unsafe extern "C" fn __vma_relocate_entry(boot_info: *const BootInfo) {
 
         let sp = stack_top_cpu0();
 
-        println!("{:<12}: {:?}", "Stack top", sp);
+        printkv!("Stack top", "{:?}", sp);
 
         // SP 移动到物理地址正确位置
         asm!(
@@ -71,7 +72,7 @@ fn phys_sp_entry() -> ! {
     println!("SP moved");
     let mut rsv = Vec::<_, 4>::new();
 
-    let alloc = RegionAllocator::new(
+    let mut alloc = RegionAllocator::new(
         "rsv",
         MemConfig {
             access: AccessFlags::Read,
@@ -80,9 +81,9 @@ fn phys_sp_entry() -> ! {
         MemRegionKind::Code,
         kcode_offset(),
     );
-
-    if let Some(r) = save_fdt(&alloc) {
-        // let _ = rsv.push(r);
+    if save_fdt(&mut alloc).is_none() {
+        println!("FDT save failed!");
+        panic!();
     }
 
     let _ = rsv.push(alloc.into());

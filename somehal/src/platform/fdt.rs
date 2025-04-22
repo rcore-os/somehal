@@ -7,9 +7,13 @@ use fdt_parser::{Fdt, FdtError, Status};
 use kmem::{IntAlign, region::MemRegionKind};
 
 use crate::{
-    mem::{PhysMemory, PhysMemoryArray, main_memory, page::page_size},
+    mem::{
+        PhysMemory, PhysMemoryArray,
+        main_memory::{self, RegionAllocator},
+        page::page_size,
+    },
     platform::CpuId,
-    println,
+    printkv, println,
 };
 
 use kmem::region::*;
@@ -107,9 +111,18 @@ fn get_fdt<'a>() -> Option<Fdt<'a>> {
     Fdt::from_ptr(NonNull::new(fdt_ptr())?).ok()
 }
 
-pub(crate) fn save_fdt(alloc: &impl Allocator) -> Option<()> {
+pub(crate) fn save_fdt(alloc: &mut RegionAllocator) -> Option<()> {
     let ptr_src = fdt_ptr();
-    let fdt = Fdt::from_ptr(NonNull::new(ptr_src)?).expect("invalid fdt");
+    println!("fdt addr {:p}", ptr_src);
+
+    let fdt = match Fdt::from_ptr(NonNull::new(ptr_src)?) {
+        Ok(f) => f,
+        Err(e) => {
+            println!("{:?}", e);
+            panic!();
+        }
+    };
+
     let size = fdt.total_size().align_up(page_size());
 
     let mut ptr_dst = alloc
@@ -123,7 +136,7 @@ pub(crate) fn save_fdt(alloc: &impl Allocator) -> Option<()> {
 
         FDT_ADDR = ptr_dst.addr().get();
 
-        println!("Save FDT to {:#x}", ptr_dst.addr());
+        printkv!("Save FDT to", "{:#x}", ptr_dst.addr());
     }
 
     Some(())

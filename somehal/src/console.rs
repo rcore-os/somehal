@@ -49,6 +49,13 @@ macro_rules! println {
 }
 
 #[macro_export]
+macro_rules! printkv {
+    ($key:expr, $($arg:tt)*) => {
+        $crate::print!("{:<24}: {}\r\n", $key, format_args!($($arg)*));
+    };
+}
+
+#[macro_export]
 macro_rules! handle_err {
     ($f:expr) => {
         match $f {

@@ -37,9 +37,9 @@ pub fn init(cpu0_id: CpuId, cpu_list: impl Iterator<Item = CpuId>) {
         id_ptr.write_volatile(cpu0_id);
 
         println!(
-            "cpu{:>6} {:?} init phys: [{:p}, {:p})",
+            "cpu {:>04} [0x{:>04x}] phys  : [{:p}, {:p})",
             idx,
-            cpu0_id,
+            cpu0_id.raw(),
             cpu0_start,
             cpu0_start.add(len)
         );
@@ -54,9 +54,9 @@ pub fn init(cpu0_id: CpuId, cpu_list: impl Iterator<Item = CpuId>) {
                     continue;
                 }
                 println!(
-                    "cpu{:>6} {:?} init phys: [{:#X}, {:#X})",
+                    "cpu {:>04} [0x{:>04x}] phys  : [{:#x}, {:#x})",
                     idx,
-                    id,
+                    id.raw(),
                     phys_iter,
                     phys_iter + len
                 );

@@ -25,8 +25,6 @@ pub(crate) mod once_static;
 pub(crate) mod platform;
 pub(crate) mod vec;
 
-
-
 pub(crate) use archif::ArchIf;
 
 pub use somehal_macros::entry;

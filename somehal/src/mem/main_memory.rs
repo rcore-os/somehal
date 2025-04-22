@@ -1,5 +1,6 @@
 use core::{
     alloc::{AllocError, Layout},
+    cell::UnsafeCell,
     ptr::NonNull,
 };
 
@@ -11,6 +12,7 @@ use kmem::{
 use spin::Mutex;
 
 use super::{MEMORY_MAIN, PhysMemory};
+use crate::println;
 
 pub unsafe fn init(start: PhysAddr, end: PhysAddr) {
     if MEMORY_MAIN.is_init() {
@@ -25,7 +27,7 @@ pub unsafe fn init(start: PhysAddr, end: PhysAddr) {
 }
 
 pub struct RegionAllocator {
-    allocator: Mutex<LineAllocator>,
+    allocator: LineAllocator,
     name: &'static str,
     config: MemConfig,
     kind: MemRegionKind,
@@ -33,21 +35,24 @@ pub struct RegionAllocator {
 }
 
 impl RegionAllocator {
-    pub fn new(name: &'static str, config: MemConfig, kind: MemRegionKind, va_offset: usize) -> Self {
+    pub fn new(
+        name: &'static str,
+        config: MemConfig,
+        kind: MemRegionKind,
+        va_offset: usize,
+    ) -> Self {
         Self {
-            allocator: Mutex::new(LineAllocator::new(MEMORY_MAIN.addr, MEMORY_MAIN.size)),
+            allocator: LineAllocator::new(MEMORY_MAIN.addr, MEMORY_MAIN.size),
             name,
             config,
             kind,
             va_offset,
         }
     }
-}
 
-unsafe impl core::alloc::Allocator for RegionAllocator {
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+    pub fn allocate(&mut self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         unsafe {
-            let ptr = self.allocator.lock().alloc(layout).ok_or(AllocError {})?;
+            let ptr = self.allocator.alloc(layout).ok_or(AllocError {})?;
 
             Ok(NonNull::slice_from_raw_parts(
                 NonNull::new_unchecked(ptr.raw() as _),
@@ -55,13 +60,11 @@ unsafe impl core::alloc::Allocator for RegionAllocator {
             ))
         }
     }
-
-    unsafe fn deallocate(&self, _ptr: core::ptr::NonNull<u8>, _layout: Layout) {}
 }
 
 impl From<RegionAllocator> for MemRegion {
     fn from(value: RegionAllocator) -> Self {
-        let al = value.allocator.lock();
+        let al = &value.allocator;
 
         let m = unsafe { &mut *MEMORY_MAIN.get() }.as_mut().unwrap();
         assert_eq!(m.addr, al.start, "parrel `RegionAllocator` allocator");

@@ -6,8 +6,8 @@ use kmem::paging::*;
 
 use crate::arch::Arch;
 use crate::archif::ArchIf;
-use crate::mem::MEM_REGIONS;
-use crate::{handle_err, println};
+use crate::mem::{init_heap, MEM_REGIONS};
+use crate::{handle_err, printkv, println};
 
 pub type Table<'a> = PageTableRef<'a, <Arch as ArchIf>::PageTable>;
 
@@ -32,6 +32,8 @@ pub const fn page_valid_addr_mask() -> usize {
 }
 
 pub fn new_mapped_table() -> PhysAddr {
+    init_heap();
+
     let tmp_size = 8 * MB;
 
     let start = if let Some(h) =
@@ -46,9 +48,11 @@ pub fn new_mapped_table() -> PhysAddr {
     let start = PhysAddr::from(start.as_ptr() as usize);
     let mut tmp_alloc = LineAllocator::new(start, tmp_size);
 
-    println!(
-        "Tmp page allocator: [{:?}, {:?})",
-        tmp_alloc.start, tmp_alloc.end
+    printkv!(
+        "Tmp page allocator",
+        "[{:?}, {:?})",
+        tmp_alloc.start,
+        tmp_alloc.end
     );
 
     let access = &mut tmp_alloc;
