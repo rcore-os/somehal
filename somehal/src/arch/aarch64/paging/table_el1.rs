@@ -1,37 +1,30 @@
-use core::arch::asm;
-
-use kmem_region::VirtAddr;
-
-use core::fmt::Debug;
+use core::{arch::asm, fmt::Debug};
 
 use aarch64_cpu::registers::*;
-use kmem_region::{
-    PhysAddr,
-    paging::{PTEGeneric, TableGeneric},
-    region::AccessFlags,
-};
+use kmem_region::region::AccessFlags;
+use page_table_generic::{PTEGeneric, PhysAddr, TableGeneric, VirtAddr};
 
-pub fn set_kernel_table(addr: PhysAddr) {
+pub fn set_kernel_table(addr: crate::mem::PhysAddr) {
     TTBR1_EL1.set_baddr(addr.raw() as _);
     flush_tlb(None);
 }
 
-pub fn get_kernel_table() -> PhysAddr {
+pub fn get_kernel_table() -> crate::mem::PhysAddr {
     (TTBR1_EL1.get_baddr() as usize).into()
 }
 
 #[inline(always)]
-pub fn set_user_table(addr: PhysAddr) {
+pub fn set_user_table(addr: crate::mem::PhysAddr) {
     TTBR0_EL1.set_baddr(addr.raw() as _);
     flush_tlb(None);
 }
 
-pub fn get_user_table() -> PhysAddr {
+pub fn get_user_table() -> crate::mem::PhysAddr {
     (TTBR0_EL1.get_baddr() as usize).into()
 }
 
 #[inline(always)]
-pub fn flush_tlb(vaddr: Option<VirtAddr>) {
+pub fn flush_tlb(vaddr: Option<crate::mem::VirtAddr>) {
     match vaddr {
         Some(addr) => {
             unsafe { asm!("tlbi vaae1is, {}; dsb nsh; isb", in(reg) addr.raw()) };
