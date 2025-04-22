@@ -1,18 +1,22 @@
 use core::{arch::asm, ptr::null_mut};
 
-use kmem::region::{STACK_TOP, set_kcode_va_offset};
+use heapless::Vec;
+use kmem::region::{
+    AccessFlags, CacheConfig, MemConfig, MemRegionKind, STACK_TOP, kcode_offset,
+    set_kcode_va_offset,
+};
 use pie_boot::BootInfo;
 use riscv::register::satp;
 
 use crate::{
     arch::debug_init,
-    fdt, handle_err,
+    handle_err,
     mem::{
-        kernal_load_start_link_addr, page::new_mapped_table, setup_memory_main,
-        setup_memory_regions, stack_top_cpu0,
+        kernal_load_start_link_addr, main_memory::RegionAllocator, page::new_mapped_table,
+        setup_memory_main, setup_memory_regions, stack_top_cpu0,
     },
+    platform::*,
     println,
-    vec::ArrayVec,
 };
 
 #[unsafe(no_mangle)]
@@ -32,7 +36,7 @@ pub unsafe extern "C" fn __vma_relocate_entry(boot_info: *const BootInfo) {
             options(nostack)
         );
         set_kcode_va_offset(kcode_offset);
-        fdt::set_fdt_ptr(dtb);
+        set_fdt_ptr(dtb);
     }
 
     println!(
@@ -46,7 +50,7 @@ pub unsafe extern "C" fn __vma_relocate_entry(boot_info: *const BootInfo) {
 
     println!("{:<12}: {:?}", "FDT", dtb);
 
-    let cpu_count = handle_err!(fdt::cpu_count(), "could not get cpu count");
+    let cpu_count = handle_err!(cpu_count(), "could not get cpu count");
 
     println!("{:<12}: {}", "CPU count", cpu_count);
     println!(
@@ -54,7 +58,7 @@ pub unsafe extern "C" fn __vma_relocate_entry(boot_info: *const BootInfo) {
         "Memory start", boot_info.main_memory_free_start
     );
 
-    let memories = handle_err!(fdt::find_memory(), "could not get memories");
+    let memories = handle_err!(find_memory(), "could not get memories");
 
     setup_memory_main(boot_info.main_memory_free_start, memories, cpu_count);
 
@@ -78,13 +82,26 @@ pub unsafe extern "C" fn __vma_relocate_entry(boot_info: *const BootInfo) {
 
 fn phys_sp_entry(hartid: usize) -> ! {
     println!("SP moved");
-    let mut rsv = ArrayVec::<_, 4>::new();
 
-    if let Some(r) = fdt::save_fdt() {
-        let _ = rsv.try_push(r);
+    let mut rsv = Vec::<_, 4>::new();
+
+    let mut alloc = RegionAllocator::new(
+        "rsv",
+        MemConfig {
+            access: AccessFlags::Read,
+            cache: CacheConfig::Normal,
+        },
+        MemRegionKind::Code,
+        kcode_offset(),
+    );
+    if save_fdt(&mut alloc).is_none() {
+        println!("FDT save failed!");
+        panic!();
     }
 
-    setup_memory_regions(hartid.into(), rsv, fdt::cpu_list().unwrap());
+    let _ = rsv.push(alloc.into());
+
+    setup_memory_regions(hartid.into(), rsv.into_iter(), cpu_list().unwrap());
 
     println!("Memory regions setup done!");
 

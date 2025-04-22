@@ -63,8 +63,8 @@ fn out_dir() -> PathBuf {
 }
 
 impl Arch {
-    fn gen_linker_script(&self, config: &Config) {
-        let mut script = "link.ld";
+    fn gen_linker_script(&self, _config: &Config) {
+        let script = "link.ld";
 
         let output_arch = if matches!(self, Arch::X86_64) {
             // script = "src/arch/x86_64/link.ld";
