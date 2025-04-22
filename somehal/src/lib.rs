@@ -20,6 +20,7 @@ pub mod arch;
 
 mod archif;
 pub mod console;
+mod entry;
 pub mod mem;
 pub(crate) mod once_static;
 pub(crate) mod platform;

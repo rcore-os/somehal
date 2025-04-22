@@ -1,3 +1,4 @@
+use entry::primary_entry;
 use page_table_generic::TableGeneric;
 use riscv::{
     asm::{sfence_vma, sfence_vma_all},
@@ -76,5 +77,9 @@ impl ArchIf for Arch {
 
     fn cpu_id() -> CpuId {
         mem::cpu_id()
+    }
+
+    fn primary_entry(boot_info: pie_boot::BootInfo) {
+        primary_entry(boot_info);
     }
 }

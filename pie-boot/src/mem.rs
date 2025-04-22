@@ -36,6 +36,12 @@ impl<T> Deref for StaticCell<T> {
     }
 }
 
+pub(crate) fn clean_boot_info() {
+    unsafe {
+        *BOOT_INFO.0.get() = BootInfo::new();
+    }
+}
+
 pub(crate) unsafe fn edit_boot_info(f: impl FnOnce(&mut BootInfo)) {
     unsafe {
         let info = &mut *BOOT_INFO.0.get();

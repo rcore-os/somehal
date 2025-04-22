@@ -46,10 +46,11 @@ unsafe fn clean_bss() {
             start.add(i).write(0);
         }
     }
+    mem::clean_boot_info();
 }
 
 use kmem_region::PhysAddr;
-use mem::{boot_info, boot_info_addr};
+use mem::boot_info;
 #[cfg(early_debug)]
 pub(crate) use somehal_macros::dbgln;
 
@@ -65,6 +66,7 @@ pub struct BootInfo {
     pub kcode_offset: usize,
     pub fdt: Option<NonNull<u8>>,
     pub main_memory_free_start: PhysAddr,
+    pub main_memory_free_end: Option<PhysAddr>,
 }
 
 impl BootInfo {
@@ -74,6 +76,7 @@ impl BootInfo {
             kcode_offset: 0,
             fdt: None,
             main_memory_free_start: PhysAddr::new(0),
+            main_memory_free_end: None,
         }
     }
 }

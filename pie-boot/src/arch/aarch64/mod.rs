@@ -6,7 +6,7 @@ use core::{
 use crate::paging::TableGeneric;
 use crate::{
     dbgln,
-    mem::{boot_info_addr, edit_boot_info, init_phys_allocator, new_boot_table},
+    mem::{edit_boot_info, init_phys_allocator, new_boot_table},
 };
 use aarch64_cpu::{
     asm::{

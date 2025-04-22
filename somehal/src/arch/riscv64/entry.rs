@@ -20,8 +20,7 @@ use crate::{
 };
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn __vma_relocate_entry(boot_info: *const BootInfo) {
-    let boot_info = unsafe { &*boot_info };
+pub fn primary_entry(boot_info: BootInfo) {
     let hartid = boot_info.cpu_id;
     let kcode_offset = boot_info.kcode_offset;
     let dtb = boot_info.fdt.map(|t| t.as_ptr()).unwrap_or(null_mut());
