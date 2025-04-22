@@ -4,6 +4,7 @@
 #![feature(used_with_arg)]
 #![feature(cfg_match)]
 #![feature(fn_align)]
+#![feature(pointer_is_aligned_to)]
 
 #[cfg(target_arch = "aarch64")]
 #[path = "arch/aarch64/mod.rs"]
@@ -25,6 +26,7 @@ pub(crate) mod debug;
 mod archif;
 mod config;
 mod mem;
+mod paging;
 
 use core::ptr::NonNull;
 

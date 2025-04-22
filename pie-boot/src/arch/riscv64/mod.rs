@@ -8,9 +8,9 @@ mod context;
 mod mmu;
 mod trap;
 
+use crate::paging::TableGeneric;
 pub use boot::*;
 use mmu::new_pte_with_config;
-use page_table_generic::TableGeneric;
 
 static mut EXT_CONSOLE: bool = false;
 

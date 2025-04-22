@@ -2,7 +2,7 @@ use core::{arch::asm, fmt::Debug};
 
 use aarch64_cpu::registers::*;
 use kmem::region::AccessFlags;
-use page_table_generic::{PTEGeneric, PhysAddr, TableGeneric, VirtAddr};
+use crate::paging::{PTEGeneric, PhysAddr, TableGeneric, VirtAddr};
 
 use super::primary_entry;
 

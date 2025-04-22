@@ -1,4 +1,4 @@
-use page_table_generic::PagingError;
+use crate::paging::PagingError;
 
 use crate::{Arch, archif::ArchIf};
 
