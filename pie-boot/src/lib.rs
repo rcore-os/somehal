@@ -30,6 +30,7 @@ mod config;
 mod mem;
 #[allow(unused)]
 mod paging;
+mod vec;
 
 use arch::*;
 use kmem_region::PhysAddr;
