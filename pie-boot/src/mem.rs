@@ -45,6 +45,10 @@ pub(crate) unsafe fn edit_boot_info(f: impl FnOnce(&mut BootInfo)) {
     }
 }
 
+pub(crate) fn boot_info() -> BootInfo {
+    unsafe { &*BOOT_INFO.0.get() }.clone()
+}
+
 pub(crate) fn boot_info_addr() -> *const BootInfo {
     BOOT_INFO.0.get()
 }

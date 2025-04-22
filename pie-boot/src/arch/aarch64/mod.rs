@@ -96,19 +96,18 @@ fn enable_mmu(va: usize) -> ! {
 
     let jump_to: *mut u8;
     unsafe {
-        asm!("LDR {0}, =__vma_relocate_entry",
+        asm!("LDR {0}, ={entry}",
             out(reg) jump_to,
+            entry = sym crate::relocate,
         );
         dbgln!("relocate to pc: {}", jump_to);
         // Enable the MMU and turn on I-cache and D-cache
         setup_sctlr();
         isb(SY);
         asm!(
-            "BL       {boot_addr}",
             "MOV      x8,  {jump}",
             "BLR      x8",
             "B       .",
-            boot_addr = sym boot_info_addr,
             jump = in(reg) jump_to,
             options(nostack, noreturn)
         )

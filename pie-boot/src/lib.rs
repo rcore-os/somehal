@@ -49,6 +49,7 @@ unsafe fn clean_bss() {
 }
 
 use kmem_region::PhysAddr;
+use mem::{boot_info, boot_info_addr};
 #[cfg(early_debug)]
 pub(crate) use somehal_macros::dbgln;
 
@@ -74,5 +75,15 @@ impl BootInfo {
             fdt: None,
             main_memory_free_start: PhysAddr::new(0),
         }
+    }
+}
+
+pub(crate) fn relocate() {
+    unsafe extern "Rust" {
+        fn __vma_relocate_entry(boot_info: BootInfo);
+    }
+
+    unsafe {
+        __vma_relocate_entry(boot_info());
     }
 }
