@@ -21,7 +21,7 @@ fn handle_breakpoint(sepc: &mut usize) {
     *sepc += 2
 }
 
-fn handle_page_fault(tf: &TrapFrame, mut access_flags: AccessFlags, is_user: bool) {
+fn handle_page_fault(tf: &TrapFrame, _access_flags: AccessFlags, is_user: bool) {
     let vaddr = stval::read();
     dbgln!(
         "Unhandled {} Page Fault @ {}, fault_vaddr={}:\n",

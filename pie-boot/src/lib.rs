@@ -26,6 +26,7 @@ pub(crate) mod debug;
 mod archif;
 mod config;
 mod mem;
+#[allow(unused)]
 mod paging;
 
 use core::ptr::NonNull;
