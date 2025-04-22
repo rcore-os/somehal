@@ -6,6 +6,8 @@
 #![feature(fn_align)]
 #![feature(pointer_is_aligned_to)]
 
+use core::ptr::NonNull;
+
 #[cfg(target_arch = "aarch64")]
 #[path = "arch/aarch64/mod.rs"]
 mod arch;
@@ -29,9 +31,16 @@ mod mem;
 #[allow(unused)]
 mod paging;
 
-use core::ptr::NonNull;
-
-pub use arch::*;
+use arch::*;
+use kmem_region::PhysAddr;
+use mem::boot_info;
+#[cfg(early_debug)]
+pub(crate) use somehal_macros::dbgln;
+#[cfg(not(early_debug))]
+#[macro_export]
+macro_rules! dbgln {
+    ($($arg:tt)*) => {};
+}
 
 unsafe fn clean_bss() {
     unsafe extern "C" {
@@ -47,17 +56,6 @@ unsafe fn clean_bss() {
         }
     }
     mem::clean_boot_info();
-}
-
-use kmem_region::PhysAddr;
-use mem::boot_info;
-#[cfg(early_debug)]
-pub(crate) use somehal_macros::dbgln;
-
-#[cfg(not(early_debug))]
-#[macro_export]
-macro_rules! dbgln {
-    ($($arg:tt)*) => {};
 }
 
 #[derive(Default, Clone)]

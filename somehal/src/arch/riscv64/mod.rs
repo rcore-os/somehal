@@ -7,7 +7,6 @@ use riscv::{
 
 use crate::{ArchIf, mem, platform::CpuId};
 
-mod boot;
 mod entry;
 
 pub(crate) mod paging;

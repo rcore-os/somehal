@@ -8,7 +8,6 @@ use crate::{
     platform::CpuId,
 };
 
-mod boot;
 mod cache;
 mod context;
 pub mod debug;
