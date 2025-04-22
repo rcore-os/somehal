@@ -9,7 +9,6 @@ mod mmu;
 mod trap;
 
 use crate::paging::TableGeneric;
-pub use boot::*;
 use mmu::new_pte_with_config;
 
 static mut EXT_CONSOLE: bool = false;
