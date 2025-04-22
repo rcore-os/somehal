@@ -25,8 +25,7 @@ pub(crate) mod once_static;
 pub(crate) mod platform;
 pub(crate) mod vec;
 
-#[cfg(use_fdt)]
-pub(crate) mod fdt;
+
 
 pub(crate) use archif::ArchIf;
 

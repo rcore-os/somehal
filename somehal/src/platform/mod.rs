@@ -2,6 +2,9 @@ cfg_if::cfg_if! {
     if #[cfg(use_acpi)]{
         mod acpi;
         pub use acpi::*;
+    }else if #[cfg(use_fdt)]{
+        mod fdt;
+        pub use fdt::*;
     }
 }
 
