@@ -1,3 +1,5 @@
+use entry::primary_entry;
+use page_table_generic::TableGeneric;
 use riscv::{
     asm::{sfence_vma, sfence_vma_all},
     register::satp,
@@ -5,7 +7,6 @@ use riscv::{
 
 use crate::{ArchIf, mem, platform::CpuId};
 
-mod boot;
 mod entry;
 
 pub(crate) mod paging;
@@ -37,29 +38,29 @@ impl ArchIf for Arch {
 
     #[inline(always)]
     fn new_pte_with_config(
-        config: kmem::region::MemConfig,
-    ) -> <Self::PageTable as kmem::paging::TableGeneric>::PTE {
+        config: kmem_region::region::MemConfig,
+    ) -> <Self::PageTable as TableGeneric>::PTE {
         paging::new_pte_with_config(config)
     }
 
-    fn set_kernel_table(_addr: kmem::PhysAddr) {
+    fn set_kernel_table(_addr: kmem_region::PhysAddr) {
         todo!()
     }
 
-    fn get_kernel_table() -> kmem::PhysAddr {
+    fn get_kernel_table() -> kmem_region::PhysAddr {
         (satp::read().ppn() << 12).into()
     }
 
-    fn set_user_table(_addr: kmem::PhysAddr) {
+    fn set_user_table(_addr: kmem_region::PhysAddr) {
         todo!()
     }
 
-    fn get_user_table() -> kmem::PhysAddr {
+    fn get_user_table() -> kmem_region::PhysAddr {
         todo!()
     }
 
     #[inline(always)]
-    fn flush_tlb(vaddr: Option<kmem::VirtAddr>) {
+    fn flush_tlb(vaddr: Option<kmem_region::VirtAddr>) {
         if let Some(vaddr) = vaddr {
             sfence_vma(0, vaddr.raw())
         } else {
@@ -75,5 +76,9 @@ impl ArchIf for Arch {
 
     fn cpu_id() -> CpuId {
         mem::cpu_id()
+    }
+
+    fn primary_entry(boot_info: pie_boot::BootInfo) {
+        primary_entry(boot_info);
     }
 }

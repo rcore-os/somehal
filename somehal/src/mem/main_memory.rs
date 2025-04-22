@@ -3,7 +3,7 @@ use core::{
     ptr::NonNull,
 };
 
-use kmem::{
+use kmem_region::{
     IntAlign, PhysAddr,
     alloc::LineAllocator,
     region::{MemConfig, MemRegion, MemRegionKind},

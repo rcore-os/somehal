@@ -1,7 +1,7 @@
 use core::mem::size_of;
 
 use crate::dbgln;
-use kmem::region::AccessFlags;
+use kmem_region::region::AccessFlags;
 use riscv::interrupt::Trap;
 use riscv::interrupt::supervisor::{Exception as E, Interrupt as I};
 use riscv::register::{scause, stval};
@@ -21,7 +21,7 @@ fn handle_breakpoint(sepc: &mut usize) {
     *sepc += 2
 }
 
-fn handle_page_fault(tf: &TrapFrame, mut access_flags: AccessFlags, is_user: bool) {
+fn handle_page_fault(tf: &TrapFrame, _access_flags: AccessFlags, is_user: bool) {
     let vaddr = stval::read();
     dbgln!(
         "Unhandled {} Page Fault @ {}, fault_vaddr={}:\n",

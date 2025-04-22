@@ -4,6 +4,9 @@
 #![feature(used_with_arg)]
 #![feature(cfg_match)]
 #![feature(fn_align)]
+#![feature(pointer_is_aligned_to)]
+
+use core::ptr::NonNull;
 
 #[cfg(target_arch = "aarch64")]
 #[path = "arch/aarch64/mod.rs"]
@@ -25,10 +28,19 @@ pub(crate) mod debug;
 mod archif;
 mod config;
 mod mem;
+#[allow(unused)]
+mod paging;
 
-use core::ptr::NonNull;
-
-pub use arch::*;
+use arch::*;
+use kmem_region::PhysAddr;
+use mem::boot_info;
+#[cfg(early_debug)]
+pub(crate) use somehal_macros::dbgln;
+#[cfg(not(early_debug))]
+#[macro_export]
+macro_rules! dbgln {
+    ($($arg:tt)*) => {};
+}
 
 unsafe fn clean_bss() {
     unsafe extern "C" {
@@ -43,16 +55,7 @@ unsafe fn clean_bss() {
             start.add(i).write(0);
         }
     }
-}
-
-use kmem::PhysAddr;
-#[cfg(early_debug)]
-pub(crate) use somehal_macros::dbgln;
-
-#[cfg(not(early_debug))]
-#[macro_export]
-macro_rules! dbgln {
-    ($($arg:tt)*) => {};
+    mem::clean_boot_info();
 }
 
 #[derive(Default, Clone)]
@@ -61,6 +64,7 @@ pub struct BootInfo {
     pub kcode_offset: usize,
     pub fdt: Option<NonNull<u8>>,
     pub main_memory_free_start: PhysAddr,
+    pub main_memory_free_end: Option<PhysAddr>,
 }
 
 impl BootInfo {
@@ -70,6 +74,17 @@ impl BootInfo {
             kcode_offset: 0,
             fdt: None,
             main_memory_free_start: PhysAddr::new(0),
+            main_memory_free_end: None,
         }
+    }
+}
+
+pub(crate) fn relocate() {
+    unsafe extern "Rust" {
+        fn __vma_relocate_entry(boot_info: BootInfo);
+    }
+
+    unsafe {
+        __vma_relocate_entry(boot_info());
     }
 }

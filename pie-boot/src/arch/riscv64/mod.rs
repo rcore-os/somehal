@@ -8,9 +8,8 @@ mod context;
 mod mmu;
 mod trap;
 
-pub use boot::*;
+use crate::paging::TableGeneric;
 use mmu::new_pte_with_config;
-use page_table_generic::TableGeneric;
 
 static mut EXT_CONSOLE: bool = false;
 
@@ -43,7 +42,7 @@ impl ArchIf for Arch {
     type PageTable = mmu::Table;
 
     fn new_pte_with_config(
-        config: kmem::region::MemConfig,
+        config: kmem_region::region::MemConfig,
     ) -> <Self::PageTable as TableGeneric>::PTE {
         new_pte_with_config(config)
     }

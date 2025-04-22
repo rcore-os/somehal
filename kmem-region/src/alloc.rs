@@ -1,5 +1,3 @@
-use page_table_generic::Access;
-
 use crate::{IntAlign, PhysAddr};
 
 pub struct LineAllocator {
@@ -37,20 +35,5 @@ impl LineAllocator {
     #[inline(always)]
     pub fn used(&self) -> usize {
         self.iter - self.start
-    }
-}
-
-impl Access for LineAllocator {
-    #[inline(always)]
-    unsafe fn alloc(&mut self, layout: core::alloc::Layout) -> Option<PhysAddr> {
-        LineAllocator::alloc(self, layout)
-    }
-
-    #[inline(always)]
-    unsafe fn dealloc(&mut self, _ptr: PhysAddr, _layout: core::alloc::Layout) {}
-
-    #[inline(always)]
-    fn phys_to_mut(&self, phys: PhysAddr) -> *mut u8 {
-        phys.raw() as _
     }
 }

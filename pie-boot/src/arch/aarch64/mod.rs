@@ -3,9 +3,10 @@ use core::{
     ptr::NonNull,
 };
 
+use crate::paging::TableGeneric;
 use crate::{
     dbgln,
-    mem::{boot_info_addr, edit_boot_info, init_phys_allocator, new_boot_table},
+    mem::{edit_boot_info, init_phys_allocator, new_boot_table},
 };
 use aarch64_cpu::{
     asm::{
@@ -14,7 +15,6 @@ use aarch64_cpu::{
     },
     registers::*,
 };
-use page_table_generic::TableGeneric;
 
 use crate::{archif::ArchIf, clean_bss};
 
@@ -29,12 +29,42 @@ cfg_match! {
     }
 }
 
+const FLAG_LE: usize = 0b0;
+const FLAG_PAGE_SIZE_4K: usize = 0b10;
+const FLAG_ANY_MEM: usize = 0b1000;
+
 #[unsafe(naked)]
-/// The entry point of the kernel.
+#[unsafe(no_mangle)]
+#[unsafe(link_section = ".text.boot.header")]
+/// The header of the kernel.
+/// 
 /// # Safety
-///
-/// The entry point of the kernel.
-pub unsafe extern "C" fn primary_entry(_fdt_addr: *mut u8) -> ! {
+pub unsafe extern "C" fn _start() -> ! {
+    naked_asm!(
+        // code0/code1
+        "nop",
+        "bl {entry}",
+        // text_offset
+        ".quad 0",
+        // image_size
+        ".quad __kernel_load_size",
+        // flags
+        ".quad {flags}",
+        // Reserved fields
+        ".quad 0",
+        ".quad 0",
+        ".quad 0",
+        // magic - yes 0x644d5241 is the same as ASCII string "ARM\x64"
+        ".ascii \"ARM\\x64\"",
+        // Another reserved field at the end of the header
+        ".byte 0, 0, 0, 0",
+        flags = const FLAG_LE | FLAG_PAGE_SIZE_4K | FLAG_ANY_MEM,
+        entry = sym primary_entry,
+    )
+}
+
+#[unsafe(naked)]
+unsafe extern "C" fn primary_entry(_fdt_addr: *mut u8) -> ! {
     naked_asm!(
         // Save dtb address.
         "MOV      x19, x0",
@@ -96,19 +126,18 @@ fn enable_mmu(va: usize) -> ! {
 
     let jump_to: *mut u8;
     unsafe {
-        asm!("LDR {0}, =__vma_relocate_entry",
+        asm!("LDR {0}, ={entry}",
             out(reg) jump_to,
+            entry = sym crate::relocate,
         );
         dbgln!("relocate to pc: {}", jump_to);
         // Enable the MMU and turn on I-cache and D-cache
         setup_sctlr();
         isb(SY);
         asm!(
-            "BL       {boot_addr}",
             "MOV      x8,  {jump}",
             "BLR      x8",
             "B       .",
-            boot_addr = sym boot_info_addr,
             jump = in(reg) jump_to,
             options(nostack, noreturn)
         )
@@ -149,7 +178,7 @@ impl ArchIf for Arch {
     type PageTable = Table;
 
     fn new_pte_with_config(
-        config: kmem::region::MemConfig,
+        config: kmem_region::region::MemConfig,
     ) -> <Self::PageTable as TableGeneric>::PTE {
         new_pte_with_config(config)
     }

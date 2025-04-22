@@ -11,7 +11,7 @@ SECTIONS
     
     BootText : {
         KEEP(*(.text.boot.header))
-        *pie_boot-*.o(.text*)
+        KEEP(*pie_boot-*.o(.text*))
     } 
     BootData : ALIGN(4K) {
         *pie_boot-*.o(.rodata* .got* .data* .sdata* .bss* .sbss* COMMON)

@@ -1,10 +1,7 @@
 use core::fmt::Debug;
 
-use kmem::{
-    VirtAddr,
-    paging::{PTEGeneric, TableGeneric},
-    region::AccessFlags,
-};
+use kmem_region::region::AccessFlags;
+use page_table_generic::{PTEGeneric, PhysAddr, TableGeneric, VirtAddr};
 
 use crate::arch::Arch;
 
@@ -48,11 +45,11 @@ impl PTEGeneric for Pte {
         PTEFlags::from_bits_truncate(self.0).contains(PTEFlags::V)
     }
 
-    fn paddr(&self) -> kmem::PhysAddr {
+    fn paddr(&self) -> PhysAddr {
         ((self.0 & Self::PHYS_ADDR_MASK) << 2).into()
     }
 
-    fn set_paddr(&mut self, paddr: kmem::PhysAddr) {
+    fn set_paddr(&mut self, paddr: PhysAddr) {
         self.0 = (self.0 & !Self::PHYS_ADDR_MASK) | ((paddr.raw() >> 2) & Self::PHYS_ADDR_MASK);
     }
 
@@ -96,11 +93,11 @@ impl TableGeneric for Table {
     const MAX_BLOCK_LEVEL: usize = 3;
 
     fn flush(vaddr: Option<VirtAddr>) {
-        Arch::flush_tlb(vaddr);
+        Arch::flush_tlb(vaddr.map(|o| o.raw().into()));
     }
 }
 
-pub fn new_pte_with_config(config: kmem::region::MemConfig) -> Pte {
+pub fn new_pte_with_config(config: kmem_region::region::MemConfig) -> Pte {
     let mut flags = PTEFlags::V | PTEFlags::D | PTEFlags::A | PTEFlags::R | PTEFlags::G;
 
     if config.access.contains(AccessFlags::Write) {

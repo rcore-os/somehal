@@ -1,37 +1,30 @@
-use core::arch::asm;
-
-use kmem::VirtAddr;
-
-use core::fmt::Debug;
+use core::{arch::asm, fmt::Debug};
 
 use aarch64_cpu::registers::*;
-use kmem::{
-    PhysAddr,
-    paging::{PTEGeneric, TableGeneric},
-    region::AccessFlags,
-};
+use kmem_region::region::AccessFlags;
+use page_table_generic::{PTEGeneric, PhysAddr, TableGeneric, VirtAddr};
 
-pub fn set_kernel_table(addr: PhysAddr) {
+pub fn set_kernel_table(addr: crate::mem::PhysAddr) {
     TTBR1_EL1.set_baddr(addr.raw() as _);
     flush_tlb(None);
 }
 
-pub fn get_kernel_table() -> PhysAddr {
+pub fn get_kernel_table() -> crate::mem::PhysAddr {
     (TTBR1_EL1.get_baddr() as usize).into()
 }
 
 #[inline(always)]
-pub fn set_user_table(addr: PhysAddr) {
+pub fn set_user_table(addr: crate::mem::PhysAddr) {
     TTBR0_EL1.set_baddr(addr.raw() as _);
     flush_tlb(None);
 }
 
-pub fn get_user_table() -> PhysAddr {
+pub fn get_user_table() -> crate::mem::PhysAddr {
     (TTBR0_EL1.get_baddr() as usize).into()
 }
 
 #[inline(always)]
-pub fn flush_tlb(vaddr: Option<VirtAddr>) {
+pub fn flush_tlb(vaddr: Option<crate::mem::VirtAddr>) {
     match vaddr {
         Some(addr) => {
             unsafe { asm!("tlbi vaae1is, {}; dsb nsh; isb", in(reg) addr.raw()) };
@@ -163,7 +156,7 @@ impl TableGeneric for Table {
     }
 }
 
-pub fn new_pte_with_config(config: kmem::region::MemConfig) -> Pte {
+pub fn new_pte_with_config(config: kmem_region::region::MemConfig) -> Pte {
     let mut flags = PteFlags::AF | PteFlags::VALID | PteFlags::NON_BLOCK;
 
     if !config.access.contains(AccessFlags::Write) {
@@ -185,9 +178,9 @@ pub fn new_pte_with_config(config: kmem::region::MemConfig) -> Pte {
     let mut pte = Pte(flags.bits());
 
     pte.set_mair_idx(match config.cache {
-        kmem::region::CacheConfig::Device => 0,
-        kmem::region::CacheConfig::Normal => 1,
-        kmem::region::CacheConfig::WriteThrough => 2,
+        kmem_region::region::CacheConfig::Device => 0,
+        kmem_region::region::CacheConfig::Normal => 1,
+        kmem_region::region::CacheConfig::WriteThrough => 2,
     });
 
     pte

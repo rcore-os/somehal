@@ -1,11 +1,11 @@
 use core::{cell::UnsafeCell, mem::MaybeUninit, ops::Deref};
 
-use kmem::{
+use crate::paging::*;
+use kmem_region::{
+    IntAlign,
     alloc::LineAllocator,
     region::{AccessFlags, CacheConfig, MemConfig},
-    *,
 };
-use page_table_generic::*;
 
 use crate::{Arch, BootInfo, archif::ArchIf, dbgln};
 
@@ -36,6 +36,12 @@ impl<T> Deref for StaticCell<T> {
     }
 }
 
+pub(crate) fn clean_boot_info() {
+    unsafe {
+        *BOOT_INFO.0.get() = BootInfo::new();
+    }
+}
+
 pub(crate) unsafe fn edit_boot_info(f: impl FnOnce(&mut BootInfo)) {
     unsafe {
         let info = &mut *BOOT_INFO.0.get();
@@ -45,14 +51,14 @@ pub(crate) unsafe fn edit_boot_info(f: impl FnOnce(&mut BootInfo)) {
     }
 }
 
-pub(crate) fn boot_info_addr() -> *const BootInfo {
-    BOOT_INFO.0.get()
+pub(crate) fn boot_info() -> BootInfo {
+    unsafe { &*BOOT_INFO.0.get() }.clone()
 }
 
 pub(crate) fn init_phys_allocator() {
     unsafe {
         *PHYS_ALLOCATOR.0.get() =
-            LineAllocator::new(PhysAddr::from(link_section_end() as usize), GB);
+            LineAllocator::new(kmem_region::PhysAddr::from(link_section_end() as usize), GB);
     }
 }
 
@@ -93,7 +99,7 @@ pub fn new_boot_table(kcode_offset: usize) -> PhysAddr {
 
         let code_start_phys = kernal_kcode_start().align_down(align);
         let code_start = code_start_phys + kcode_offset;
-        let code_end: usize = (code_end_phys + kcode_offset).align_up(align).raw();
+        let code_end: usize = (code_end_phys + kcode_offset).raw().align_up(align);
 
         let size = (code_end - code_start).max(align);
 
@@ -156,4 +162,19 @@ pub fn new_boot_table(kcode_offset: usize) -> PhysAddr {
     }
 
     addr
+}
+
+impl Access for LineAllocator {
+    #[inline(always)]
+    unsafe fn alloc(&mut self, layout: core::alloc::Layout) -> Option<PhysAddr> {
+        LineAllocator::alloc(self, layout).map(|p| p.raw().into())
+    }
+
+    #[inline(always)]
+    unsafe fn dealloc(&mut self, _ptr: PhysAddr, _layout: core::alloc::Layout) {}
+
+    #[inline(always)]
+    fn phys_to_mut(&self, phys: PhysAddr) -> *mut u8 {
+        phys.raw() as _
+    }
 }

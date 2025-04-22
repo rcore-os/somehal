@@ -21,28 +21,28 @@ impl ArchIf for Arch {
     type PageTable = paging::Table;
 
     fn new_pte_with_config(
-        config: kmem::region::MemConfig,
-    ) -> <Self::PageTable as kmem::paging::TableGeneric>::PTE {
+        config: kmem_region::region::MemConfig,
+    ) -> <Self::PageTable as kmem_region::paging::TableGeneric>::PTE {
         todo!()
     }
 
-    fn set_kernel_table(addr: kmem::PhysAddr) {
+    fn set_kernel_table(addr: kmem_region::PhysAddr) {
         todo!()
     }
 
-    fn get_kernel_table() -> kmem::PhysAddr {
+    fn get_kernel_table() -> kmem_region::PhysAddr {
         todo!()
     }
 
-    fn set_user_table(addr: kmem::PhysAddr) {
+    fn set_user_table(addr: kmem_region::PhysAddr) {
         todo!()
     }
 
-    fn get_user_table() -> kmem::PhysAddr {
+    fn get_user_table() -> kmem_region::PhysAddr {
         todo!()
     }
 
-    fn flush_tlb(vaddr: Option<kmem::VirtAddr>) {
+    fn flush_tlb(vaddr: Option<kmem_region::VirtAddr>) {
         todo!()
     }
 

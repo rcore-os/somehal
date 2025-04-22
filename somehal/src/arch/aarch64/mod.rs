@@ -1,9 +1,13 @@
 use aarch64_cpu::asm::wfe;
-use kmem::paging::TableGeneric;
+use entry::primary_entry;
+use page_table_generic::TableGeneric;
 
-use crate::{ArchIf, platform::CpuId};
+use crate::{
+    ArchIf,
+    mem::{PhysAddr, VirtAddr},
+    platform::CpuId,
+};
 
-mod boot;
 mod cache;
 mod context;
 pub mod debug;
@@ -23,28 +27,28 @@ impl ArchIf for Arch {
     type PageTable = paging::Table;
 
     fn new_pte_with_config(
-        config: kmem::region::MemConfig,
+        config: kmem_region::region::MemConfig,
     ) -> <Self::PageTable as TableGeneric>::PTE {
         paging::new_pte_with_config(config)
     }
 
-    fn set_kernel_table(addr: kmem::PhysAddr) {
+    fn set_kernel_table(addr: PhysAddr) {
         paging::set_kernel_table(addr);
     }
 
-    fn get_kernel_table() -> kmem::PhysAddr {
+    fn get_kernel_table() -> PhysAddr {
         paging::get_kernel_table()
     }
 
-    fn set_user_table(addr: kmem::PhysAddr) {
+    fn set_user_table(addr: PhysAddr) {
         paging::set_user_table(addr);
     }
 
-    fn get_user_table() -> kmem::PhysAddr {
+    fn get_user_table() -> PhysAddr {
         paging::get_user_table()
     }
 
-    fn flush_tlb(vaddr: Option<kmem::VirtAddr>) {
+    fn flush_tlb(vaddr: Option<VirtAddr>) {
         paging::flush_tlb(vaddr);
     }
 
@@ -58,5 +62,9 @@ impl ArchIf for Arch {
 
     fn cpu_id() -> CpuId {
         ((MPIDR_EL1.get() & 0xffffff) as usize).into()
+    }
+
+    fn primary_entry(boot_info: pie_boot::BootInfo) {
+        primary_entry(boot_info);
     }
 }

@@ -2,7 +2,7 @@ use core::arch::asm;
 
 use aarch64_cpu::registers::*;
 use heapless::Vec;
-use kmem::region::{
+use kmem_region::region::{
     AccessFlags, CacheConfig, MemConfig, MemRegionKind, STACK_TOP, kcode_offset,
     set_kcode_va_offset,
 };
@@ -24,12 +24,9 @@ use crate::{
     printkv, println,
 };
 
-#[unsafe(no_mangle)]
-// pub unsafe extern "C" fn __vma_relocate_entry(kcode_offset: usize, dtb: *mut u8) {
-pub unsafe extern "C" fn __vma_relocate_entry(boot_info: *const BootInfo) {
+pub fn primary_entry(boot_info: BootInfo) {
     unsafe {
         cache::dcache_all(cache::DcacheOp::CleanAndInvalidate);
-        let boot_info = &*boot_info;
 
         set_kcode_va_offset(boot_info.kcode_offset);
         set_fdt_ptr(boot_info.fdt.unwrap().as_ptr());
@@ -51,7 +48,11 @@ pub unsafe extern "C" fn __vma_relocate_entry(boot_info: *const BootInfo) {
 
         let memories = handle_err!(find_memory(), "could not get memories");
 
-        setup_memory_main(boot_info.main_memory_free_start, memories, cpu_count);
+        setup_memory_main(
+            boot_info.main_memory_free_start,
+            memories.into_iter(),
+            cpu_count,
+        );
 
         let sp = stack_top_cpu0();
 

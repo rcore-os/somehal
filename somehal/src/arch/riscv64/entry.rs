@@ -1,7 +1,7 @@
 use core::{arch::asm, ptr::null_mut};
 
 use heapless::Vec;
-use kmem::region::{
+use kmem_region::region::{
     AccessFlags, CacheConfig, MemConfig, MemRegionKind, STACK_TOP, kcode_offset,
     set_kcode_va_offset,
 };
@@ -16,12 +16,10 @@ use crate::{
         setup_memory_main, setup_memory_regions, stack_top_cpu0,
     },
     platform::*,
-    println,
+    printkv, println,
 };
 
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn __vma_relocate_entry(boot_info: *const BootInfo) {
-    let boot_info = unsafe { &*boot_info };
+pub fn primary_entry(boot_info: BootInfo) {
     let hartid = boot_info.cpu_id;
     let kcode_offset = boot_info.kcode_offset;
     let dtb = boot_info.fdt.map(|t| t.as_ptr()).unwrap_or(null_mut());
@@ -39,32 +37,33 @@ pub unsafe extern "C" fn __vma_relocate_entry(boot_info: *const BootInfo) {
         set_fdt_ptr(dtb);
     }
 
-    println!(
-        "{:<12}: {:#X}",
+    printkv!(
         "Kernel LMA",
+        "{:#X}",
         kernal_load_start_link_addr() - kcode_offset
     );
 
-    println!("{:<12}: {:#X}", "Code offst", kcode_offset);
-    println!("{:<12}: {:?}", "Hart", hartid);
+    printkv!("Code offst", "{:#X}", kcode_offset);
+    printkv!("Hart", "{:?}", hartid);
 
-    println!("{:<12}: {:?}", "FDT", dtb);
+    printkv!("FDT", "{:?}", dtb);
 
     let cpu_count = handle_err!(cpu_count(), "could not get cpu count");
 
-    println!("{:<12}: {}", "CPU count", cpu_count);
-    println!(
-        "{:<12}: {:?}",
-        "Memory start", boot_info.main_memory_free_start
-    );
+    printkv!("CPU count", "{}", cpu_count);
+    printkv!("Memory start", "{:?}", boot_info.main_memory_free_start);
 
     let memories = handle_err!(find_memory(), "could not get memories");
 
-    setup_memory_main(boot_info.main_memory_free_start, memories, cpu_count);
+    setup_memory_main(
+        boot_info.main_memory_free_start,
+        memories.into_iter(),
+        cpu_count,
+    );
 
     let sp = stack_top_cpu0();
 
-    println!("{:<12}: {:?}", "Stack top", sp);
+    printkv!("Stack top", "{:?}", sp);
 
     // SP 移动到物理地址正确位置
     unsafe {
