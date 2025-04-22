@@ -55,10 +55,6 @@ pub(crate) fn boot_info() -> BootInfo {
     unsafe { &*BOOT_INFO.0.get() }.clone()
 }
 
-pub(crate) fn boot_info_addr() -> *const BootInfo {
-    BOOT_INFO.0.get()
-}
-
 pub(crate) fn init_phys_allocator() {
     unsafe {
         *PHYS_ALLOCATOR.0.get() =

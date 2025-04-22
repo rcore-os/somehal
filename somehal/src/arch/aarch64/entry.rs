@@ -24,12 +24,9 @@ use crate::{
     printkv, println,
 };
 
-#[unsafe(no_mangle)]
-// pub unsafe extern "C" fn __vma_relocate_entry(boot_info: *const BootInfo) {
-pub unsafe extern "Rust" fn __vma_relocate_entry(boot_info: BootInfo) {
+pub fn primary_entry(boot_info: BootInfo) {
     unsafe {
         cache::dcache_all(cache::DcacheOp::CleanAndInvalidate);
-        // let boot_info = &*boot_info;
 
         set_kcode_va_offset(boot_info.kcode_offset);
         set_fdt_ptr(boot_info.fdt.unwrap().as_ptr());

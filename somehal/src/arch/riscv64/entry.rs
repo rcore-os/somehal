@@ -19,7 +19,6 @@ use crate::{
     println,
 };
 
-#[unsafe(no_mangle)]
 pub fn primary_entry(boot_info: BootInfo) {
     let hartid = boot_info.cpu_id;
     let kcode_offset = boot_info.kcode_offset;

@@ -3,10 +3,9 @@ use core::{arch::naked_asm, ptr::NonNull};
 use riscv::register::stvec::{self, Stvec};
 
 use crate::{
-    BootInfo,
     arch::debug_init,
     clean_bss, dbgln,
-    mem::{boot_info_addr, edit_boot_info, init_phys_allocator},
+    mem::{edit_boot_info, init_phys_allocator},
 };
 
 use super::mmu::init_mmu;
