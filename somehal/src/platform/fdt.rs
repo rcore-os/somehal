@@ -4,17 +4,13 @@ use core::{
 };
 
 use fdt_parser::{Fdt, FdtError, Status};
-use kmem::{IntAlign, region::MemRegionKind};
+use kmem::IntAlign;
 
 use crate::{
-    mem::{PhysMemory, PhysMemoryArray, main_memory::RegionAllocator, page::page_size},
+    mem::{main_memory::RegionAllocator, page::page_size, *},
     platform::CpuId,
     printkv, println,
 };
-
-use kmem::region::*;
-
-use crate::mem::MemRegion;
 
 static mut FDT_ADDR: usize = 0;
 
@@ -67,6 +63,8 @@ pub fn cpu_list() -> Result<impl Iterator<Item = CpuId>, FdtError<'static>> {
 
 #[cfg(not(target_arch = "riscv64"))]
 pub fn init_debugcon() -> Option<(any_uart::Uart, MemRegion)> {
+    use kmem::region::*;
+
     fn phys_to_virt(p: usize) -> *mut u8 {
         p as _
     }
