@@ -1,6 +1,6 @@
 use aarch64_cpu::registers::*;
 use core::arch::global_asm;
-use kmem::VirtAddr;
+use kmem_region::VirtAddr;
 use log::{error, warn};
 use somehal_macros::aarch64_trap_handler;
 

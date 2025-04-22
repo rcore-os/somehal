@@ -1,7 +1,7 @@
 use core::{arch::asm, ptr::null_mut};
 
 use heapless::Vec;
-use kmem::region::{
+use kmem_region::region::{
     AccessFlags, CacheConfig, MemConfig, MemRegionKind, STACK_TOP, kcode_offset,
     set_kcode_va_offset,
 };

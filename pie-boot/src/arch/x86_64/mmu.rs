@@ -1,6 +1,6 @@
 use core::arch::asm;
 
-use kmem::{
+use kmem_region::{
     VirtAddr,
     region::{ADDR_BITS, AccessFlags, PAGE_LEVELS},
 };
@@ -11,7 +11,7 @@ use somehal_macros::dbgln;
 use crate::{arch::boot::entry_vma, mem::new_boot_table};
 
 #[inline(always)]
-fn flush_tlb(vaddr: Option<kmem::VirtAddr>) {
+fn flush_tlb(vaddr: Option<kmem_region::VirtAddr>) {
     if let Some(vaddr) = vaddr {
     } else {
     }
@@ -67,11 +67,11 @@ impl PTEGeneric for Pte {
         PTEFlags::from_bits_truncate(self.0).contains(PTEFlags::V)
     }
 
-    fn paddr(&self) -> kmem::PhysAddr {
+    fn paddr(&self) -> kmem_region::PhysAddr {
         ((self.0 & Self::PHYS_ADDR_MASK) << 2).into()
     }
 
-    fn set_paddr(&mut self, paddr: kmem::PhysAddr) {
+    fn set_paddr(&mut self, paddr: kmem_region::PhysAddr) {
         self.0 = (self.0 & !Self::PHYS_ADDR_MASK) | ((paddr.raw() >> 2) & Self::PHYS_ADDR_MASK);
     }
 
@@ -115,7 +115,7 @@ impl TableGeneric for Table {
     }
 }
 
-pub fn new_pte_with_config(config: kmem::region::MemConfig) -> Pte {
+pub fn new_pte_with_config(config: kmem_region::region::MemConfig) -> Pte {
     let mut flags = PTEFlags::V | PTEFlags::D | PTEFlags::A | PTEFlags::R | PTEFlags::G;
 
     if config.access.contains(AccessFlags::Write) {

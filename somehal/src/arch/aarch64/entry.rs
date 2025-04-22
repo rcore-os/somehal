@@ -2,7 +2,7 @@ use core::arch::asm;
 
 use aarch64_cpu::registers::*;
 use heapless::Vec;
-use kmem::region::{
+use kmem_region::region::{
     AccessFlags, CacheConfig, MemConfig, MemRegionKind, STACK_TOP, kcode_offset,
     set_kcode_va_offset,
 };

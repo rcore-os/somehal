@@ -16,7 +16,7 @@ early-debug = ["any-uart"]
 [dependencies]
 somehal-macros = { version = "0.1", path = "../somehal-macros" }
 bitflags = "2.9"
-kmem = { version = "0.1", path = "../kmem" }
+kmem-region = { version = "0.1", path = "../kmem-region" }
 thiserror = { version = "2", default-features = false }
 num-align = "0.1"
 

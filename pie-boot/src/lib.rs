@@ -48,7 +48,7 @@ unsafe fn clean_bss() {
     }
 }
 
-use kmem::PhysAddr;
+use kmem_region::PhysAddr;
 #[cfg(early_debug)]
 pub(crate) use somehal_macros::dbgln;
 

@@ -326,12 +326,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "kmem"
+name = "kmem-region"
 version = "0.1.0"
 dependencies = [
  "bitflags 2.9.0",
- "link-boot",
- "page-table-generic",
  "prettyplease",
  "quote",
  "syn",
@@ -435,7 +433,7 @@ dependencies = [
  "any-uart",
  "bitflags 2.9.0",
  "fdt-parser",
- "kmem",
+ "kmem-region",
  "num-align 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "prettyplease",
  "quote",
@@ -666,10 +664,11 @@ dependencies = [
  "cfg-if",
  "fdt-parser",
  "heapless",
- "kmem",
+ "kmem-region",
  "linked_list_allocator",
  "log",
  "multiboot",
+ "page-table-generic",
  "pie-boot",
  "prettyplease",
  "quote",

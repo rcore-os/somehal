@@ -1,11 +1,11 @@
 use core::arch::asm;
 
-use kmem::VirtAddr;
+use kmem_region::VirtAddr;
 
 use core::fmt::Debug;
 
 use aarch64_cpu::registers::*;
-use kmem::{
+use kmem_region::{
     PhysAddr,
     paging::{PTEGeneric, TableGeneric},
     region::AccessFlags,
@@ -163,7 +163,7 @@ impl TableGeneric for Table {
     }
 }
 
-pub fn new_pte_with_config(config: kmem::region::MemConfig) -> Pte {
+pub fn new_pte_with_config(config: kmem_region::region::MemConfig) -> Pte {
     let mut flags = PteFlags::AF | PteFlags::VALID | PteFlags::NON_BLOCK;
 
     if !config.access.contains(AccessFlags::Write) {
@@ -185,9 +185,9 @@ pub fn new_pte_with_config(config: kmem::region::MemConfig) -> Pte {
     let mut pte = Pte(flags.bits());
 
     pte.set_mair_idx(match config.cache {
-        kmem::region::CacheConfig::Device => 0,
-        kmem::region::CacheConfig::Normal => 1,
-        kmem::region::CacheConfig::WriteThrough => 2,
+        kmem_region::region::CacheConfig::Device => 0,
+        kmem_region::region::CacheConfig::Normal => 1,
+        kmem_region::region::CacheConfig::WriteThrough => 2,
     });
 
     pte

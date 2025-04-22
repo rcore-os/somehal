@@ -1,7 +1,7 @@
 pub use crate::mem::{PhysAddr, VirtAddr};
 use crate::platform::CpuId;
-pub use kmem::paging::*;
-use kmem::region::MemConfig;
+use kmem_region::region::MemConfig;
+pub use page_table_generic::*;
 
 pub trait ArchIf {
     fn early_debug_put(byte: u8);

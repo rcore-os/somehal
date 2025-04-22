@@ -43,7 +43,7 @@ impl ArchIf for Arch {
     type PageTable = mmu::Table;
 
     fn new_pte_with_config(
-        config: kmem::region::MemConfig,
+        config: kmem_region::region::MemConfig,
     ) -> <Self::PageTable as TableGeneric>::PTE {
         new_pte_with_config(config)
     }

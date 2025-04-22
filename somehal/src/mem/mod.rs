@@ -7,11 +7,11 @@ use crate::{
     vec::ArrayVec,
 };
 use heap::HEAP;
-use kmem::region::{
+use kmem_region::region::{
     AccessFlags, CacheConfig, MemConfig, MemRegionKind, OFFSET_LINER, STACK_SIZE, STACK_TOP,
     kcode_offset, region_phys_to_virt, region_virt_to_phys,
 };
-pub use kmem::{region::MemRegion, *};
+pub use kmem_region::{region::MemRegion, *};
 use somehal_macros::fn_link_section;
 
 pub(crate) mod heap;

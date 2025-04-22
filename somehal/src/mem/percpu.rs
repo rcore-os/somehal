@@ -7,7 +7,7 @@ use crate::{
 };
 
 use super::PERCPU_OTHER_ALL;
-use kmem::{IntAlign, region::kcode_offset};
+use kmem_region::{IntAlign, region::kcode_offset};
 use somehal_macros::percpu_data;
 
 #[percpu_data]

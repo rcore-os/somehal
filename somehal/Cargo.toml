@@ -6,11 +6,11 @@ edition.workspace = true
 [features]
 vm = ["pie-boot/vm"]
 early-debug = ["pie-boot/early-debug"]
-sv39 = ["kmem/sv39"]
+sv39 = ["kmem-region/sv39"]
 
 [dependencies]
 somehal-macros = { path = "../somehal-macros" }
-kmem = { path = "../kmem" }
+kmem-region = { path = "../kmem-region" }
 spin = "0.10.0"
 tock-registers = "0.9"
 log = "0.4"
@@ -19,6 +19,7 @@ pie-boot = { path = "../pie-boot" }
 cfg-if = "1.0.0"
 linked_list_allocator = "0.10"
 heapless = "0.8"
+page-table-generic = { path = "../page-table-generic" }
 
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]

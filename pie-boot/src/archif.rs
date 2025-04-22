@@ -1,7 +1,7 @@
 #![allow(unused)]
 
-use kmem::region::MemConfig;
 use crate::paging::TableGeneric;
+use kmem_region::region::MemConfig;
 
 pub trait ArchIf {
     fn early_debug_put(byte: u8);

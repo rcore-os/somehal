@@ -1,7 +1,7 @@
 use core::mem::size_of;
 
 use crate::dbgln;
-use kmem::region::AccessFlags;
+use kmem_region::region::AccessFlags;
 use riscv::interrupt::Trap;
 use riscv::interrupt::supervisor::{Exception as E, Interrupt as I};
 use riscv::register::{scause, stval};

@@ -1,7 +1,7 @@
 use core::{cell::UnsafeCell, mem::MaybeUninit, ops::Deref};
 
 use crate::paging::*;
-use kmem::{
+use kmem_region::{
     IntAlign,
     alloc::LineAllocator,
     region::{AccessFlags, CacheConfig, MemConfig},
@@ -52,7 +52,7 @@ pub(crate) fn boot_info_addr() -> *const BootInfo {
 pub(crate) fn init_phys_allocator() {
     unsafe {
         *PHYS_ALLOCATOR.0.get() =
-            LineAllocator::new(kmem::PhysAddr::from(link_section_end() as usize), GB);
+            LineAllocator::new(kmem_region::PhysAddr::from(link_section_end() as usize), GB);
     }
 }
 

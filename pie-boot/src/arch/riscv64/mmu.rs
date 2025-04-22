@@ -1,7 +1,7 @@
 use core::arch::asm;
 
 use crate::paging::*;
-use kmem::region::{ADDR_BITS, AccessFlags, PAGE_LEVELS};
+use kmem_region::region::{ADDR_BITS, AccessFlags, PAGE_LEVELS};
 use riscv::{
     asm::{sfence_vma, sfence_vma_all},
     register::satp,
@@ -135,7 +135,7 @@ impl TableGeneric for Table {
     }
 }
 
-pub fn new_pte_with_config(config: kmem::region::MemConfig) -> Pte {
+pub fn new_pte_with_config(config: kmem_region::region::MemConfig) -> Pte {
     let mut flags = PTEFlags::V | PTEFlags::D | PTEFlags::A | PTEFlags::R | PTEFlags::G;
 
     if config.access.contains(AccessFlags::Write) {

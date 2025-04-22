@@ -1,5 +1,5 @@
 use aarch64_cpu::asm::wfe;
-use kmem::paging::TableGeneric;
+use kmem_region::paging::TableGeneric;
 
 use crate::{ArchIf, platform::CpuId};
 
@@ -23,28 +23,28 @@ impl ArchIf for Arch {
     type PageTable = paging::Table;
 
     fn new_pte_with_config(
-        config: kmem::region::MemConfig,
+        config: kmem_region::region::MemConfig,
     ) -> <Self::PageTable as TableGeneric>::PTE {
         paging::new_pte_with_config(config)
     }
 
-    fn set_kernel_table(addr: kmem::PhysAddr) {
+    fn set_kernel_table(addr: kmem_region::PhysAddr) {
         paging::set_kernel_table(addr);
     }
 
-    fn get_kernel_table() -> kmem::PhysAddr {
+    fn get_kernel_table() -> kmem_region::PhysAddr {
         paging::get_kernel_table()
     }
 
-    fn set_user_table(addr: kmem::PhysAddr) {
+    fn set_user_table(addr: kmem_region::PhysAddr) {
         paging::set_user_table(addr);
     }
 
-    fn get_user_table() -> kmem::PhysAddr {
+    fn get_user_table() -> kmem_region::PhysAddr {
         paging::get_user_table()
     }
 
-    fn flush_tlb(vaddr: Option<kmem::VirtAddr>) {
+    fn flush_tlb(vaddr: Option<kmem_region::VirtAddr>) {
         paging::flush_tlb(vaddr);
     }
 

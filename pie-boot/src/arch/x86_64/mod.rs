@@ -12,18 +12,16 @@ pub struct Arch;
 impl ArchIf for Arch {
     #[inline(always)]
     #[allow(deprecated)]
-    fn early_debug_put(byte: u8) {
-        
-    }
+    fn early_debug_put(byte: u8) {}
 
     fn wait_for_event() {
-       loop{}
+        loop {}
     }
 
     type PageTable = mmu::Table;
 
     fn new_pte_with_config(
-        config: kmem::region::MemConfig,
+        config: kmem_region::region::MemConfig,
     ) -> <Self::PageTable as TableGeneric>::PTE {
         new_pte_with_config(config)
     }

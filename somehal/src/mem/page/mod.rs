@@ -1,12 +1,12 @@
 use core::alloc::Layout;
 use core::panic;
 
-use kmem::alloc::LineAllocator;
-use kmem::paging::*;
+use kmem_region::alloc::LineAllocator;
+use page_table_generic::*;
 
 use crate::arch::Arch;
 use crate::archif::ArchIf;
-use crate::mem::{init_heap, MEM_REGIONS};
+use crate::mem::{MEM_REGIONS, init_heap};
 use crate::{handle_err, printkv, println};
 
 pub type Table<'a> = PageTableRef<'a, <Arch as ArchIf>::PageTable>;
@@ -31,7 +31,7 @@ pub const fn page_valid_addr_mask() -> usize {
     (1 << page_valid_bits()) - 1
 }
 
-pub fn new_mapped_table() -> PhysAddr {
+pub fn new_mapped_table() -> kmem_region::PhysAddr {
     init_heap();
 
     let tmp_size = 8 * MB;
@@ -45,14 +45,14 @@ pub fn new_mapped_table() -> PhysAddr {
         panic!();
     };
 
-    let start = PhysAddr::from(start.as_ptr() as usize);
-    let mut tmp_alloc = LineAllocator::new(start, tmp_size);
+    let start = start.as_ptr() as usize;
+    let mut tmp_alloc = PageTableAccess(LineAllocator::new(start.into(), tmp_size));
 
     printkv!(
         "Tmp page allocator",
         "[{:?}, {:?})",
-        tmp_alloc.start,
-        tmp_alloc.end
+        tmp_alloc.0.start,
+        tmp_alloc.0.end
     );
 
     let access = &mut tmp_alloc;
@@ -63,8 +63,8 @@ pub fn new_mapped_table() -> PhysAddr {
         unsafe {
             handle_err!(table.map(
                 MapConfig {
-                    vaddr: region.virt_start,
-                    paddr: region.phys_start,
+                    vaddr: region.virt_start.raw().into(),
+                    paddr: region.phys_start.raw().into(),
                     size: region.size,
                     pte: Arch::new_pte_with_config(region.config),
                     allow_huge: true,
@@ -75,7 +75,24 @@ pub fn new_mapped_table() -> PhysAddr {
         }
     }
 
-    println!("Table size {:#x}", tmp_alloc.used());
+    println!("Table size {:#x}", tmp_alloc.0.used());
 
-    table.paddr()
+    table.paddr().raw().into()
+}
+
+struct PageTableAccess(LineAllocator);
+
+impl Access for PageTableAccess {
+    #[inline(always)]
+    unsafe fn alloc(&mut self, layout: core::alloc::Layout) -> Option<PhysAddr> {
+        self.0.alloc(layout).map(|p| p.raw().into())
+    }
+
+    #[inline(always)]
+    unsafe fn dealloc(&mut self, _ptr: PhysAddr, _layout: core::alloc::Layout) {}
+
+    #[inline(always)]
+    fn phys_to_mut(&self, phys: PhysAddr) -> *mut u8 {
+        phys.raw() as _
+    }
 }
