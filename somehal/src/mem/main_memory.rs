@@ -1,6 +1,5 @@
 use core::{
     alloc::{AllocError, Layout},
-    cell::UnsafeCell,
     ptr::NonNull,
 };
 
@@ -9,10 +8,8 @@ use kmem::{
     alloc::LineAllocator,
     region::{MemConfig, MemRegion, MemRegionKind},
 };
-use spin::Mutex;
 
 use super::{MEMORY_MAIN, PhysMemory};
-use crate::println;
 
 pub unsafe fn init(start: PhysAddr, end: PhysAddr) {
     if MEMORY_MAIN.is_init() {

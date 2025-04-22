@@ -1,5 +1,5 @@
 use core::{
-    alloc::{Allocator, Layout},
+    alloc::Layout,
     ptr::{NonNull, slice_from_raw_parts_mut},
 };
 
@@ -7,11 +7,7 @@ use fdt_parser::{Fdt, FdtError, Status};
 use kmem::{IntAlign, region::MemRegionKind};
 
 use crate::{
-    mem::{
-        PhysMemory, PhysMemoryArray,
-        main_memory::{self, RegionAllocator},
-        page::page_size,
-    },
+    mem::{PhysMemory, PhysMemoryArray, main_memory::RegionAllocator, page::page_size},
     platform::CpuId,
     printkv, println,
 };
