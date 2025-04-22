@@ -58,7 +58,7 @@ unsafe fn clean_bss() {
     mem::clean_boot_info();
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct BootInfo {
     pub cpu_id: usize,
     pub kcode_offset: usize,

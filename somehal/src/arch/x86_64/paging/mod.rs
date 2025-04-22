@@ -1,9 +1,6 @@
-use core::{arch::asm, fmt::Debug};
+use core::fmt::Debug;
 
-use kmem_region::{
-    VirtAddr,
-    paging::{PTEGeneric, TableGeneric},
-};
+use page_table_generic::{PTEGeneric, PhysAddr, TableGeneric, VirtAddr};
 
 #[repr(transparent)]
 #[derive(Clone, Copy)]
@@ -14,11 +11,11 @@ impl PTEGeneric for Pte {
         todo!()
     }
 
-    fn paddr(&self) -> kmem_region::PhysAddr {
+    fn paddr(&self) -> PhysAddr {
         todo!()
     }
 
-    fn set_paddr(&mut self, paddr: kmem_region::PhysAddr) {
+    fn set_paddr(&mut self, paddr: PhysAddr) {
         todo!()
     }
 

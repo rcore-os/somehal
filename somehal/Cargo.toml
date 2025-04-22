@@ -33,7 +33,6 @@ fdt-parser = "0.4"
 x86 = "0.52"
 x86_64 = "0.15"
 any-uart = "0.2"
-multiboot = "0.8"
 acpi = { version = "5.2", default-features = false, features = [
     "allocator_api",
 ] }

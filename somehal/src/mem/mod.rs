@@ -61,6 +61,17 @@ pub(crate) fn init_heap() {
     }
 }
 
+pub(crate) fn set_memory_main(start: PhysAddr, end: PhysAddr) {
+    let memory_main = PhysMemory {
+        addr: start,
+        size: end.raw() - start.raw(),
+    };
+
+    unsafe {
+        (*MEMORY_MAIN.get()).replace(memory_main);
+    }
+}
+
 pub(crate) fn setup_memory_main(
     main_memory_start: PhysAddr,
     memories: impl Iterator<Item = PhysMemory>,
