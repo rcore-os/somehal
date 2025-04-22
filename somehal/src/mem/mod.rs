@@ -1,18 +1,19 @@
 use core::alloc::Layout;
 
-use crate::{
-    once_static::OnceStatic,
-    platform::{CpuId, CpuIdx},
-    printkv, println,
-    vec::ArrayVec,
-};
 use heap::HEAP;
+use heapless::Vec;
 use kmem_region::region::{
     AccessFlags, CacheConfig, MemConfig, MemRegionKind, OFFSET_LINER, STACK_SIZE, STACK_TOP,
     kcode_offset, region_phys_to_virt, region_virt_to_phys,
 };
 pub use kmem_region::{region::MemRegion, *};
 use somehal_macros::fn_link_section;
+
+use crate::{
+    once_static::OnceStatic,
+    platform::{CpuId, CpuIdx},
+    printkv, println,
+};
 
 pub(crate) mod heap;
 pub(crate) mod main_memory;
@@ -27,11 +28,11 @@ pub struct PhysMemory {
     pub size: usize,
 }
 
-pub type PhysMemoryArray = ArrayVec<PhysMemory, 12>;
+pub type PhysMemoryArray = Vec<PhysMemory, 12>;
 
 static MEMORY_MAIN: OnceStatic<PhysMemory> = OnceStatic::new();
 static mut CPU_COUNT: usize = 1;
-static MEM_REGIONS: OnceStatic<ArrayVec<MemRegion, 32>> = OnceStatic::new();
+static MEM_REGIONS: OnceStatic<Vec<MemRegion, 32>> = OnceStatic::new();
 static STACK_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
 // 除主CPU 外，其他CPU的独占Data
 static PERCPU_OTHER_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
@@ -217,7 +218,7 @@ fn mem_region_add(mut region: MemRegion) {
     }
 
     if unsafe { (*MEM_REGIONS.get()).as_mut().unwrap() }
-        .try_push(region)
+        .push(region)
         .is_err()
     {
         panic!();
@@ -225,7 +226,7 @@ fn mem_region_add(mut region: MemRegion) {
 }
 
 fn detect_link_space() {
-    let regions = ArrayVec::new();
+    let regions = Vec::new();
     unsafe {
         (*MEM_REGIONS.get()).replace(regions);
     }
@@ -319,13 +320,13 @@ fn rwdata() -> &'static [u8] {
 
 /// Returns an iterator over all physical memory regions.
 pub fn memory_regions() -> impl Iterator<Item = MemRegion> {
-    MEM_REGIONS.clone()
+    MEM_REGIONS.clone().into_iter()
 }
 
 pub fn phys_to_virt(p: PhysAddr) -> VirtAddr {
-    region_phys_to_virt(memory_regions(), p)
+    region_phys_to_virt(MEM_REGIONS.iter(), p)
 }
 
 pub fn virt_to_phys(v: VirtAddr) -> PhysAddr {
-    region_virt_to_phys(memory_regions(), v)
+    region_virt_to_phys(MEM_REGIONS.iter(), v)
 }

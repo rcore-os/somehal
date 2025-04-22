@@ -26,7 +26,7 @@ pub fn find_memory() -> Result<PhysMemoryArray, FdtError<'static>> {
             }
 
             if mems
-                .try_push(PhysMemory {
+                .push(PhysMemory {
                     addr: (region.address as usize).into(),
                     size: region.size,
                 })

@@ -23,7 +23,6 @@ pub mod console;
 pub mod mem;
 pub(crate) mod once_static;
 pub(crate) mod platform;
-pub(crate) mod vec;
 
 pub(crate) use archif::ArchIf;
 

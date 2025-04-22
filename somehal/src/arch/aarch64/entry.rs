@@ -51,7 +51,11 @@ pub unsafe extern "C" fn __vma_relocate_entry(boot_info: *const BootInfo) {
 
         let memories = handle_err!(find_memory(), "could not get memories");
 
-        setup_memory_main(boot_info.main_memory_free_start, memories, cpu_count);
+        setup_memory_main(
+            boot_info.main_memory_free_start,
+            memories.into_iter(),
+            cpu_count,
+        );
 
         let sp = stack_top_cpu0();
 
