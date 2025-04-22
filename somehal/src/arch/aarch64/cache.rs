@@ -1,18 +1,17 @@
+#![allow(unused)]
+
 #[repr(usize)]
 pub enum DcacheOp {
     CleanAndInvalidate = 0,
     InvalidateOnly = 1,
 }
 
-#[link_boot::link_boot]
-mod _m {
-    use core::arch::naked_asm;
+use core::arch::naked_asm;
 
-    #[naked]
-    pub extern "C" fn flush_dcache_range(start: usize, end: usize) {
-        unsafe {
-            naked_asm!(
-                "
+#[unsafe(naked)]
+pub unsafe extern "C" fn flush_dcache_range(start: usize, end: usize) {
+    naked_asm!(
+        "
     mrs	x3, ctr_el0
 	ubfx	x3, x3, #16, #4
 	mov	x2, #4
@@ -28,15 +27,13 @@ mod _m {
 	dsb	sy
 	ret
             "
-            )
-        }
-    }
+    )
+}
 
-    #[naked]
-    pub extern "C" fn flush_invalidate_range(start: usize, end: usize) {
-        unsafe {
-            naked_asm!(
-                "
+#[unsafe(naked)]
+pub unsafe extern "C" fn flush_invalidate_range(start: usize, end: usize) {
+    naked_asm!(
+        "
     mrs	    x3, ctr_el0
 	ubfx	x3, x3, #16, #4
 	mov	    x2, #4
@@ -52,32 +49,28 @@ mod _m {
 	dsb	sy
 	ret
             "
-            )
-        }
-    }
+    )
+}
 
-    #[naked]
-    pub extern "C" fn invalidate_icache_all() {
-        unsafe {
-            naked_asm!(
-                "
+#[unsafe(naked)]
+pub unsafe extern "C" fn invalidate_icache_all() {
+    naked_asm!(
+        "
     ic	ialluis
 	isb	sy
 	ret
             "
-            )
-        }
-    }
+    )
+}
 
-    /// Flush and invalidate all cache levels
-    ///
-    /// x16: FEAT_CCIDX
-    /// x2~x9: clobbered
-    #[naked]
-    pub extern "C" fn dcache_level(cache_level: usize, op: DcacheOp) {
-        unsafe {
-            naked_asm!(
-                "
+/// Flush and invalidate all cache levels
+///
+/// x16: FEAT_CCIDX
+/// x2~x9: clobbered
+#[unsafe(naked)]
+pub unsafe extern "C" fn dcache_level(cache_level: usize, op: DcacheOp) {
+    naked_asm!(
+        "
 	lsl	x12, x0, #1
 	msr	csselr_el1, x12		/* select cache level */
 	isb				/* sync change of cssidr_el1 */
@@ -117,16 +110,14 @@ mod _m {
 
 	ret
             "
-            )
-        }
-    }
+    )
+}
 
-    /// Flush or invalidate all data cache by SET/WAY.
-    #[naked]
-    pub extern "C" fn dcache_all(op: DcacheOp) {
-        unsafe {
-            naked_asm!(
-                        "
+/// Flush or invalidate all data cache by SET/WAY.
+#[unsafe(naked)]
+pub unsafe extern "C" fn dcache_all(op: DcacheOp) {
+    naked_asm!(
+                "
 	mov	x1, x0
 	dsb	sy
 	mrs	x10, clidr_el1		/* read clidr_el1 */
@@ -163,8 +154,6 @@ mod _m {
 3:
 	ret
             ",
-            dcache_level = sym dcache_level
-                    )
-        }
-    }
+    dcache_level = sym dcache_level
+            )
 }

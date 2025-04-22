@@ -12,11 +12,14 @@ sv39 = ["kmem/sv39"]
 somehal-macros = { path = "../somehal-macros" }
 kmem = { path = "../kmem" }
 spin = "0.10.0"
-link-boot = { version = "0.2" }
 tock-registers = "0.9"
 log = "0.4"
 bitflags = "2.9"
 pie-boot = { path = "../pie-boot" }
+cfg-if = "1.0.0"
+linked_list_allocator = "0.10"
+heapless = "0.8"
+
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "10.0"
@@ -28,6 +31,11 @@ fdt-parser = "0.4"
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 x86 = "0.52"
 x86_64 = "0.15"
+any-uart = "0.2"
+multiboot = "0.8"
+acpi = { version = "5.2", default-features = false, features = [
+    "allocator_api",
+] }
 
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
 riscv = "0.13"

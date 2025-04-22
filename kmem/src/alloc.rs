@@ -1,11 +1,6 @@
-use kmem::{
-    IntAlign,
-    paging::{Access, PhysAddr},
-};
+use page_table_generic::Access;
 
-use super::PhysMemory;
-
-static mut KCODE_VA_OFFSET: usize = 0;
+use crate::{IntAlign, PhysAddr};
 
 pub struct LineAllocator {
     pub start: PhysAddr,
@@ -14,6 +9,7 @@ pub struct LineAllocator {
 }
 
 impl LineAllocator {
+    #[inline(always)]
     pub fn new(start: PhysAddr, size: usize) -> Self {
         Self {
             start,
@@ -22,41 +18,39 @@ impl LineAllocator {
         }
     }
 
+    #[inline(always)]
     pub fn alloc(&mut self, layout: core::alloc::Layout) -> Option<PhysAddr> {
         let start = self.iter.align_up(layout.align());
         if start + layout.size() > self.end {
             return None;
         }
-
-        self.iter += layout.size().align_up(layout.align());
+        self.iter = start + layout.size();
 
         Some(start)
     }
 
-    pub fn used(&self) -> PhysMemory {
-        PhysMemory {
-            addr: self.start,
-            size: self.iter - self.start,
-        }
+    #[inline(always)]
+    pub fn highest_address(&self) -> PhysAddr {
+        self.iter
+    }
+
+    #[inline(always)]
+    pub fn used(&self) -> usize {
+        self.iter - self.start
     }
 }
 
 impl Access for LineAllocator {
+    #[inline(always)]
     unsafe fn alloc(&mut self, layout: core::alloc::Layout) -> Option<PhysAddr> {
         LineAllocator::alloc(self, layout)
     }
 
+    #[inline(always)]
     unsafe fn dealloc(&mut self, _ptr: PhysAddr, _layout: core::alloc::Layout) {}
 
+    #[inline(always)]
     fn phys_to_mut(&self, phys: PhysAddr) -> *mut u8 {
         phys.raw() as _
     }
-}
-
-pub unsafe fn set_kcode_va_offset(offset: usize) {
-    unsafe { KCODE_VA_OFFSET = offset };
-}
-
-pub fn kcode_offset() -> usize {
-    unsafe { KCODE_VA_OFFSET }
 }

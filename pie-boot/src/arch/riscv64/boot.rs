@@ -1,12 +1,17 @@
-use core::arch::naked_asm;
+use core::{arch::naked_asm, ptr::NonNull};
 
 use riscv::register::stvec::{self, Stvec};
 
-use crate::{arch::debug_init, clean_bss, dbgln};
+use crate::{
+    BootInfo,
+    arch::debug_init,
+    clean_bss, dbgln,
+    mem::{boot_info_addr, edit_boot_info, init_phys_allocator},
+};
 
 use super::mmu::init_mmu;
 
-#[naked]
+#[unsafe(naked)]
 /// The entry point of the kernel.
 pub extern "C" fn primary_entry(_hart_id: usize, _fdt_addr: *mut u8) -> ! {
     unsafe {
@@ -24,25 +29,26 @@ pub extern "C" fn primary_entry(_hart_id: usize, _fdt_addr: *mut u8) -> ! {
             "call    {setup}",
             "mv      s2, a0",    // return kcode offset
 
-            "mv      a0, s1",
-            "mv      a1, s2",
             "call    {init_mmu}",
+
+            "mv      a0, s0",  // hartid
+            "mv      a1, s2",  // kcode offset
+            "mv      a2, s1",  // fdt addr
+            "call    {setup_boot_info}",
+            "mv      s0, a0",
 
             "call    {entry_vma}",
             "mv      t0, a0",
 
             "mv      gp, zero",
 
-            "mv      a0, s0",  // hartid
-            "mv      a1, s2",  // kcode offset
-            "mv      a2, s1",  // fdt addr
-
+            "mv      a0, s0",
             "jalr    t0",
             "j       .",
             stack_size = const crate::config::STACK_SIZE,
             setup = sym setup,
             init_mmu = sym init_mmu,
-
+            setup_boot_info = sym setup_boot_info,
             entry_vma = sym entry_vma,
         )
     }
@@ -70,12 +76,24 @@ fn setup(hartid: usize, fdt: *mut u8) -> usize {
         vec.set_trap_mode(stvec::TrapMode::Direct);
         stvec::write(vec);
 
+        init_phys_allocator();
+
         kcode_offset
     }
 }
 
+fn setup_boot_info(hartid: usize, kcode_offset: usize, fdt: *mut u8) -> *const BootInfo {
+    unsafe {
+        edit_boot_info(|info| {
+            info.cpu_id = hartid;
+            info.kcode_offset = kcode_offset;
+            info.fdt = NonNull::new(fdt);
+        });
+    }
+    boot_info_addr()
+}
 
-#[naked]
+#[unsafe(naked)]
 extern "C" fn entry_lma() -> usize {
     unsafe {
         naked_asm!(
@@ -85,7 +103,7 @@ extern "C" fn entry_lma() -> usize {
         )
     }
 }
-#[naked]
+#[unsafe(naked)]
 pub extern "C" fn entry_vma() -> usize {
     unsafe {
         naked_asm!(

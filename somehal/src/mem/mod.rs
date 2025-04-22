@@ -1,32 +1,31 @@
-use boot::kcode_offset;
-use kmem::region::{CacheConfig, STACK_TOP, region_phys_to_virt, region_virt_to_phys};
-pub use kmem::*;
-use page::page_size;
+use core::alloc::Layout;
 
+use crate::{
+    once_static::OnceStatic,
+    platform::{CpuId, CpuIdx},
+    printkv, println,
+    vec::ArrayVec,
+};
+use heap::HEAP;
+use kmem::region::{
+    AccessFlags, CacheConfig, MemConfig, MemRegionKind, OFFSET_LINER, STACK_SIZE, STACK_TOP,
+    kcode_offset, region_phys_to_virt, region_virt_to_phys,
+};
+pub use kmem::{region::MemRegion, *};
 use somehal_macros::fn_link_section;
 
-pub(crate) mod boot;
+pub(crate) mod heap;
+pub(crate) mod main_memory;
 pub mod page;
 mod percpu;
+
+use page::page_size;
 
 #[derive(Debug, Clone)]
 pub struct PhysMemory {
     pub addr: PhysAddr,
     pub size: usize,
 }
-
-use core::alloc::Layout;
-
-use crate::{
-    consts::KERNEL_STACK_SIZE,
-    dbgln,
-    platform::{CpuId, CpuIdx},
-    println,
-};
-pub use kmem::region::MemRegion;
-use kmem::region::{AccessFlags, MemConfig, MemRegionKind, OFFSET_LINER};
-
-use crate::{once_static::OnceStatic, vec::ArrayVec};
 
 pub type PhysMemoryArray = ArrayVec<PhysMemory, 12>;
 
@@ -46,10 +45,26 @@ pub fn cpu_id() -> CpuId {
 }
 
 pub(crate) fn stack_top_cpu0() -> PhysAddr {
-    STACK_ALL.addr + KERNEL_STACK_SIZE
+    STACK_ALL.addr + STACK_SIZE
 }
 
-pub(crate) fn setup_memory_main(memories: impl Iterator<Item = PhysMemory>, cpu_count: usize) {
+pub(crate) fn init_heap() {
+    let mut h = HEAP.lock();
+    if h.size() == 0 {
+        let size = MEMORY_MAIN.size / 2;
+        let start = MEMORY_MAIN.addr + size;
+        printkv!("Tmp heap", "[{:?}, {:?})", start, start + size);
+        unsafe {
+            h.init(start.raw() as _, size);
+        }
+    }
+}
+
+pub(crate) fn setup_memory_main(
+    main_memory_start: PhysAddr,
+    memories: impl Iterator<Item = PhysMemory>,
+    cpu_count: usize,
+) {
     detect_link_space();
     unsafe {
         CPU_COUNT = cpu_count;
@@ -59,12 +74,11 @@ pub(crate) fn setup_memory_main(memories: impl Iterator<Item = PhysMemory>, cpu_
         let phys_raw = phys_start.raw();
         let size = m.size;
         let mut phys_end = phys_start + size;
-        let kcode_end = PhysAddr::from(link_section_end() as usize - kcode_offset());
 
-        if phys_raw < kcode_end.raw() && kcode_end.raw() < phys_raw + m.size {
-            phys_start = kcode_end;
+        if phys_raw < main_memory_start.raw() && main_memory_start.raw() < phys_raw + m.size {
+            phys_start = main_memory_start;
 
-            let stack_all_size = cpu_count * KERNEL_STACK_SIZE;
+            let stack_all_size = cpu_count * STACK_SIZE;
 
             phys_end = phys_end - stack_all_size;
 
@@ -76,10 +90,19 @@ pub(crate) fn setup_memory_main(memories: impl Iterator<Item = PhysMemory>, cpu_
             unsafe {
                 (*STACK_ALL.get()).replace(stack_all);
 
-                (*MEMORY_MAIN.get()).replace(PhysMemory {
+                main_memory::init(phys_start, phys_end);
+                let memory_main = PhysMemory {
                     addr: phys_start,
                     size: phys_end.raw() - phys_start.raw(),
-                });
+                };
+
+                (*MEMORY_MAIN.get()).replace(memory_main);
+                printkv!(
+                    "Found main memory",
+                    "[{:?}, {:?})",
+                    MEMORY_MAIN.addr,
+                    MEMORY_MAIN.addr + MEMORY_MAIN.size
+                );
             }
         } else {
             mem_region_add(MemRegion {
@@ -96,12 +119,10 @@ pub(crate) fn setup_memory_main(memories: impl Iterator<Item = PhysMemory>, cpu_
         }
     }
 
-    let stack_start = STACK_ALL.addr + STACK_ALL.size - KERNEL_STACK_SIZE;
-
     mem_region_add(MemRegion {
-        virt_start: (STACK_TOP - KERNEL_STACK_SIZE).into(),
-        size: KERNEL_STACK_SIZE,
-        phys_start: stack_start,
+        virt_start: (STACK_TOP - STACK_SIZE).into(),
+        size: STACK_SIZE,
+        phys_start: stack_top_cpu0() - STACK_SIZE,
         name: "stack",
         config: MemConfig {
             access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
@@ -124,8 +145,9 @@ pub(crate) fn setup_memory_regions(
     let percpu_all = if cpu_other_count > 0 {
         let percpu_other_all_size = percpu_one_size * cpu_other_count;
 
-        let percpu_start =
-            main_memory_alloc(Layout::from_size_align(percpu_other_all_size, page_size()).unwrap());
+        let percpu_start = main_memory::alloc(
+            Layout::from_size_align(percpu_other_all_size, page_size()).unwrap(),
+        );
 
         PhysMemory {
             addr: percpu_start,
@@ -174,23 +196,12 @@ pub(crate) fn kernal_load_start_link_addr() -> usize {
     BootText().as_ptr() as _
 }
 
-pub(crate) fn main_memory_alloc(layout: Layout) -> PhysAddr {
-    unsafe {
-        let end = MEMORY_MAIN.addr + MEMORY_MAIN.size;
-        let ptr = MEMORY_MAIN.addr.align_up(layout.align());
-        let start = ptr + layout.size();
-        let size = end.raw() - start.raw();
-        (*MEMORY_MAIN.get()).replace(PhysMemory { addr: start, size });
-        ptr
-    }
-}
-
 fn mem_region_add(mut region: MemRegion) {
     let size = region.size.align_up(page_size());
     region.size = size;
 
     println!(
-        "region {:<12}: [{:?}, {:?}) -> [{:?}, {:?}) {:?} {:?} {}",
+        "region {:<17}: [{:?}, {:?}) -> [{:?}, {:?}) {:?} {:?} {}",
         region.name,
         region.virt_start,
         region.virt_start + region.size,
@@ -209,7 +220,6 @@ fn mem_region_add(mut region: MemRegion) {
         .try_push(region)
         .is_err()
     {
-        dbgln!("MemRegion is full");
         panic!();
     }
 }
@@ -291,14 +301,6 @@ fn_link_section!(text);
 fn_link_section!(rodata);
 fn_link_section!(bss);
 fn_link_section!(percpu);
-
-#[inline(always)]
-pub(crate) fn link_section_end() -> *const u8 {
-    unsafe extern "C" {
-        fn __boot_stack_bottom();
-    }
-    __boot_stack_bottom as _
-}
 
 #[inline(always)]
 fn rwdata() -> &'static [u8] {

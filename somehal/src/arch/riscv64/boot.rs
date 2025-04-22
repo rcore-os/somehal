@@ -11,7 +11,7 @@ const HEADER_VERSION_MAJOR: usize = 0;
 const HEADER_VERSION_MINOR: usize = 2;
 const HEADER_VERSION: usize = (HEADER_VERSION_MAJOR << 16) | HEADER_VERSION_MINOR;
 
-#[naked]
+#[unsafe(naked)]
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.boot.header")]
 /// The entry point of the kernel.
@@ -40,7 +40,6 @@ pub unsafe extern "C" fn _start() -> ! {
             flags = const FLAG_LE ,
             version = const HEADER_VERSION,
             entry = sym pie_boot::primary_entry,
-            // entry = sym entry,
         )
     }
 }

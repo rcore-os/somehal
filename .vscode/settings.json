@@ -3,7 +3,7 @@
     "rust-analyzer.check.command": "clippy",
     "rust-analyzer.cargo.features": [
         "early-debug", 
-        "sv39"
+        // "sv39"
     ],
     "rust-targets.targets": [
         "aarch64-unknown-none",

@@ -4,18 +4,13 @@ use core::{
 };
 
 use fdt_parser::{Fdt, FdtError, Status};
-use kmem::{IntAlign, region::MemRegionKind};
+use kmem::IntAlign;
 
 use crate::{
-    mem::{PhysMemory, PhysMemoryArray, main_memory_alloc, page::page_size},
+    mem::{main_memory::RegionAllocator, page::page_size, *},
     platform::CpuId,
-    println,
+    printkv, println,
 };
-
-// use crate::{dbgln,};
-use kmem::region::*;
-
-use crate::mem::{MemRegion, boot::kcode_offset};
 
 static mut FDT_ADDR: usize = 0;
 
@@ -68,6 +63,8 @@ pub fn cpu_list() -> Result<impl Iterator<Item = CpuId>, FdtError<'static>> {
 
 #[cfg(not(target_arch = "riscv64"))]
 pub fn init_debugcon() -> Option<(any_uart::Uart, MemRegion)> {
+    use kmem::region::*;
+
     fn phys_to_virt(p: usize) -> *mut u8 {
         p as _
     }
@@ -108,31 +105,33 @@ fn get_fdt<'a>() -> Option<Fdt<'a>> {
     Fdt::from_ptr(NonNull::new(fdt_ptr())?).ok()
 }
 
-pub(crate) fn save_fdt() -> Option<MemRegion> {
+pub(crate) fn save_fdt(alloc: &mut RegionAllocator) -> Option<()> {
     let ptr_src = fdt_ptr();
-    let fdt = Fdt::from_ptr(NonNull::new(ptr_src)?).expect("invalid fdt");
+    println!("fdt addr {:p}", ptr_src);
+
+    let fdt = match Fdt::from_ptr(NonNull::new(ptr_src)?) {
+        Ok(f) => f,
+        Err(e) => {
+            println!("{:?}", e);
+            panic!();
+        }
+    };
+
     let size = fdt.total_size().align_up(page_size());
 
-    let ptr_dst =
-        main_memory_alloc(Layout::from_size_align(size, page_size()).unwrap()).raw() as *mut u8;
+    let mut ptr_dst = alloc
+        .allocate(Layout::from_size_align(size, page_size()).unwrap())
+        .ok()?;
 
     unsafe {
         let src = &mut *slice_from_raw_parts_mut(ptr_src, size);
-        let dst = &mut *slice_from_raw_parts_mut(ptr_dst, size);
+        let dst = ptr_dst.as_mut();
         dst.copy_from_slice(src);
 
-        FDT_ADDR = ptr_dst as _;
+        FDT_ADDR = ptr_dst.addr().get();
+
+        printkv!("Save FDT to", "{:#x}", ptr_dst.addr());
     }
 
-    Some(MemRegion {
-        virt_start: (ptr_dst as usize + kcode_offset()).into(),
-        size,
-        phys_start: (ptr_dst as usize).into(),
-        name: "fdt data",
-        config: MemConfig {
-            access: AccessFlags::Read,
-            cache: CacheConfig::Normal,
-        },
-        kind: MemRegionKind::Code,
-    })
+    Some(())
 }

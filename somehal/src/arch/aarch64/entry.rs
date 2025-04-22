@@ -1,57 +1,63 @@
 use core::arch::asm;
 
 use aarch64_cpu::registers::*;
-use kmem::region::STACK_TOP;
+use heapless::Vec;
+use kmem::region::{
+    AccessFlags, CacheConfig, MemConfig, MemRegionKind, STACK_TOP, kcode_offset,
+    set_kcode_va_offset,
+};
+use pie_boot::BootInfo;
 
 use super::debug;
 use crate::{
     ArchIf,
     arch::{
-        Arch,
+        Arch, cache,
         paging::{set_kernel_table, set_user_table},
     },
-    fdt::{self, save_fdt},
     handle_err,
     mem::{
-        boot::set_kcode_va_offset, kernal_load_start_link_addr, page::new_mapped_table,
+        kernal_load_start_link_addr, main_memory::RegionAllocator, page::new_mapped_table,
         setup_memory_main, setup_memory_regions, stack_top_cpu0,
     },
-    println,
-    vec::ArrayVec,
+    platform::*,
+    printkv, println,
 };
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn __vma_relocate_entry(kcode_offset: usize, dtb: *mut u8) {
+// pub unsafe extern "C" fn __vma_relocate_entry(kcode_offset: usize, dtb: *mut u8) {
+pub unsafe extern "C" fn __vma_relocate_entry(boot_info: *const BootInfo) {
     unsafe {
-        set_kcode_va_offset(kcode_offset);
-        fdt::set_fdt_ptr(dtb);
-    }
-    debug::init();
+        cache::dcache_all(cache::DcacheOp::CleanAndInvalidate);
+        let boot_info = &*boot_info;
 
-    println!("MMU ready!");
+        set_kcode_va_offset(boot_info.kcode_offset);
+        set_fdt_ptr(boot_info.fdt.unwrap().as_ptr());
+        debug::init();
 
-    println!(
-        "{:<12}: {:#X}",
-        "Kernel LMA",
-        kernal_load_start_link_addr() - kcode_offset
-    );
+        println!("MMU ready!");
 
-    println!("{:<12}: {}", "Current EL", CurrentEL.read(CurrentEL::EL));
+        printkv!(
+            "Kernel LMA",
+            "{:#X}",
+            kernal_load_start_link_addr() - boot_info.kcode_offset
+        );
 
-    let cpu_count = handle_err!(fdt::cpu_count(), "could not get cpu count");
+        printkv!("Current EL", "{}", CurrentEL.read(CurrentEL::EL));
 
-    println!("{:<12}: {}", "CPU count", cpu_count);
+        let cpu_count = handle_err!(cpu_count(), "could not get cpu count");
 
-    let memories = handle_err!(fdt::find_memory(), "could not get memories");
+        printkv!("CPU count", "{}", cpu_count);
 
-    setup_memory_main(memories, cpu_count);
+        let memories = handle_err!(find_memory(), "could not get memories");
 
-    let sp = stack_top_cpu0();
+        setup_memory_main(boot_info.main_memory_free_start, memories, cpu_count);
 
-    println!("{:<12}: {:?}", "Stack top", sp);
+        let sp = stack_top_cpu0();
 
-    // SP 移动到物理地址正确位置
-    unsafe {
+        printkv!("Stack top", "{:?}", sp);
+
+        // SP 移动到物理地址正确位置
         asm!(
             "MOV SP, {sp}",
             "B   {fix_sp}",
@@ -64,15 +70,26 @@ pub unsafe extern "C" fn __vma_relocate_entry(kcode_offset: usize, dtb: *mut u8)
 
 fn phys_sp_entry() -> ! {
     println!("SP moved");
-    let mut rsv = ArrayVec::<_, 4>::new();
+    let mut rsv = Vec::<_, 4>::new();
 
-    if let Some(r) = save_fdt() {
-        let _ = rsv.try_push(r);
+    let mut alloc = RegionAllocator::new(
+        "rsv",
+        MemConfig {
+            access: AccessFlags::Read,
+            cache: CacheConfig::Normal,
+        },
+        MemRegionKind::Code,
+        kcode_offset(),
+    );
+    if save_fdt(&mut alloc).is_none() {
+        println!("FDT save failed!");
+        panic!();
     }
 
-    let _ = rsv.try_push(super::debug::MEM_REGION_DEBUG_CON.clone());
+    let _ = rsv.push(alloc.into());
+    let _ = rsv.push(super::debug::MEM_REGION_DEBUG_CON.clone());
 
-    setup_memory_regions(Arch::cpu_id(), rsv, fdt::cpu_list().unwrap());
+    setup_memory_regions(Arch::cpu_id(), rsv.into_iter(), cpu_list().unwrap());
 
     println!("Memory regions setup done!");
 

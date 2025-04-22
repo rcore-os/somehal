@@ -1,3 +1,1 @@
-#![allow(unused)]
-
-include!(concat!(env!("OUT_DIR"), "/constant.rs"));
+pub use kmem::region::*;

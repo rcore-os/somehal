@@ -1,6 +1,6 @@
 use core::cell::UnsafeCell;
 
-use crate::{mem::MemRegion, once_static::OnceStatic, platform};
+use crate::{mem::MemRegion, once_static::OnceStatic};
 
 use any_uart::Sender;
 use kmem::region::OFFSET_LINER;
@@ -28,9 +28,6 @@ impl UartWapper {
 
 pub(crate) fn init() {
     unsafe {
-        let (uart, debug_region) = platform::init_debugcon().unwrap();
-        (*MEM_REGION_DEBUG_CON.get()).replace(debug_region);
-        set_uart(uart);
     }
 }
 
@@ -38,10 +35,6 @@ fn set_uart(uart: any_uart::Uart) -> Option<()> {
     let tx = uart.tx?;
     UART.set(tx);
     Some(())
-}
-
-pub(crate) fn reloacte() {
-    UART.get().mmio_base_add(OFFSET_LINER);
 }
 
 pub fn write_byte(b: u8) {

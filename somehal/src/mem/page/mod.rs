@@ -1,12 +1,13 @@
+use core::alloc::Layout;
+use core::panic;
+
+use kmem::alloc::LineAllocator;
 use kmem::paging::*;
 
 use crate::arch::Arch;
 use crate::archif::ArchIf;
-use crate::mem::MEM_REGIONS;
-use crate::{handle_err, println};
-
-use super::MEMORY_MAIN;
-use super::boot::LineAllocator;
+use crate::mem::{init_heap, MEM_REGIONS};
+use crate::{handle_err, printkv, println};
 
 pub type Table<'a> = PageTableRef<'a, <Arch as ArchIf>::PageTable>;
 
@@ -31,12 +32,27 @@ pub const fn page_valid_addr_mask() -> usize {
 }
 
 pub fn new_mapped_table() -> PhysAddr {
-    let start = MEMORY_MAIN.addr + MEMORY_MAIN.size / 2;
-    let mut tmp_alloc = LineAllocator::new(start, MEMORY_MAIN.size / 2);
+    init_heap();
 
-    println!(
-        "Tmp page allocator: [{:?}, {:?})",
-        tmp_alloc.start, tmp_alloc.end
+    let tmp_size = 8 * MB;
+
+    let start = if let Some(h) =
+        unsafe { super::heap::alloc(Layout::from_size_align(tmp_size, page_size()).unwrap()) }
+    {
+        h
+    } else {
+        println!("Failed to allocate tmp page table");
+        panic!();
+    };
+
+    let start = PhysAddr::from(start.as_ptr() as usize);
+    let mut tmp_alloc = LineAllocator::new(start, tmp_size);
+
+    printkv!(
+        "Tmp page allocator",
+        "[{:?}, {:?})",
+        tmp_alloc.start,
+        tmp_alloc.end
     );
 
     let access = &mut tmp_alloc;
@@ -59,7 +75,7 @@ pub fn new_mapped_table() -> PhysAddr {
         }
     }
 
-    println!("Table size {:#x}", tmp_alloc.used().size);
+    println!("Table size {:#x}", tmp_alloc.used());
 
     table.paddr()
 }

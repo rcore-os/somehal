@@ -12,6 +12,21 @@ const REGION_ONE: usize = (1 << ADDR_BITS) / 16;
 pub const OFFSET_LINER: usize = ADDR_BASE + REGION_ONE * 8;
 pub const STACK_TOP: usize = ADDR_BASE + REGION_ONE * 15;
 
+static mut KCODE_VA_OFFSET: usize = 0;
+
+/// 设置内核代码的虚拟地址偏移量
+///
+/// # Safety
+///
+/// 确保 `offset` 是一个合法的虚拟地址偏移量
+pub unsafe fn set_kcode_va_offset(offset: usize) {
+    unsafe { KCODE_VA_OFFSET = offset };
+}
+
+pub fn kcode_offset() -> usize {
+    unsafe { KCODE_VA_OFFSET }
+}
+
 bitflags::bitflags! {
     #[repr(transparent)]
     #[derive(Clone, Copy, PartialEq, Eq)]

@@ -1,8 +1,13 @@
+use core::arch::asm;
+
 use crate::ArchIf;
 
 mod entry;
 mod multiboot1;
 pub(crate) mod paging;
+mod uart16550;
+
+extern crate pie_boot;
 
 extern crate pie_boot;
 
@@ -10,7 +15,7 @@ pub struct Arch;
 
 impl ArchIf for Arch {
     fn early_debug_put(byte: u8) {
-        todo!()
+        uart16550::write_bytes(&[byte]);
     }
 
     type PageTable = paging::Table;
@@ -42,7 +47,7 @@ impl ArchIf for Arch {
     }
 
     fn wait_for_event() {
-        todo!()
+        unsafe { asm!("hlt") }
     }
 
     fn init_debugcon() {
