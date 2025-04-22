@@ -1,4 +1,4 @@
-use core::arch::asm;
+use core::arch::{asm, global_asm};
 
 use entry::primary_entry;
 use kmem_region::region::MemConfig;

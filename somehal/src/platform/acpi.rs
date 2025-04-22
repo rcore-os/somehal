@@ -1,15 +1,14 @@
 use alloc::vec::Vec;
 
-use core::{ptr::NonNull, slice::Iter};
+use core::ptr::NonNull;
 
-use acpi::{
-    madt::MadtEntry,
-    platform::{Processor, ProcessorInfo, ProcessorState},
-    *,
+use acpi::{platform::ProcessorState, *};
+
+use crate::{
+    mem::{PhysMemory, heap::GlobalHeap},
+    once_static::OnceStatic,
+    println,
 };
-use spin::Mutex;
-
-use crate::{mem::heap::GlobalHeap, once_static::OnceStatic, println};
 
 use super::CpuId;
 
