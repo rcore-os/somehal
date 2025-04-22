@@ -1,7 +1,11 @@
 use core::arch::asm;
 
 use aarch64_cpu::registers::*;
-use kmem::region::STACK_TOP;
+use heapless::Vec;
+use kmem::region::{
+    AccessFlags, CacheConfig, MemConfig, MemRegionKind, STACK_TOP, kcode_offset,
+    set_kcode_va_offset,
+};
 use pie_boot::BootInfo;
 
 use super::debug;
@@ -14,11 +18,10 @@ use crate::{
     fdt::{self, save_fdt},
     handle_err,
     mem::{
-        boot::set_kcode_va_offset, kernal_load_start_link_addr, page::new_mapped_table,
+        kernal_load_start_link_addr, main_memory::RegionAllocator, page::new_mapped_table,
         setup_memory_main, setup_memory_regions, stack_top_cpu0,
     },
     println,
-    vec::ArrayVec,
 };
 
 #[unsafe(no_mangle)]
@@ -66,15 +69,26 @@ pub unsafe extern "C" fn __vma_relocate_entry(boot_info: *const BootInfo) {
 
 fn phys_sp_entry() -> ! {
     println!("SP moved");
-    let mut rsv = ArrayVec::<_, 4>::new();
+    let mut rsv = Vec::<_, 4>::new();
 
-    if let Some(r) = save_fdt() {
-        let _ = rsv.try_push(r);
+    let alloc = RegionAllocator::new(
+        "rsv",
+        MemConfig {
+            access: AccessFlags::Read,
+            cache: CacheConfig::Normal,
+        },
+        MemRegionKind::Code,
+        kcode_offset(),
+    );
+
+    if let Some(r) = save_fdt(&alloc) {
+        // let _ = rsv.push(r);
     }
 
-    let _ = rsv.try_push(super::debug::MEM_REGION_DEBUG_CON.clone());
+    let _ = rsv.push(alloc.into());
+    let _ = rsv.push(super::debug::MEM_REGION_DEBUG_CON.clone());
 
-    setup_memory_regions(Arch::cpu_id(), rsv, fdt::cpu_list().unwrap());
+    setup_memory_regions(Arch::cpu_id(), rsv.into_iter(), fdt::cpu_list().unwrap());
 
     println!("Memory regions setup done!");
 

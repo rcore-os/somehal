@@ -1,11 +1,16 @@
-use core::alloc::Layout;
+use core::{
+    alloc::{AllocError, Layout},
+    ptr::NonNull,
+};
 
-use kmem::IntAlign;
-use kmem::region::{MemConfig, MemRegion, MemRegionKind};
-use kmem::{PhysAddr, alloc::LineAllocator};
+use kmem::{
+    IntAlign, PhysAddr,
+    alloc::LineAllocator,
+    region::{MemConfig, MemRegion, MemRegionKind},
+};
+use spin::Mutex;
 
-use super::PhysMemory;
-use super::{MEMORY_MAIN, mem_region_add};
+use super::{MEMORY_MAIN, PhysMemory};
 
 pub unsafe fn init(start: PhysAddr, end: PhysAddr) {
     if MEMORY_MAIN.is_init() {
@@ -20,44 +25,58 @@ pub unsafe fn init(start: PhysAddr, end: PhysAddr) {
 }
 
 pub struct RegionAllocator {
-    allocator: LineAllocator,
+    allocator: Mutex<LineAllocator>,
     name: &'static str,
     config: MemConfig,
     kind: MemRegionKind,
     va_offset: usize,
 }
 
-impl Drop for RegionAllocator {
-    fn drop(&mut self) {
-        let m = unsafe { &mut *MEMORY_MAIN.get() }.as_mut().unwrap();
-        m.addr = self.allocator.highest_address();
-        m.size -= self.allocator.used();
-
-        let region = MemRegion {
-            name: self.name,
-            phys_start: self.allocator.start,
-            size: self.allocator.used(),
-            config: self.config,
-            kind: self.kind,
-            virt_start: (self.allocator.start.raw() + self.va_offset).into(),
-        };
-
-        mem_region_add(region);
+impl RegionAllocator {
+    pub fn new(name: &'static str, config: MemConfig, kind: MemRegionKind, va_offset: usize) -> Self {
+        Self {
+            allocator: Mutex::new(LineAllocator::new(MEMORY_MAIN.addr, MEMORY_MAIN.size)),
+            name,
+            config,
+            kind,
+            va_offset,
+        }
     }
 }
 
-pub unsafe fn region_allocator(
-    name: &'static str,
-    config: MemConfig,
-    kind: MemRegionKind,
-    va_offset: usize,
-) -> RegionAllocator {
-    RegionAllocator {
-        allocator: LineAllocator::new(MEMORY_MAIN.addr, MEMORY_MAIN.size),
-        name,
-        config,
-        kind,
-        va_offset,
+unsafe impl core::alloc::Allocator for RegionAllocator {
+    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+        unsafe {
+            let ptr = self.allocator.lock().alloc(layout).ok_or(AllocError {})?;
+
+            Ok(NonNull::slice_from_raw_parts(
+                NonNull::new_unchecked(ptr.raw() as _),
+                layout.size(),
+            ))
+        }
+    }
+
+    unsafe fn deallocate(&self, _ptr: core::ptr::NonNull<u8>, _layout: Layout) {}
+}
+
+impl From<RegionAllocator> for MemRegion {
+    fn from(value: RegionAllocator) -> Self {
+        let al = value.allocator.lock();
+
+        let m = unsafe { &mut *MEMORY_MAIN.get() }.as_mut().unwrap();
+        assert_eq!(m.addr, al.start, "parrel `RegionAllocator` allocator");
+
+        m.addr = al.highest_address();
+        m.size -= al.used();
+
+        MemRegion {
+            name: value.name,
+            phys_start: al.start,
+            size: al.used(),
+            config: value.config,
+            kind: value.kind,
+            virt_start: (al.start.raw() + value.va_offset).into(),
+        }
     }
 }
 

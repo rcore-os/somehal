@@ -1,6 +1,6 @@
 use core::{arch::asm, ptr::null_mut};
 
-use kmem::region::STACK_TOP;
+use kmem::region::{STACK_TOP, set_kcode_va_offset};
 use pie_boot::BootInfo;
 use riscv::register::satp;
 
@@ -8,8 +8,8 @@ use crate::{
     arch::debug_init,
     fdt, handle_err,
     mem::{
-        boot::set_kcode_va_offset, kernal_load_start_link_addr, page::new_mapped_table,
-        setup_memory_main, setup_memory_regions, stack_top_cpu0,
+        kernal_load_start_link_addr, page::new_mapped_table, setup_memory_main,
+        setup_memory_regions, stack_top_cpu0,
     },
     println,
     vec::ArrayVec,

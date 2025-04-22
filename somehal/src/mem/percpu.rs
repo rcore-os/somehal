@@ -1,13 +1,13 @@
 use core::ptr::addr_of;
 
 use crate::{
-    mem::{boot::kcode_offset, page::page_size, percpu},
+    mem::{page::page_size, percpu},
     platform::{CpuId, CpuIdx},
     println,
 };
 
 use super::PERCPU_OTHER_ALL;
-use kmem::IntAlign;
+use kmem::{IntAlign, region::kcode_offset};
 use somehal_macros::percpu_data;
 
 #[percpu_data]
@@ -36,7 +36,13 @@ pub fn init(cpu0_id: CpuId, cpu_list: impl Iterator<Item = CpuId>) {
         idx_ptr.write_volatile(0.into());
         id_ptr.write_volatile(cpu0_id);
 
-        println!("cpu{:>6} {:?} init phys: {:p}", idx, cpu0_id, cpu0_start);
+        println!(
+            "cpu{:>6} {:?} init phys: [{:p}, {:p})",
+            idx,
+            cpu0_id,
+            cpu0_start,
+            cpu0_start.add(len)
+        );
 
         if PERCPU_OTHER_ALL.size > 0 {
             let start = PERCPU_OTHER_ALL.addr.raw();
@@ -47,7 +53,13 @@ pub fn init(cpu0_id: CpuId, cpu_list: impl Iterator<Item = CpuId>) {
                 if id == cpu0_id {
                     continue;
                 }
-                println!("cpu{:>6} {:?} init phys: {:#X}", idx, id, phys_iter);
+                println!(
+                    "cpu{:>6} {:?} init phys: [{:#X}, {:#X})",
+                    idx,
+                    id,
+                    phys_iter,
+                    phys_iter + len
+                );
 
                 core::slice::from_raw_parts_mut(phys_iter as *mut u8, len)
                     .copy_from_slice(core::slice::from_raw_parts(cpu0_start, len));

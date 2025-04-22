@@ -9,18 +9,16 @@ use crate::{
 use heap::HEAP;
 use kmem::region::{
     AccessFlags, CacheConfig, MemConfig, MemRegionKind, OFFSET_LINER, STACK_SIZE, STACK_TOP,
-    region_phys_to_virt, region_virt_to_phys,
+    kcode_offset, region_phys_to_virt, region_virt_to_phys,
 };
 pub use kmem::{region::MemRegion, *};
 use somehal_macros::fn_link_section;
 
-pub(crate) mod boot;
 pub(crate) mod heap;
 pub(crate) mod main_memory;
 pub mod page;
 mod percpu;
 
-use boot::kcode_offset;
 use page::page_size;
 
 #[derive(Debug, Clone)]

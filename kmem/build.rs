@@ -41,6 +41,8 @@ fn main() {
     let content = include_str!("memory.ld");
 
     let content = content.replace("${VCODE}", &format!("{:#x}", kernel_load_vaddr));
+    let content = content.replace("${KERNAL_LOAD_VMA}", &format!("{:#x}", kernel_load_vaddr));
+
 
     let mut file =
         std::fs::File::create(out_dir().join("memory.x")).expect("memory.x create failed");

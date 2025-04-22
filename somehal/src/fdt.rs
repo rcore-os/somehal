@@ -1,5 +1,5 @@
 use core::{
-    alloc::Layout,
+    alloc::{Allocator, Layout},
     ptr::{NonNull, slice_from_raw_parts_mut},
 };
 
@@ -14,7 +14,7 @@ use crate::{
 
 use kmem::region::*;
 
-use crate::mem::{MemRegion, boot::kcode_offset};
+use crate::mem::MemRegion;
 
 static mut FDT_ADDR: usize = 0;
 
@@ -107,31 +107,24 @@ fn get_fdt<'a>() -> Option<Fdt<'a>> {
     Fdt::from_ptr(NonNull::new(fdt_ptr())?).ok()
 }
 
-pub(crate) fn save_fdt() -> Option<MemRegion> {
+pub(crate) fn save_fdt(alloc: &impl Allocator) -> Option<()> {
     let ptr_src = fdt_ptr();
     let fdt = Fdt::from_ptr(NonNull::new(ptr_src)?).expect("invalid fdt");
     let size = fdt.total_size().align_up(page_size());
 
-    let ptr_dst =
-        main_memory::alloc(Layout::from_size_align(size, page_size()).unwrap()).raw() as *mut u8;
+    let mut ptr_dst = alloc
+        .allocate(Layout::from_size_align(size, page_size()).unwrap())
+        .ok()?;
 
     unsafe {
         let src = &mut *slice_from_raw_parts_mut(ptr_src, size);
-        let dst = &mut *slice_from_raw_parts_mut(ptr_dst, size);
+        let dst = ptr_dst.as_mut();
         dst.copy_from_slice(src);
 
-        FDT_ADDR = ptr_dst as _;
+        FDT_ADDR = ptr_dst.addr().get();
+
+        println!("Save FDT to {:#x}", ptr_dst.addr());
     }
 
-    Some(MemRegion {
-        virt_start: (ptr_dst as usize + kcode_offset()).into(),
-        size,
-        phys_start: (ptr_dst as usize).into(),
-        name: "fdt data",
-        config: MemConfig {
-            access: AccessFlags::Read,
-            cache: CacheConfig::Normal,
-        },
-        kind: MemRegionKind::Code,
-    })
+    Some(())
 }
