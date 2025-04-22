@@ -47,7 +47,7 @@ pub struct TrapFrame {
     /// Supervisor Status Register.
     pub sstatus: usize,
 }
-
+#[allow(unused)]
 impl TrapFrame {
     /// Gets the 0th syscall argument.
     pub const fn arg0(&self) -> usize {
