@@ -16,7 +16,7 @@ use crate::{
         setup_memory_main, setup_memory_regions, stack_top_cpu0,
     },
     platform::*,
-    println,
+    printkv, println,
 };
 
 pub fn primary_entry(boot_info: BootInfo) {
@@ -37,24 +37,21 @@ pub fn primary_entry(boot_info: BootInfo) {
         set_fdt_ptr(dtb);
     }
 
-    println!(
-        "{:<12}: {:#X}",
+    printkv!(
         "Kernel LMA",
+        "{:#X}",
         kernal_load_start_link_addr() - kcode_offset
     );
 
-    println!("{:<12}: {:#X}", "Code offst", kcode_offset);
-    println!("{:<12}: {:?}", "Hart", hartid);
+    printkv!("Code offst", "{:#X}", kcode_offset);
+    printkv!("Hart", "{:?}", hartid);
 
-    println!("{:<12}: {:?}", "FDT", dtb);
+    printkv!("FDT", "{:?}", dtb);
 
     let cpu_count = handle_err!(cpu_count(), "could not get cpu count");
 
-    println!("{:<12}: {}", "CPU count", cpu_count);
-    println!(
-        "{:<12}: {:?}",
-        "Memory start", boot_info.main_memory_free_start
-    );
+    printkv!("CPU count", "{}", cpu_count);
+    printkv!("Memory start", "{:?}", boot_info.main_memory_free_start);
 
     let memories = handle_err!(find_memory(), "could not get memories");
 
@@ -66,7 +63,7 @@ pub fn primary_entry(boot_info: BootInfo) {
 
     let sp = stack_top_cpu0();
 
-    println!("{:<12}: {:?}", "Stack top", sp);
+    printkv!("Stack top", "{:?}", sp);
 
     // SP 移动到物理地址正确位置
     unsafe {
