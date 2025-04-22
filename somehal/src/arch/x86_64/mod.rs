@@ -3,8 +3,11 @@ use core::arch::asm;
 use crate::ArchIf;
 
 mod entry;
+mod multiboot1;
 pub(crate) mod paging;
 mod uart16550;
+
+extern crate pie_boot;
 
 extern crate pie_boot;
 
