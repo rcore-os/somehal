@@ -37,7 +37,7 @@ const FLAG_ANY_MEM: usize = 0b1000;
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.boot.header")]
 /// The header of the kernel.
-/// 
+///
 /// # Safety
 pub unsafe extern "C" fn _start() -> ! {
     naked_asm!(
@@ -69,8 +69,8 @@ unsafe extern "C" fn primary_entry(_fdt_addr: *mut u8) -> ! {
         // Save dtb address.
         "MOV      x19, x0",
         // Set the stack pointer.
-        "ADRP     x1,  __boot_stack_bottom",
-        "ADD      x1, x1, :lo12:__boot_stack_bottom",
+        "ADRP     x1,  __kernel_code_end",
+        "ADD      x1, x1, :lo12:__kernel_code_end",
         "ADD      x1, x1, {stack_size}",
         "MOV      sp, x1",
 

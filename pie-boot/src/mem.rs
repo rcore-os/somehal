@@ -1,6 +1,6 @@
-use core::{cell::UnsafeCell, mem::MaybeUninit, ops::Deref};
+use core::{alloc::Layout, cell::UnsafeCell, mem::MaybeUninit, ops::Deref, ptr::NonNull};
 
-use crate::paging::*;
+use crate::{config::BOOT_STACK_SIZE, paging::*};
 use kmem_region::{
     IntAlign,
     alloc::LineAllocator,
@@ -24,9 +24,9 @@ impl<T> StaticCell<T> {
     }
 }
 
+static mut BOOT_TABLE: usize = 0;
 static BOOT_INFO: StaticCell<BootInfo> = StaticCell::new();
 static PHYS_ALLOCATOR: StaticCell<LineAllocator> = StaticCell::new();
-static mut BOOT_TABLE: usize = 0;
 
 impl<T> Deref for StaticCell<T> {
     type Target = T;
@@ -58,16 +58,29 @@ pub(crate) fn boot_info() -> BootInfo {
 pub(crate) fn init_phys_allocator() {
     unsafe {
         *PHYS_ALLOCATOR.0.get() =
-            LineAllocator::new(kmem_region::PhysAddr::from(link_section_end() as usize), GB);
+            LineAllocator::new(kmem_region::PhysAddr::from(kernel_code_end() as usize), GB);
+
+        reserved_alloc(Layout::from_size_align_unchecked(
+            BOOT_STACK_SIZE,
+            size_of::<usize>(),
+        ));
+    }
+}
+
+pub(crate) unsafe fn reserved_alloc(layout: Layout) -> Option<NonNull<u8>> {
+    unsafe {
+        (*PHYS_ALLOCATOR.0.get())
+            .alloc(layout)
+            .map(|o| NonNull::new_unchecked(o.raw() as _))
     }
 }
 
 #[inline(always)]
-fn link_section_end() -> *const u8 {
+fn kernel_code_end() -> *const u8 {
     unsafe extern "C" {
-        fn __boot_stack_bottom();
+        fn __kernel_code_end();
     }
-    __boot_stack_bottom as _
+    __kernel_code_end as _
 }
 
 fn kernal_kcode_start() -> usize {
@@ -83,15 +96,10 @@ fn table_len() -> usize {
 
 /// `rsv_space` 在 `boot stack` 之后保留的空间到校
 pub fn new_boot_table(kcode_offset: usize) -> PhysAddr {
-    let code_end_phys = PhysAddr::from(link_section_end() as usize);
+    let code_end_phys = PhysAddr::from(kernel_code_end() as usize);
 
     let access = unsafe { &mut *PHYS_ALLOCATOR.0.get() };
-
-    dbgln!(
-        "Tmp Table space: [{}, {})",
-        access.start.raw(),
-        access.end.raw()
-    );
+    dbgln!("BootTable space: [{}, --)", access.start.raw());
 
     let mut table = early_err!(Table::create_empty(access));
     unsafe {
@@ -157,8 +165,8 @@ pub fn new_boot_table(kcode_offset: usize) -> PhysAddr {
     let addr = table.paddr();
 
     unsafe {
-        edit_boot_info(|_f| {});
         BOOT_TABLE = addr.raw();
+        edit_boot_info(|_f| {});
     }
 
     addr

@@ -25,12 +25,13 @@ pub(crate) mod console;
 #[cfg(early_uart)]
 pub(crate) mod debug;
 
+mod api;
 mod archif;
-mod config;
 mod mem;
 #[allow(unused)]
 mod paging;
 mod vec;
+mod config;
 
 use arch::*;
 use kmem_region::PhysAddr;
@@ -42,6 +43,8 @@ pub(crate) use somehal_macros::dbgln;
 macro_rules! dbgln {
     ($($arg:tt)*) => {};
 }
+
+pub use api::*;
 
 unsafe fn clean_bss() {
     unsafe extern "C" {

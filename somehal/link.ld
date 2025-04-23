@@ -50,7 +50,7 @@ SECTIONS
         *(COMMON)
         . = ALIGN(4K);
 
-        __boot_stack_bottom = .;
+        __kernel_code_end = .;
     } 
 
 

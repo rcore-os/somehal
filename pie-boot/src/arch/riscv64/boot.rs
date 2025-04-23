@@ -59,7 +59,7 @@ unsafe extern "C" fn primary_entry(_hart_id: usize, _fdt_addr: *mut u8) -> ! {
         "mv      s1, a1",                  // save DTB pointer
 
         // Set the stack pointer.
-        "la      sp, __boot_stack_bottom",
+        "la      sp, __kernel_code_end",
         "li      t0, {stack_size}",
         "add     sp, sp, t0",
 
@@ -83,7 +83,7 @@ unsafe extern "C" fn primary_entry(_hart_id: usize, _fdt_addr: *mut u8) -> ! {
         "mv      a0, s0",
         "jalr    t0",
         "j       .",
-        stack_size = const crate::config::STACK_SIZE,
+        stack_size = const crate::config::BOOT_STACK_SIZE,
         setup = sym setup,
         init_mmu = sym init_mmu,
         setup_boot_info = sym setup_boot_info,

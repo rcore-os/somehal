@@ -81,7 +81,7 @@ bsp_entry64:
     ENTRY64_COMMON
 
     # set RSP to boot stack
-    movabs  rsp, offset __boot_stack_bottom
+    movabs  rsp, offset __kernel_code_end
     add     rsp, {boot_stack_size}
 
     # call rust_entry(magic, mbi)
