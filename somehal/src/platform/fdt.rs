@@ -16,7 +16,7 @@ use crate::{
 
 static mut FDT_ADDR: usize = 0;
 static mut FDT_LEN: usize = 0;
-static MEM_REGION_DEBUG_CON: OnceStatic<Option<MemRegion>> = OnceStatic::new();
+static MEM_REGION_DEBUG_CON: OnceStatic<MemRegion> = OnceStatic::new();
 
 pub fn find_memory() -> Result<PhysMemoryArray, FdtError<'static>> {
     let mut mems = PhysMemoryArray::new();
@@ -94,7 +94,7 @@ pub fn init_debugcon() -> Option<any_uart::Uart> {
         kind: MemRegionKind::Device,
     };
 
-    unsafe { MEM_REGION_DEBUG_CON.init(Some(region)) };
+    unsafe { MEM_REGION_DEBUG_CON.init(region) };
 
     Some(uart)
 }
@@ -136,8 +136,8 @@ pub(crate) fn memory_regions() -> vec::Vec<MemRegion> {
             });
         }
 
-        if let Some(debug) = MEM_REGION_DEBUG_CON.as_ref() {
-            vec.push(debug.clone());
+        if MEM_REGION_DEBUG_CON.is_init() {
+            vec.push(MEM_REGION_DEBUG_CON.clone());
         }
 
         vec

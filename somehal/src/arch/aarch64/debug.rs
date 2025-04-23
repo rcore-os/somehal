@@ -1,6 +1,6 @@
 use core::cell::UnsafeCell;
 
-use crate::{mem::MemRegion, once_static::OnceStatic, platform};
+use crate::platform;
 
 use any_uart::Sender;
 use kmem_region::region::OFFSET_LINER;
