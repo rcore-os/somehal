@@ -3,12 +3,12 @@ use core::{
     ptr::NonNull,
 };
 
-use crate::paging::TableGeneric;
 use crate::{archif::ArchIf, mem::clean_bss};
 use crate::{
     dbgln,
     mem::{edit_boot_info, init_phys_allocator, new_boot_table},
 };
+use crate::{mem::set_fdt_ptr, paging::TableGeneric};
 use aarch64_cpu::{
     asm::{
         barrier::{self, SY, isb},
@@ -77,7 +77,7 @@ unsafe extern "C" fn primary_entry(_fdt_addr: *mut u8) -> ! {
         "MOV      x0,  x19",
         "BL       {entry}",
         "B        .",
-        stack_size = const crate::config::STACK_SIZE,
+        stack_size = const crate::config::BOOT_STACK_SIZE,
         switch_to_elx = sym switch_to_elx,
         entry = sym rust_boot,
     )
@@ -87,6 +87,7 @@ fn rust_boot(fdt_addr: *mut u8) -> ! {
     unsafe {
         clean_bss();
         enable_fp();
+        set_fdt_ptr(fdt_addr);
 
         #[cfg(early_debug)]
         crate::debug::fdt::init_debugcon(fdt_addr);
@@ -107,7 +108,6 @@ fn rust_boot(fdt_addr: *mut u8) -> ! {
         edit_boot_info(|info| {
             info.cpu_id = (MPIDR_EL1.get() as usize) & 0xffffff;
             info.kcode_offset = kcode_offset;
-            info.fdt = NonNull::new(fdt_addr);
         });
 
         enable_mmu(kcode_offset)

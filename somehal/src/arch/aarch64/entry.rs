@@ -6,7 +6,7 @@ use kmem_region::region::{
     AccessFlags, CacheConfig, MemConfig, MemRegionKind, STACK_TOP, kcode_offset,
     set_kcode_va_offset,
 };
-use pie_boot::BootInfo;
+use pie_boot::{BootInfo, MemoryKind};
 
 use super::debug;
 use crate::{
@@ -17,8 +17,8 @@ use crate::{
     },
     handle_err,
     mem::{
-        kernal_load_start_link_addr, main_memory::RegionAllocator, page::new_mapped_table,
-        setup_memory_main, setup_memory_regions, stack_top_cpu0,
+        PhysMemory, kernal_load_start_link_addr, main_memory::RegionAllocator,
+        page::new_mapped_table, setup_memory_main, setup_memory_regions, stack_top_cpu0,
     },
     platform::*,
     printkv, println,
@@ -29,7 +29,7 @@ pub fn primary_entry(boot_info: BootInfo) {
         cache::dcache_all(cache::DcacheOp::CleanAndInvalidate);
 
         set_kcode_va_offset(boot_info.kcode_offset);
-        set_fdt_ptr(boot_info.fdt.unwrap().as_ptr());
+        set_fdt_info(boot_info.fdt);
         debug::init();
 
         println!("MMU ready!");
@@ -46,13 +46,20 @@ pub fn primary_entry(boot_info: BootInfo) {
 
         printkv!("CPU count", "{}", cpu_count);
 
+        let reserved_memories = boot_info.memory_regions.filter_map(|o| {
+            if matches!(o.kind, MemoryKind::Reserved) {
+                Some(PhysMemory {
+                    addr: o.start.into(),
+                    size: o.end - o.start,
+                })
+            } else {
+                None
+            }
+        });
+
         let memories = handle_err!(find_memory(), "could not get memories");
 
-        setup_memory_main(
-            boot_info.main_memory_free_start,
-            memories.into_iter(),
-            cpu_count,
-        );
+        setup_memory_main(reserved_memories, memories.into_iter(), cpu_count);
 
         let sp = stack_top_cpu0();
 
@@ -71,26 +78,8 @@ pub fn primary_entry(boot_info: BootInfo) {
 
 fn phys_sp_entry() -> ! {
     println!("SP moved");
-    let mut rsv = Vec::<_, 4>::new();
 
-    let mut alloc = RegionAllocator::new(
-        "rsv",
-        MemConfig {
-            access: AccessFlags::Read,
-            cache: CacheConfig::Normal,
-        },
-        MemRegionKind::Code,
-        kcode_offset(),
-    );
-    if save_fdt(&mut alloc).is_none() {
-        println!("FDT save failed!");
-        panic!();
-    }
-
-    let _ = rsv.push(alloc.into());
-    let _ = rsv.push(super::debug::MEM_REGION_DEBUG_CON.clone());
-
-    setup_memory_regions(Arch::cpu_id(), rsv.into_iter(), cpu_list().unwrap());
+    setup_memory_regions(Arch::cpu_id(), cpu_list().unwrap());
 
     println!("Memory regions setup done!");
 

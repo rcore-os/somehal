@@ -1,4 +1,4 @@
-use core::{arch::naked_asm, ptr::NonNull};
+use core::arch::naked_asm;
 
 use riscv::register::stvec::{self, Stvec};
 

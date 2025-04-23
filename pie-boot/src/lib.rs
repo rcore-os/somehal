@@ -6,8 +6,6 @@
 #![feature(fn_align)]
 #![feature(pointer_is_aligned_to)]
 
-use core::ptr::NonNull;
-
 #[cfg(target_arch = "aarch64")]
 #[path = "arch/aarch64/mod.rs"]
 mod arch;

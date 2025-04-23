@@ -6,6 +6,7 @@ use kmem_region::{
     allocator::LineAllocator,
     region::{AccessFlags, CacheConfig, MemConfig, PAGE_SIZE},
 };
+use num_align::NumAssertAlign;
 
 use crate::{Arch, BootInfo, archif::ArchIf, dbgln};
 
@@ -119,13 +120,19 @@ pub fn new_boot_table(kcode_offset: usize) -> PhysAddr {
     let code_end_phys = PhysAddr::from(kernel_code_end() as usize);
 
     let access = unsafe { &mut *PHYS_ALLOCATOR.0.get() };
+
     dbgln!("BootTable space: [{}, --)", access.start.raw());
 
     let mut table = early_err!(Table::create_empty(access));
     unsafe {
-        let align = GB;
+        let align = if kcode_offset.is_aligned_to(GB) {
+            GB
+        } else {
+            2 * MB
+        };
 
         let code_start_phys = kernal_kcode_start().align_down(align);
+
         let code_start = code_start_phys + kcode_offset;
         let code_end: usize = (code_end_phys + kcode_offset).raw().align_up(align);
 
@@ -177,12 +184,12 @@ pub fn new_boot_table(kcode_offset: usize) -> PhysAddr {
         ));
     }
 
+    let addr = table.paddr();
+
     dbgln!(
         "Table size     : {}",
-        access.highest_address().raw() - access.start.raw()
+        access.highest_address().raw() - addr.raw()
     );
-
-    let addr = table.paddr();
 
     unsafe {
         BOOT_TABLE = addr.raw();

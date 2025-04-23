@@ -9,12 +9,14 @@ use kmem_region::{
 use crate::{
     _alloc::*,
     mem::{page::page_size, *},
+    once_static::OnceStatic,
     platform::CpuId,
     println,
 };
 
 static mut FDT_ADDR: usize = 0;
 static mut FDT_LEN: usize = 0;
+static MEM_REGION_DEBUG_CON: OnceStatic<Option<MemRegion>> = OnceStatic::new();
 
 pub fn find_memory() -> Result<PhysMemoryArray, FdtError<'static>> {
     let mut mems = PhysMemoryArray::new();
@@ -64,7 +66,7 @@ pub fn cpu_list() -> Result<impl Iterator<Item = CpuId>, FdtError<'static>> {
 }
 
 #[cfg(not(target_arch = "riscv64"))]
-pub fn init_debugcon() -> Option<(any_uart::Uart, MemRegion)> {
+pub fn init_debugcon() -> Option<any_uart::Uart> {
     use kmem_region::region::*;
 
     fn phys_to_virt(p: usize) -> *mut u8 {
@@ -80,20 +82,21 @@ pub fn init_debugcon() -> Option<(any_uart::Uart, MemRegion)> {
     let reg = node.reg()?.next()?;
     let phys_start = reg.address as usize;
 
-    Some((
-        uart,
-        MemRegion {
-            virt_start: (phys_start + OFFSET_LINER).into(),
-            size: page_size(),
-            phys_start: phys_start.into(),
-            name: "debug uart",
-            config: MemConfig {
-                access: AccessFlags::Read | AccessFlags::Write,
-                cache: CacheConfig::Device,
-            },
-            kind: MemRegionKind::Device,
+    let region = MemRegion {
+        virt_start: (phys_start + OFFSET_LINER).into(),
+        size: page_size(),
+        phys_start: phys_start.into(),
+        name: "debug uart",
+        config: MemConfig {
+            access: AccessFlags::Read | AccessFlags::Write,
+            cache: CacheConfig::Device,
         },
-    ))
+        kind: MemRegionKind::Device,
+    };
+
+    unsafe { MEM_REGION_DEBUG_CON.init(Some(region)) };
+
+    Some(uart)
 }
 pub(crate) unsafe fn set_fdt_info(info: Option<(NonNull<u8>, usize)>) {
     unsafe {
@@ -131,6 +134,10 @@ pub(crate) fn memory_regions() -> vec::Vec<MemRegion> {
                 size: end - start,
                 phys_start: start.into(),
             });
+        }
+
+        if let Some(debug) = MEM_REGION_DEBUG_CON.as_ref() {
+            vec.push(debug.clone());
         }
 
         vec
