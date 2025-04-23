@@ -5,7 +5,7 @@ use core::{
 
 use kmem_region::{
     IntAlign, PhysAddr,
-    alloc::LineAllocator,
+    allocator::LineAllocator,
     region::{MemConfig, MemRegion, MemRegionKind},
 };
 

@@ -1,15 +1,18 @@
-use core::arch::asm;
+use core::arch::{asm, global_asm};
 
-use crate::ArchIf;
+use entry::primary_entry;
+use kmem_region::region::MemConfig;
+use page_table_generic::TableGeneric;
+use pie_boot::BootInfo;
+
+use crate::{
+    ArchIf,
+    mem::{PhysAddr, VirtAddr},
+};
 
 mod entry;
-mod multiboot1;
 pub(crate) mod paging;
 mod uart16550;
-
-extern crate pie_boot;
-
-extern crate pie_boot;
 
 pub struct Arch;
 
@@ -20,29 +23,27 @@ impl ArchIf for Arch {
 
     type PageTable = paging::Table;
 
-    fn new_pte_with_config(
-        config: kmem_region::region::MemConfig,
-    ) -> <Self::PageTable as kmem_region::paging::TableGeneric>::PTE {
+    fn new_pte_with_config(config: MemConfig) -> <Self::PageTable as TableGeneric>::PTE {
         todo!()
     }
 
-    fn set_kernel_table(addr: kmem_region::PhysAddr) {
+    fn set_kernel_table(addr: PhysAddr) {
         todo!()
     }
 
-    fn get_kernel_table() -> kmem_region::PhysAddr {
+    fn get_kernel_table() -> PhysAddr {
         todo!()
     }
 
-    fn set_user_table(addr: kmem_region::PhysAddr) {
+    fn set_user_table(addr: PhysAddr) {
         todo!()
     }
 
-    fn get_user_table() -> kmem_region::PhysAddr {
+    fn get_user_table() -> PhysAddr {
         todo!()
     }
 
-    fn flush_tlb(vaddr: Option<kmem_region::VirtAddr>) {
+    fn flush_tlb(vaddr: Option<VirtAddr>) {
         todo!()
     }
 
@@ -56,5 +57,9 @@ impl ArchIf for Arch {
 
     fn cpu_id() -> crate::platform::CpuId {
         todo!()
+    }
+
+    fn primary_entry(boot_info: BootInfo) {
+        primary_entry(boot_info);
     }
 }

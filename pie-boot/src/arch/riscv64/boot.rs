@@ -1,11 +1,11 @@
-use core::{arch::naked_asm, ptr::NonNull};
+use core::arch::naked_asm;
 
 use riscv::register::stvec::{self, Stvec};
 
 use crate::{
     arch::debug_init,
-    clean_bss, dbgln,
-    mem::{edit_boot_info, init_phys_allocator},
+    dbgln,
+    mem::{clean_bss, edit_boot_info, init_phys_allocator, set_fdt_ptr},
 };
 
 use super::mmu::init_mmu;
@@ -59,7 +59,7 @@ unsafe extern "C" fn primary_entry(_hart_id: usize, _fdt_addr: *mut u8) -> ! {
         "mv      s1, a1",                  // save DTB pointer
 
         // Set the stack pointer.
-        "la      sp, __boot_stack_bottom",
+        "la      sp, __kernel_code_end",
         "li      t0, {stack_size}",
         "add     sp, sp, t0",
 
@@ -83,7 +83,7 @@ unsafe extern "C" fn primary_entry(_hart_id: usize, _fdt_addr: *mut u8) -> ! {
         "mv      a0, s0",
         "jalr    t0",
         "j       .",
-        stack_size = const crate::config::STACK_SIZE,
+        stack_size = const crate::config::BOOT_STACK_SIZE,
         setup = sym setup,
         init_mmu = sym init_mmu,
         setup_boot_info = sym setup_boot_info,
@@ -105,6 +105,8 @@ fn setup(hartid: usize, fdt: *mut u8) -> usize {
         dbgln!("Hart           : {}", hartid);
         dbgln!("fdt            : {}", fdt);
 
+        set_fdt_ptr(fdt);
+
         unsafe extern "C" {
             fn trap_vector_base();
         }
@@ -119,12 +121,11 @@ fn setup(hartid: usize, fdt: *mut u8) -> usize {
     }
 }
 
-fn setup_boot_info(hartid: usize, kcode_offset: usize, fdt: *mut u8) {
+fn setup_boot_info(hartid: usize, kcode_offset: usize) {
     unsafe {
         edit_boot_info(|info| {
             info.cpu_id = hartid;
             info.kcode_offset = kcode_offset;
-            info.fdt = NonNull::new(fdt);
         });
     }
 }

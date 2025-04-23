@@ -1,11 +1,12 @@
-use core::{cell::UnsafeCell, mem::MaybeUninit, ops::Deref};
+use core::{alloc::Layout, cell::UnsafeCell, mem::MaybeUninit, ops::Deref, ptr::NonNull};
 
-use crate::paging::*;
+use crate::{config::BOOT_STACK_SIZE, paging::*};
 use kmem_region::{
     IntAlign,
-    alloc::LineAllocator,
-    region::{AccessFlags, CacheConfig, MemConfig},
+    allocator::LineAllocator,
+    region::{AccessFlags, CacheConfig, MemConfig, PAGE_SIZE},
 };
+use num_align::NumAssertAlign;
 
 use crate::{Arch, BootInfo, archif::ArchIf, dbgln};
 
@@ -24,9 +25,11 @@ impl<T> StaticCell<T> {
     }
 }
 
+static mut BOOT_TABLE: usize = 0;
 static BOOT_INFO: StaticCell<BootInfo> = StaticCell::new();
 static PHYS_ALLOCATOR: StaticCell<LineAllocator> = StaticCell::new();
-static mut BOOT_TABLE: usize = 0;
+static mut FDT: usize = 0;
+static mut FDT_SIZE: usize = 0;
 
 impl<T> Deref for StaticCell<T> {
     type Target = T;
@@ -36,38 +39,69 @@ impl<T> Deref for StaticCell<T> {
     }
 }
 
-pub(crate) fn clean_boot_info() {
+pub unsafe fn clean_bss() {
+    unsafe extern "C" {
+        fn __start_BootBss();
+        fn __stop_BootBss();
+    }
     unsafe {
-        *BOOT_INFO.0.get() = BootInfo::new();
+        let start = __start_BootBss as *mut u8;
+        let end = __stop_BootBss as *mut u8;
+        let len = end as usize - start as usize;
+        for i in 0..len {
+            start.add(i).write(0);
+        }
+        (*BOOT_INFO.0.get()) = BootInfo::default();
     }
 }
-
 pub(crate) unsafe fn edit_boot_info(f: impl FnOnce(&mut BootInfo)) {
     unsafe {
         let info = &mut *BOOT_INFO.0.get();
-        info.main_memory_free_start = PHYS_ALLOCATOR.highest_address();
-
         f(info);
     }
 }
 
 pub(crate) fn boot_info() -> BootInfo {
-    unsafe { &*BOOT_INFO.0.get() }.clone()
+    unsafe {
+        let info = &mut *BOOT_INFO.0.get();
+        early_err!(info.memory_regions.try_push(crate::MemoryRegion {
+            start: PHYS_ALLOCATOR.start.raw(),
+            end: PHYS_ALLOCATOR.highest_address().raw(),
+            kind: crate::MemoryKind::Reserved,
+        }));
+        info.highest_address = PHYS_ALLOCATOR.highest_address().raw();
+        info.fdt = get_fdt_ptr().map(|ptr| (ptr, FDT_SIZE));
+        info.clone()
+    }
 }
 
 pub(crate) fn init_phys_allocator() {
     unsafe {
         *PHYS_ALLOCATOR.0.get() =
-            LineAllocator::new(kmem_region::PhysAddr::from(link_section_end() as usize), GB);
+            LineAllocator::new(kmem_region::PhysAddr::from(kernel_code_end() as usize), GB);
+
+        reserved_alloc::<[u8; BOOT_STACK_SIZE]>();
     }
 }
 
-#[inline(always)]
-fn link_section_end() -> *const u8 {
-    unsafe extern "C" {
-        fn __boot_stack_bottom();
+pub(crate) unsafe fn reserved_alloc_with_layout(layout: Layout) -> Option<NonNull<u8>> {
+    unsafe {
+        (*PHYS_ALLOCATOR.0.get())
+            .alloc(layout)
+            .map(|o| NonNull::new_unchecked(o.raw() as _))
     }
-    __boot_stack_bottom as _
+}
+
+pub(crate) unsafe fn reserved_alloc<T>() -> Option<NonNull<T>> {
+    unsafe { reserved_alloc_with_layout(Layout::new::<T>()).map(|o| o.cast()) }
+}
+
+#[inline(always)]
+fn kernel_code_end() -> *const u8 {
+    unsafe extern "C" {
+        fn __kernel_code_end();
+    }
+    __kernel_code_end as _
 }
 
 fn kernal_kcode_start() -> usize {
@@ -83,21 +117,22 @@ fn table_len() -> usize {
 
 /// `rsv_space` 在 `boot stack` 之后保留的空间到校
 pub fn new_boot_table(kcode_offset: usize) -> PhysAddr {
-    let code_end_phys = PhysAddr::from(link_section_end() as usize);
+    let code_end_phys = PhysAddr::from(kernel_code_end() as usize);
 
     let access = unsafe { &mut *PHYS_ALLOCATOR.0.get() };
 
-    dbgln!(
-        "Tmp Table space: [{}, {})",
-        access.start.raw(),
-        access.end.raw()
-    );
+    dbgln!("BootTable space: [{}, --)", access.start.raw());
 
     let mut table = early_err!(Table::create_empty(access));
     unsafe {
-        let align = GB;
+        let align = if kcode_offset.is_aligned_to(GB) {
+            GB
+        } else {
+            2 * MB
+        };
 
         let code_start_phys = kernal_kcode_start().align_down(align);
+
         let code_start = code_start_phys + kcode_offset;
         let code_end: usize = (code_end_phys + kcode_offset).raw().align_up(align);
 
@@ -149,19 +184,56 @@ pub fn new_boot_table(kcode_offset: usize) -> PhysAddr {
         ));
     }
 
-    dbgln!(
-        "Table size     : {}",
-        access.highest_address().raw() - access.start.raw()
-    );
-
     let addr = table.paddr();
 
+    dbgln!(
+        "Table size     : {}",
+        access.highest_address().raw() - addr.raw()
+    );
+
     unsafe {
-        edit_boot_info(|_f| {});
         BOOT_TABLE = addr.raw();
+        edit_boot_info(|_f| {});
     }
 
     addr
+}
+pub(crate) unsafe fn set_fdt_ptr(fdt: *mut u8) {
+    unsafe {
+        FDT = fdt as _;
+    }
+}
+
+pub(crate) fn get_fdt_ptr() -> Option<NonNull<u8>> {
+    unsafe {
+        if FDT == 0 {
+            return None;
+        }
+
+        NonNull::new(FDT as _)
+    }
+}
+
+pub(crate) unsafe fn save_fdt() -> Option<()> {
+    const FDT_MAGIC: u32 = 0xd00dfeed;
+    unsafe {
+        let ptr = NonNull::new(FDT as *mut u32)?;
+        let magic = u32::from_be(ptr.read());
+        if magic != FDT_MAGIC {
+            return None;
+        }
+        let len = u32::from_be(ptr.add(1).read()) as usize;
+        let addr = reserved_alloc_with_layout(Layout::from_size_align(len, PAGE_SIZE).unwrap())?;
+
+        let src = core::slice::from_raw_parts(ptr.cast::<u8>().as_ptr(), len);
+        let dst = core::slice::from_raw_parts_mut(addr.as_ptr(), len);
+
+        dst.copy_from_slice(src);
+
+        set_fdt_ptr(dst.as_mut_ptr());
+        FDT_SIZE = len;
+    }
+    Some(())
 }
 
 impl Access for LineAllocator {

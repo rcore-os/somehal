@@ -6,6 +6,11 @@
 #![feature(fn_align)]
 #![feature(allocator_api)]
 
+extern crate alloc;
+
+#[macro_use]
+pub(crate) mod _alloc;
+
 #[cfg(target_arch = "aarch64")]
 #[path = "arch/aarch64/mod.rs"]
 pub mod arch;

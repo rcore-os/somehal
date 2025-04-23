@@ -1,13 +1,11 @@
-use core::{
-    arch::{asm, naked_asm},
-    ptr::NonNull,
-};
+use core::arch::{asm, naked_asm};
 
-use crate::paging::TableGeneric;
+use crate::{archif::ArchIf, mem::clean_bss};
 use crate::{
     dbgln,
     mem::{edit_boot_info, init_phys_allocator, new_boot_table},
 };
+use crate::{mem::set_fdt_ptr, paging::TableGeneric};
 use aarch64_cpu::{
     asm::{
         barrier::{self, SY, isb},
@@ -15,8 +13,6 @@ use aarch64_cpu::{
     },
     registers::*,
 };
-
-use crate::{archif::ArchIf, clean_bss};
 
 cfg_match! {
     feature = "vm" => {
@@ -37,7 +33,7 @@ const FLAG_ANY_MEM: usize = 0b1000;
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.boot.header")]
 /// The header of the kernel.
-/// 
+///
 /// # Safety
 pub unsafe extern "C" fn _start() -> ! {
     naked_asm!(
@@ -69,8 +65,8 @@ unsafe extern "C" fn primary_entry(_fdt_addr: *mut u8) -> ! {
         // Save dtb address.
         "MOV      x19, x0",
         // Set the stack pointer.
-        "ADRP     x1,  __boot_stack_bottom",
-        "ADD      x1, x1, :lo12:__boot_stack_bottom",
+        "ADRP     x1,  __kernel_code_end",
+        "ADD      x1, x1, :lo12:__kernel_code_end",
         "ADD      x1, x1, {stack_size}",
         "MOV      sp, x1",
 
@@ -78,7 +74,7 @@ unsafe extern "C" fn primary_entry(_fdt_addr: *mut u8) -> ! {
         "MOV      x0,  x19",
         "BL       {entry}",
         "B        .",
-        stack_size = const crate::config::STACK_SIZE,
+        stack_size = const crate::config::BOOT_STACK_SIZE,
         switch_to_elx = sym switch_to_elx,
         entry = sym rust_boot,
     )
@@ -88,6 +84,7 @@ fn rust_boot(fdt_addr: *mut u8) -> ! {
     unsafe {
         clean_bss();
         enable_fp();
+        set_fdt_ptr(fdt_addr);
 
         #[cfg(early_debug)]
         crate::debug::fdt::init_debugcon(fdt_addr);
@@ -108,7 +105,6 @@ fn rust_boot(fdt_addr: *mut u8) -> ! {
         edit_boot_info(|info| {
             info.cpu_id = (MPIDR_EL1.get() as usize) & 0xffffff;
             info.kcode_offset = kcode_offset;
-            info.fdt = NonNull::new(fdt_addr);
         });
 
         enable_mmu(kcode_offset)

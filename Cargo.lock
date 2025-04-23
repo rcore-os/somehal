@@ -434,6 +434,7 @@ dependencies = [
  "bitflags 2.9.0",
  "fdt-parser",
  "kmem-region",
+ "multiboot",
  "num-align 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "prettyplease",
  "quote",
@@ -452,6 +453,7 @@ dependencies = [
 name = "platform-test"
 version = "0.1.0"
 dependencies = [
+ "linked_list_allocator",
  "somehal",
 ]
 
@@ -667,7 +669,6 @@ dependencies = [
  "kmem-region",
  "linked_list_allocator",
  "log",
- "multiboot",
  "page-table-generic",
  "pie-boot",
  "prettyplease",

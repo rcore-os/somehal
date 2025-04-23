@@ -3,7 +3,7 @@ use core::cell::UnsafeCell;
 use crate::{mem::MemRegion, once_static::OnceStatic};
 
 use any_uart::Sender;
-use kmem_region::region::OFFSET_LINER;
+use kmem::region::OFFSET_LINER;
 
 pub(super) static MEM_REGION_DEBUG_CON: OnceStatic<MemRegion> = OnceStatic::new();
 static UART: UartWapper = UartWapper(UnsafeCell::new(None));

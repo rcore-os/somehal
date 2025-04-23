@@ -1,9 +1,16 @@
+use alloc::vec::Vec;
+
 use core::ptr::NonNull;
 
-use acpi::{madt::MadtEntry, *};
-use spin::Mutex;
+use acpi::{platform::ProcessorState, *};
 
-use crate::{once_static::OnceStatic, println};
+use crate::{
+    mem::{PhysMemory, heap::GlobalHeap},
+    once_static::OnceStatic,
+    println,
+};
+
+use super::CpuId;
 
 #[derive(Clone)]
 struct AcpiImpl;
@@ -45,19 +52,24 @@ pub fn init() {
     }
 }
 
-pub fn cpu_list() {
-    for ssdt in ACPI_TABLE.ssdts(){
-    
+pub fn cpu_list() -> impl Iterator<Item = CpuId> {
+    let info = ACPI_TABLE.platform_info_in(GlobalHeap {}).unwrap();
+
+    let mut ls = Vec::new_in(GlobalHeap {});
+
+    if let Some(info) = info.processor_info {
+        ls.push(info.boot_processor);
+
+        for p in info.application_processors.iter() {
+            ls.push(*p);
+        }
     }
 
-    let madt = ACPI_TABLE.find_table::<acpi::madt::Madt>().unwrap();
-    for id in madt.get().entries().filter_map(|one| {
-        if let MadtEntry::LocalApic(apic) = one {
-            Some(apic.processor_id)
-        } else {
+    ls.into_iter().filter_map(|one| {
+        if matches!(one.state, ProcessorState::Disabled) {
             None
+        } else {
+            Some((one.processor_uid as usize).into())
         }
-    }) {
-        println!("CPU {}", id);
-    }
+    })
 }

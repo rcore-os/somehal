@@ -50,6 +50,14 @@ impl Print for PagingError {
     }
 }
 
+impl Print for crate::vec::Error {
+    fn _print(self) {
+        match self {
+            crate::vec::Error::Full => __print_str("Vec full"),
+        }
+    }
+}
+
 #[cfg(fdt)]
 impl Print for fdt_parser::FdtError<'_> {
     fn _print(self) {

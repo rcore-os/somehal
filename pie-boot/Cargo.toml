@@ -36,6 +36,7 @@ x86 = "0.52"
 x86_64 = "0.15"
 x2apic = "0.5"
 raw-cpuid = "11.3"
+multiboot = "0.8"
 
 [build-dependencies]
 prettyplease = "0.2"
