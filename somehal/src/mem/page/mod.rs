@@ -6,7 +6,7 @@ use page_table_generic::*;
 
 use crate::arch::Arch;
 use crate::archif::ArchIf;
-use crate::mem::{MEM_REGIONS, init_heap};
+use crate::mem::MEM_REGIONS;
 use crate::{handle_err, printkv, println};
 
 pub type Table<'a> = PageTableRef<'a, <Arch as ArchIf>::PageTable>;

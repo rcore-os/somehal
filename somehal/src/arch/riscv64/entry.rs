@@ -1,10 +1,6 @@
-use core::{arch::asm, ptr::null_mut};
+use core::arch::asm;
 
-use heapless::Vec;
-use kmem_region::region::{
-    AccessFlags, CacheConfig, MemConfig, MemRegionKind, STACK_TOP, kcode_offset,
-    set_kcode_va_offset,
-};
+use kmem_region::region::{STACK_TOP, set_kcode_va_offset};
 use pie_boot::{BootInfo, MemoryKind};
 use riscv::register::satp;
 
@@ -12,8 +8,8 @@ use crate::{
     arch::debug_init,
     handle_err,
     mem::{
-        PhysMemory, kernal_load_start_link_addr, main_memory::RegionAllocator,
-        page::new_mapped_table, setup_memory_main, setup_memory_regions, stack_top_cpu0,
+        PhysMemory, kernal_load_start_link_addr, page::new_mapped_table, setup_memory_main,
+        setup_memory_regions, stack_top_cpu0,
     },
     platform::*,
     printkv, println,

@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 pub mod vec {
     pub type Vec<T> = alloc::vec::Vec<T, crate::mem::heap::GlobalHeap>;
 }

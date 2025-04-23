@@ -1,7 +1,4 @@
-use core::{
-    alloc::Layout,
-    ptr::{NonNull, slice_from_raw_parts_mut},
-};
+use core::ptr::NonNull;
 
 use fdt_parser::{Fdt, FdtError, Status};
 use kmem_region::{
@@ -11,9 +8,9 @@ use kmem_region::{
 
 use crate::{
     _alloc::*,
-    mem::{main_memory::RegionAllocator, page::page_size, *},
+    mem::{page::page_size, *},
     platform::CpuId,
-    printkv, println,
+    println,
 };
 
 static mut FDT_ADDR: usize = 0;
