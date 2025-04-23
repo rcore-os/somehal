@@ -27,5 +27,5 @@ pub struct BootInfo {
     pub kcode_offset: usize,
     pub highest_address: usize,
     pub memory_regions: ArrayVec<MemoryRegion, 128>,
-    pub fdt: Option<NonNull<u8>>,
+    pub fdt: Option<(NonNull<u8>, usize)>,
 }

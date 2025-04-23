@@ -4,15 +4,20 @@ use core::{
 };
 
 use fdt_parser::{Fdt, FdtError, Status};
-use kmem_region::IntAlign;
+use kmem_region::{
+    IntAlign,
+    region::{AccessFlags, CacheConfig, MemConfig, MemRegionKind, kcode_offset},
+};
 
 use crate::{
+    _alloc::*,
     mem::{main_memory::RegionAllocator, page::page_size, *},
     platform::CpuId,
     printkv, println,
 };
 
 static mut FDT_ADDR: usize = 0;
+static mut FDT_LEN: usize = 0;
 
 pub fn find_memory() -> Result<PhysMemoryArray, FdtError<'static>> {
     let mut mems = PhysMemoryArray::new();
@@ -93,8 +98,13 @@ pub fn init_debugcon() -> Option<(any_uart::Uart, MemRegion)> {
         },
     ))
 }
-pub(crate) unsafe fn set_fdt_ptr(fdt: *mut u8) {
-    unsafe { FDT_ADDR = fdt as _ };
+pub(crate) unsafe fn set_fdt_info(info: Option<(NonNull<u8>, usize)>) {
+    unsafe {
+        if let Some((ptr, len)) = info {
+            FDT_ADDR = ptr.as_ptr() as _;
+            FDT_LEN = len;
+        }
+    };
 }
 
 fn fdt_ptr() -> *mut u8 {
@@ -105,33 +115,27 @@ fn get_fdt<'a>() -> Option<Fdt<'a>> {
     Fdt::from_ptr(NonNull::new(fdt_ptr())?).ok()
 }
 
-pub(crate) fn save_fdt(alloc: &mut RegionAllocator) -> Option<()> {
-    let ptr_src = fdt_ptr();
-    println!("fdt addr {:p}", ptr_src);
-
-    let fdt = match Fdt::from_ptr(NonNull::new(ptr_src)?) {
-        Ok(f) => f,
-        Err(e) => {
-            println!("{:?}", e);
-            panic!();
-        }
-    };
-
-    let size = fdt.total_size().align_up(page_size());
-
-    let mut ptr_dst = alloc
-        .allocate(Layout::from_size_align(size, page_size()).unwrap())
-        .ok()?;
-
+pub(crate) fn memory_regions() -> vec::Vec<MemRegion> {
     unsafe {
-        let src = &mut *slice_from_raw_parts_mut(ptr_src, size);
-        let dst = ptr_dst.as_mut();
-        dst.copy_from_slice(src);
+        let mut vec = vec![];
 
-        FDT_ADDR = ptr_dst.addr().get();
+        if FDT_ADDR != 0 && FDT_LEN != 0 {
+            let start = FDT_ADDR.align_down(page_size());
+            let end = (FDT_ADDR + FDT_LEN).align_up(page_size());
 
-        printkv!("Save FDT to", "{:#x}", ptr_dst.addr());
+            vec.push(MemRegion {
+                name: "fdt",
+                config: MemConfig {
+                    access: AccessFlags::Read,
+                    cache: CacheConfig::Normal,
+                },
+                kind: MemRegionKind::Code,
+                virt_start: (start + kcode_offset()).into(),
+                size: end - start,
+                phys_start: start.into(),
+            });
+        }
+
+        vec
     }
-
-    Some(())
 }

@@ -5,7 +5,7 @@ use riscv::register::stvec::{self, Stvec};
 use crate::{
     arch::debug_init,
     dbgln,
-    mem::{clean_bss, edit_boot_info, init_phys_allocator},
+    mem::{clean_bss, edit_boot_info, init_phys_allocator, set_fdt_ptr},
 };
 
 use super::mmu::init_mmu;
@@ -105,6 +105,8 @@ fn setup(hartid: usize, fdt: *mut u8) -> usize {
         dbgln!("Hart           : {}", hartid);
         dbgln!("fdt            : {}", fdt);
 
+        set_fdt_ptr(fdt);
+
         unsafe extern "C" {
             fn trap_vector_base();
         }
@@ -119,12 +121,11 @@ fn setup(hartid: usize, fdt: *mut u8) -> usize {
     }
 }
 
-fn setup_boot_info(hartid: usize, kcode_offset: usize, fdt: *mut u8) {
+fn setup_boot_info(hartid: usize, kcode_offset: usize) {
     unsafe {
         edit_boot_info(|info| {
             info.cpu_id = hartid;
             info.kcode_offset = kcode_offset;
-            info.fdt = NonNull::new(fdt);
         });
     }
 }

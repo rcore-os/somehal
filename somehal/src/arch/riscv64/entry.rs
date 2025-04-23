@@ -22,7 +22,6 @@ use crate::{
 pub fn primary_entry(boot_info: BootInfo) {
     let hartid = boot_info.cpu_id;
     let kcode_offset = boot_info.kcode_offset;
-    let dtb = boot_info.fdt.map(|t| t.as_ptr()).unwrap_or(null_mut());
 
     debug_init();
     unsafe {
@@ -34,7 +33,7 @@ pub fn primary_entry(boot_info: BootInfo) {
             options(nostack)
         );
         set_kcode_va_offset(kcode_offset);
-        set_fdt_ptr(dtb);
+        set_fdt_info(boot_info.fdt);
     }
 
     printkv!(
@@ -46,7 +45,9 @@ pub fn primary_entry(boot_info: BootInfo) {
     printkv!("Code offst", "{:#X}", kcode_offset);
     printkv!("Hart", "{:?}", hartid);
 
-    printkv!("FDT", "{:?}", dtb);
+    if let Some(fdt) = boot_info.fdt {
+        printkv!("FDT", "{:?}", fdt.0);
+    }
 
     let cpu_count = handle_err!(cpu_count(), "could not get cpu count");
 
@@ -89,25 +90,7 @@ pub fn primary_entry(boot_info: BootInfo) {
 fn phys_sp_entry(hartid: usize) -> ! {
     println!("SP moved");
 
-    let mut rsv = Vec::<_, 4>::new();
-
-    let mut alloc = RegionAllocator::new(
-        "rsv",
-        MemConfig {
-            access: AccessFlags::Read,
-            cache: CacheConfig::Normal,
-        },
-        MemRegionKind::Code,
-        kcode_offset(),
-    );
-    if save_fdt(&mut alloc).is_none() {
-        println!("FDT save failed!");
-        panic!();
-    }
-
-    let _ = rsv.push(alloc.into());
-
-    setup_memory_regions(hartid.into(), rsv.into_iter(), cpu_list().unwrap());
+    setup_memory_regions(hartid.into(), cpu_list().unwrap());
 
     println!("Memory regions setup done!");
 

@@ -1,7 +1,7 @@
 use core::alloc::Layout;
 use core::panic;
 
-use kmem_region::alloc::LineAllocator;
+use kmem_region::allocator::LineAllocator;
 use page_table_generic::*;
 
 use crate::arch::Arch;
@@ -32,8 +32,6 @@ pub const fn page_valid_addr_mask() -> usize {
 }
 
 pub fn new_mapped_table() -> kmem_region::PhysAddr {
-    init_heap();
-
     let tmp_size = 8 * MB;
 
     let start = if let Some(h) =

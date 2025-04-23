@@ -4,7 +4,7 @@ mod align;
 pub mod region;
 pub use align::*;
 mod addr;
-pub mod alloc;
+pub mod allocator;
 
 pub use addr::*;
 

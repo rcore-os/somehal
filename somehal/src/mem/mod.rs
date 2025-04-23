@@ -11,7 +11,7 @@ use somehal_macros::fn_link_section;
 
 use crate::{
     once_static::OnceStatic,
-    platform::{CpuId, CpuIdx},
+    platform::{self, CpuId, CpuIdx},
     printkv, println,
 };
 
@@ -107,7 +107,7 @@ pub(crate) fn setup_memory_main(
             let rsv_end = rsv.addr + rsv.size;
 
             if main.addr < rsv_end && rsv_end < main_end {
-                main.addr = rsv_end;
+                main.addr = rsv_end.align_up(page_size());
             }
         }
 
@@ -148,13 +148,11 @@ pub(crate) fn setup_memory_main(
         },
         kind: MemRegionKind::Stack,
     });
+
+    init_heap();
 }
 
-pub(crate) fn setup_memory_regions(
-    cpu0_id: CpuId,
-    rsv: impl Iterator<Item = MemRegion>,
-    cpu_list: impl Iterator<Item = CpuId>,
-) {
+pub(crate) fn setup_memory_regions(cpu0_id: CpuId, cpu_list: impl Iterator<Item = CpuId>) {
     let percpu_one_size = percpu().len().align_up(page_size());
     let percpu_cpu0_start = percpu().as_ptr() as usize - kcode_offset();
 
@@ -205,7 +203,7 @@ pub(crate) fn setup_memory_regions(
         kind: MemRegionKind::Memory,
     });
 
-    for r in rsv {
+    for r in platform::memory_regions() {
         mem_region_add(r);
     }
 }

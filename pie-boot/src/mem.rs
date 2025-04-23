@@ -3,8 +3,8 @@ use core::{alloc::Layout, cell::UnsafeCell, mem::MaybeUninit, ops::Deref, ptr::N
 use crate::{config::BOOT_STACK_SIZE, paging::*};
 use kmem_region::{
     IntAlign,
-    alloc::LineAllocator,
-    region::{AccessFlags, CacheConfig, MemConfig},
+    allocator::LineAllocator,
+    region::{AccessFlags, CacheConfig, MemConfig, PAGE_SIZE},
 };
 
 use crate::{Arch, BootInfo, archif::ArchIf, dbgln};
@@ -27,6 +27,8 @@ impl<T> StaticCell<T> {
 static mut BOOT_TABLE: usize = 0;
 static BOOT_INFO: StaticCell<BootInfo> = StaticCell::new();
 static PHYS_ALLOCATOR: StaticCell<LineAllocator> = StaticCell::new();
+static mut FDT: usize = 0;
+static mut FDT_SIZE: usize = 0;
 
 impl<T> Deref for StaticCell<T> {
     type Target = T;
@@ -67,6 +69,7 @@ pub(crate) fn boot_info() -> BootInfo {
             kind: crate::MemoryKind::Reserved,
         }));
         info.highest_address = PHYS_ALLOCATOR.highest_address().raw();
+        info.fdt = get_fdt_ptr().map(|ptr| (ptr, FDT_SIZE));
         info.clone()
     }
 }
@@ -76,19 +79,20 @@ pub(crate) fn init_phys_allocator() {
         *PHYS_ALLOCATOR.0.get() =
             LineAllocator::new(kmem_region::PhysAddr::from(kernel_code_end() as usize), GB);
 
-        reserved_alloc(Layout::from_size_align_unchecked(
-            BOOT_STACK_SIZE,
-            size_of::<usize>(),
-        ));
+        reserved_alloc::<[u8; BOOT_STACK_SIZE]>();
     }
 }
 
-pub(crate) unsafe fn reserved_alloc(layout: Layout) -> Option<NonNull<u8>> {
+pub(crate) unsafe fn reserved_alloc_with_layout(layout: Layout) -> Option<NonNull<u8>> {
     unsafe {
         (*PHYS_ALLOCATOR.0.get())
             .alloc(layout)
             .map(|o| NonNull::new_unchecked(o.raw() as _))
     }
+}
+
+pub(crate) unsafe fn reserved_alloc<T>() -> Option<NonNull<T>> {
+    unsafe { reserved_alloc_with_layout(Layout::new::<T>()).map(|o| o.cast()) }
 }
 
 #[inline(always)]
@@ -186,6 +190,43 @@ pub fn new_boot_table(kcode_offset: usize) -> PhysAddr {
     }
 
     addr
+}
+pub(crate) unsafe fn set_fdt_ptr(fdt: *mut u8) {
+    unsafe {
+        FDT = fdt as _;
+    }
+}
+
+pub(crate) fn get_fdt_ptr() -> Option<NonNull<u8>> {
+    unsafe {
+        if FDT == 0 {
+            return None;
+        }
+
+        NonNull::new(FDT as _)
+    }
+}
+
+pub(crate) unsafe fn save_fdt() -> Option<()> {
+    const FDT_MAGIC: u32 = 0xd00dfeed;
+    unsafe {
+        let ptr = NonNull::new(FDT as *mut u32)?;
+        let magic = u32::from_be(ptr.read());
+        if magic != FDT_MAGIC {
+            return None;
+        }
+        let len = u32::from_be(ptr.add(1).read()) as usize;
+        let addr = reserved_alloc_with_layout(Layout::from_size_align(len, PAGE_SIZE).unwrap())?;
+
+        let src = core::slice::from_raw_parts(ptr.cast::<u8>().as_ptr(), len);
+        let dst = core::slice::from_raw_parts_mut(addr.as_ptr(), len);
+
+        dst.copy_from_slice(src);
+
+        set_fdt_ptr(dst.as_mut_ptr());
+        FDT_SIZE = len;
+    }
+    Some(())
 }
 
 impl Access for LineAllocator {
