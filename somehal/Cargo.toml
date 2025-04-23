@@ -26,7 +26,7 @@ bit_field = "0.10"
 aarch64-cpu = "10.0"
 smccc = "0.2"
 arm-gic-driver = "0.7"
-any-uart = "0.2"
+any-uart = "0.2.6"
 fdt-parser = "0.4"
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]

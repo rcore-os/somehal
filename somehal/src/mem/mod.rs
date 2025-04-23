@@ -209,7 +209,11 @@ pub(crate) fn setup_memory_regions(cpu0_id: CpuId, cpu_list: impl Iterator<Item 
 }
 
 pub(crate) fn kernal_load_start_link_addr() -> usize {
-    BootText().as_ptr() as _
+    unsafe extern "C" {
+        fn __kernel_load_vma();
+    }
+
+    __kernel_load_vma as _
 }
 
 fn mem_region_add(mut region: MemRegion) {
@@ -248,52 +252,36 @@ fn detect_link_space() {
 
     mem_region_add(link_section_to_kspace(
         ".text.boot",
-        BootText(),
+        pie_boot::boot_text(),
         MemConfig {
             access: AccessFlags::Read | AccessFlags::Execute,
             cache: CacheConfig::Normal,
         },
     ));
-    mem_region_add(link_section_to_kspace(
-        ".data.boot",
-        BootData(),
-        MemConfig {
-            access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
-            cache: CacheConfig::Normal,
-        },
-    ));
-    mem_region_add(link_section_to_kspace(
-        ".text",
-        text(),
-        MemConfig {
-            access: AccessFlags::Read | AccessFlags::Execute,
-            cache: CacheConfig::Normal,
-        },
-    ));
-    mem_region_add(link_section_to_kspace(
-        ".rodata",
-        rodata(),
-        MemConfig {
-            access: AccessFlags::Read | AccessFlags::Execute,
-            cache: CacheConfig::Normal,
-        },
-    ));
-    mem_region_add(link_section_to_kspace(
-        ".data",
-        rwdata(),
-        MemConfig {
-            access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
-            cache: CacheConfig::Normal,
-        },
-    ));
-    mem_region_add(link_section_to_kspace(
-        ".bss",
-        bss(),
-        MemConfig {
-            access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
-            cache: CacheConfig::Normal,
-        },
-    ));
+    // mem_region_add(link_section_to_kspace(
+    //     ".data.boot",
+    //     BootData(),
+    //     MemConfig {
+    //         access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
+    //         cache: CacheConfig::Normal,
+    //     },
+    // ));
+    mem_region_add(link_section_to_kspace(".text", text(), MemConfig {
+        access: AccessFlags::Read | AccessFlags::Execute,
+        cache: CacheConfig::Normal,
+    }));
+    mem_region_add(link_section_to_kspace(".rodata", rodata(), MemConfig {
+        access: AccessFlags::Read | AccessFlags::Execute,
+        cache: CacheConfig::Normal,
+    }));
+    mem_region_add(link_section_to_kspace(".data", rwdata(), MemConfig {
+        access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
+        cache: CacheConfig::Normal,
+    }));
+    mem_region_add(link_section_to_kspace(".bss", bss(), MemConfig {
+        access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
+        cache: CacheConfig::Normal,
+    }));
 }
 
 /// `section`在mmu开启前是物理地址
@@ -325,8 +313,8 @@ pub(crate) fn clean_bss() {
     }
 }
 
-fn_link_section!(BootText);
-fn_link_section!(BootData);
+// fn_link_section!(BootText);
+// fn_link_section!(BootData);
 fn_link_section!(text);
 fn_link_section!(rodata);
 fn_link_section!(bss);

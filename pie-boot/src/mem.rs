@@ -43,12 +43,12 @@ impl<T> Deref for StaticCell<T> {
 
 pub unsafe fn clean_bss() {
     unsafe extern "C" {
-        fn __start_BootBss();
-        fn __stop_BootBss();
+        fn __start_boot_bss();
+        fn __stop_boot_bss();
     }
     unsafe {
-        let start = __start_BootBss as *mut u8;
-        let end = __stop_BootBss as *mut u8;
+        let start = __start_boot_bss as *mut u8;
+        let end = __stop_boot_bss as *mut u8;
         let len = end as usize - start as usize;
         for i in 0..len {
             start.add(i).write(0);
@@ -115,9 +115,9 @@ fn kernel_code_end() -> *const u8 {
 
 fn kernal_kcode_start() -> usize {
     unsafe extern "C" {
-        fn __start_BootText();
+        fn __kernel_load_vma();
     }
-    __start_BootText as _
+    __kernel_load_vma as _
 }
 
 fn table_len() -> usize {

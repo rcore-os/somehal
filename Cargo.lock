@@ -94,21 +94,20 @@ dependencies = [
 
 [[package]]
 name = "any-uart"
-version = "0.2.5"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea2c79fd64280d56cff7b8a1d5144f7184e5cb97ac65d91bc65a4596ba4df7a2"
+checksum = "d850fc758dd4c9c8d16eb240ea13f3395f7e5602409b1c370902ac6f10235190"
 dependencies = [
  "bitflags 2.9.0",
  "embedded-hal-nb",
  "fdt-parser",
- "link-boot",
 ]
 
 [[package]]
 name = "arm-gic-driver"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "685276fc52d3d6b4834d1d0d0c4a25feeea216a2cd069ad1e0b53e3d61d37a7f"
+checksum = "e233ce5f0f51ff96685a9a094918f827fef4d78abb6c2861e23424c77956ba93"
 dependencies = [
  "aarch64-cpu",
  "bitflags 2.9.0",
@@ -303,9 +302,9 @@ checksum = "7943c866cc5cd64cbc25b2e01621d07fa8eb2a1a23160ee81ce38704e97b8ecf"
 
 [[package]]
 name = "jiff"
-version = "0.2.5"
+version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c102670231191d07d37a35af3eb77f1f0dbf7a71be51a962dcd57ea607be7260"
+checksum = "5a064218214dc6a10fbae5ec5fa888d80c45d611aba169222fc272072bf7aef6"
 dependencies = [
  "jiff-static",
  "log",
@@ -316,9 +315,9 @@ dependencies = [
 
 [[package]]
 name = "jiff-static"
-version = "0.2.5"
+version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cdde31a9d349f1b1f51a0b3714a5940ac022976f4b49485fc04be052b183b4c"
+checksum = "199b7932d97e325aff3a7030e141eafe7f2c6268e1d1b24859b753a627f45254"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -331,16 +330,6 @@ version = "0.1.0"
 dependencies = [
  "bitflags 2.9.0",
  "prettyplease",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "link-boot"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1c54ef43b013b17dbd852dc6ba543bb11d4eb9072511e6056099870f170f654"
-dependencies = [
  "quote",
  "syn",
 ]
@@ -485,9 +474,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.94"
+version = "1.0.95"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a31971752e70b8b2686d7e46ec17fb38dad4051d94024c88df49b667caea9c84"
+checksum = "02b3e5e68a3a1a02aad3ec490a98007cbc13c37cbe84a3cd7b8e406d76e7f778"
 dependencies = [
  "unicode-ident",
 ]

@@ -30,7 +30,7 @@ SECTIONS
     }
 
     percpu : ALIGN(4K) {
-        __kernel_load_size = . - __start_BootText;
+        __kernel_load_size = . - __kernel_load_vma;
         __erwdata = .;
 
         *(.percpu*)
