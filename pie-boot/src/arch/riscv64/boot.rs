@@ -1,4 +1,4 @@
-use core::arch::naked_asm;
+use core::arch::{global_asm, naked_asm};
 
 use riscv::register::stvec::{self, Stvec};
 
@@ -21,7 +21,7 @@ const HEADER_VERSION_MAJOR: usize = 0;
 const HEADER_VERSION_MINOR: usize = 2;
 const HEADER_VERSION: usize = (HEADER_VERSION_MAJOR << 16) | HEADER_VERSION_MINOR;
 
-#[unsafe(naked)]
+#[naked]
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.boot.header")]
 /// The entry point of the kernel.
@@ -52,7 +52,7 @@ pub unsafe extern "C" fn _start() -> ! {
     )
 }
 
-#[unsafe(naked)]
+#[naked]
 unsafe extern "C" fn primary_entry(_hart_id: usize, _fdt_addr: *mut u8) -> ! {
     naked_asm!(
         "mv      s0, a0",                  // save hartid
@@ -95,6 +95,7 @@ fn setup(hartid: usize, fdt: *mut u8) -> usize {
         clean_bss();
         debug_init();
         let lma = entry_lma();
+
         let vma = entry_vma();
         let kcode_offset = vma - lma;
 
@@ -130,7 +131,7 @@ fn setup_boot_info(hartid: usize, kcode_offset: usize) {
     }
 }
 
-#[unsafe(naked)]
+#[naked]
 unsafe extern "C" fn entry_lma() -> usize {
     naked_asm!(
         "
@@ -139,23 +140,39 @@ unsafe extern "C" fn entry_lma() -> usize {
     )
 }
 
-/// The entry point of the kernel.
-///
-/// # Safety
-#[unsafe(naked)]
-pub unsafe extern "C" fn entry_vma() -> usize {
-    naked_asm!(
-        "
-    .option pic
+global_asm!(
+    "
+.option pic
+__entry_vma:
     la      a0,  __vma_relocate_entry
-    ret"
-    )
+    ret
+"
+);
+
+pub unsafe extern "C" fn entry_vma() -> usize {
+    unsafe extern "C" {
+        fn __entry_vma() -> usize;
+    }
+    unsafe { __entry_vma() }
 }
+
+// /// The entry point of the kernel.
+// ///
+// /// # Safety
+// #[naked]
+// pub unsafe extern "C" fn entry_vma() -> usize {
+//     naked_asm!(
+//         "
+//     .option pic
+//     la      a0,  __vma_relocate_entry
+//     ret"
+//     )
+// }
 
 /// The entry point of the kernel.
 ///
 /// # Safety
-#[unsafe(naked)]
+#[naked]
 pub unsafe extern "C" fn relocate_vma() -> usize {
     naked_asm!(
         "

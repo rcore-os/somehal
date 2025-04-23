@@ -8,7 +8,7 @@ pub enum DcacheOp {
 
 use core::arch::naked_asm;
 
-#[unsafe(naked)]
+#[naked]
 pub unsafe extern "C" fn flush_dcache_range(start: usize, end: usize) {
     naked_asm!(
         "
@@ -30,7 +30,7 @@ pub unsafe extern "C" fn flush_dcache_range(start: usize, end: usize) {
     )
 }
 
-#[unsafe(naked)]
+#[naked]
 pub unsafe extern "C" fn flush_invalidate_range(start: usize, end: usize) {
     naked_asm!(
         "
@@ -52,7 +52,7 @@ pub unsafe extern "C" fn flush_invalidate_range(start: usize, end: usize) {
     )
 }
 
-#[unsafe(naked)]
+#[naked]
 pub unsafe extern "C" fn invalidate_icache_all() {
     naked_asm!(
         "
@@ -67,7 +67,7 @@ pub unsafe extern "C" fn invalidate_icache_all() {
 ///
 /// x16: FEAT_CCIDX
 /// x2~x9: clobbered
-#[unsafe(naked)]
+#[naked]
 pub unsafe extern "C" fn dcache_level(cache_level: usize, op: DcacheOp) {
     naked_asm!(
         "
@@ -114,7 +114,7 @@ pub unsafe extern "C" fn dcache_level(cache_level: usize, op: DcacheOp) {
 }
 
 /// Flush or invalidate all data cache by SET/WAY.
-#[unsafe(naked)]
+#[naked]
 pub unsafe extern "C" fn dcache_all(op: DcacheOp) {
     naked_asm!(
                 "

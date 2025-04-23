@@ -14,12 +14,11 @@ use aarch64_cpu::{
     registers::*,
 };
 
-cfg_match! {
-    feature = "vm" => {
+cfg_if::cfg_if! {
+    if #[cfg(feature = "vm")]{
         mod el2;
         pub use el2::*;
-    }
-    _ => {
+    }else{
         mod el1;
         pub use el1::*;
     }
@@ -29,7 +28,7 @@ const FLAG_LE: usize = 0b0;
 const FLAG_PAGE_SIZE_4K: usize = 0b10;
 const FLAG_ANY_MEM: usize = 0b1000;
 
-#[unsafe(naked)]
+#[naked]
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.boot.header")]
 /// The header of the kernel.
@@ -59,7 +58,7 @@ pub unsafe extern "C" fn _start() -> ! {
     )
 }
 
-#[unsafe(naked)]
+#[naked]
 unsafe extern "C" fn primary_entry(_fdt_addr: *mut u8) -> ! {
     naked_asm!(
         // Save dtb address.
@@ -140,7 +139,7 @@ fn enable_mmu(va: usize) -> ! {
     }
 }
 
-#[unsafe(naked)]
+#[naked]
 unsafe extern "C" fn entry_lma() -> usize {
     naked_asm!(
         "ADRP     x0,  __vma_relocate_entry",
@@ -149,7 +148,7 @@ unsafe extern "C" fn entry_lma() -> usize {
     )
 }
 
-#[unsafe(naked)]
+#[naked]
 unsafe extern "C" fn entry_vma() -> usize {
     naked_asm!("LDR      x0,  =__vma_relocate_entry", "ret")
 }
