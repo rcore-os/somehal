@@ -11,6 +11,7 @@ use x86::controlregs;
 use crate::{
     ArchIf,
     mem::{PhysAddr, VirtAddr, page::page_size},
+    platform,
 };
 
 mod entry;
@@ -62,6 +63,8 @@ impl ArchIf for Arch {
 
     fn init_debugcon() {
         uart16550::init();
+
+        platform::init_debugcon();
     }
 
     fn cpu_id() -> crate::platform::CpuId {

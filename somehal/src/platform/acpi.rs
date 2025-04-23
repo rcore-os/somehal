@@ -45,7 +45,6 @@ pub fn check_acpi() -> Result<(), AcpiError> {
 pub fn init() {
     unsafe {
         let acpi_table = AcpiTables::search_for_rsdp_bios(AcpiImpl).unwrap();
-        println!("ACPI found!");
         ACPI_TABLE.init(acpi_table);
     }
 }
@@ -96,4 +95,14 @@ pub fn cpu_list() -> impl Iterator<Item = CpuId> {
 
 pub(crate) fn memory_regions() -> vec::Vec<MemRegion> {
     vec![]
+}
+
+pub fn init_debugcon() -> Option<any_uart::Uart> {
+    let s = ACPI_TABLE.find_table::<spcr::Spcr>().ok()?;
+
+    let addr = s.base_address()?.ok()?;
+
+    println!("{:?}", addr);
+
+    None
 }

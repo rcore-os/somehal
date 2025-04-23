@@ -21,18 +21,17 @@ linked_list_allocator = "0.10"
 heapless = "0.8"
 page-table-generic = { path = "../page-table-generic" }
 bit_field = "0.10"
+any-uart = "0.2"
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "10.0"
 smccc = "0.2"
 arm-gic-driver = "0.7"
-any-uart = "0.2.6"
 fdt-parser = "0.4"
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 x86 = "0.52"
 x86_64 = "0.15"
-any-uart = "0.2"
 acpi = { version = "5.2", default-features = false, features = [
     "allocator_api",
 ] }

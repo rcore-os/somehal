@@ -18,6 +18,8 @@ pub fn primary_entry(boot_info: BootInfo) -> ! {
     unsafe {
         clean_bss();
         set_kcode_va_offset(boot_info.kcode_offset);
+        platform::init();
+
         Arch::init_debugcon();
 
         println!("\r\nMMU ready");
@@ -29,8 +31,6 @@ pub fn primary_entry(boot_info: BootInfo) -> ! {
         );
 
         printkv!("Code offst", "{:#X}", kcode_offset());
-
-        platform::init();
 
         let cpu_count = platform::cpu_count();
 
