@@ -4,8 +4,8 @@ use riscv::register::stvec::{self, Stvec};
 
 use crate::{
     arch::debug_init,
-    clean_bss, dbgln,
-    mem::{edit_boot_info, init_phys_allocator},
+    dbgln,
+    mem::{clean_bss, edit_boot_info, init_phys_allocator},
 };
 
 use super::mmu::init_mmu;

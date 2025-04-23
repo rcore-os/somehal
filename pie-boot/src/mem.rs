@@ -36,23 +36,39 @@ impl<T> Deref for StaticCell<T> {
     }
 }
 
-pub(crate) fn clean_boot_info() {
+pub unsafe fn clean_bss() {
+    unsafe extern "C" {
+        fn __start_BootBss();
+        fn __stop_BootBss();
+    }
     unsafe {
-        *BOOT_INFO.0.get() = BootInfo::new();
+        let start = __start_BootBss as *mut u8;
+        let end = __stop_BootBss as *mut u8;
+        let len = end as usize - start as usize;
+        for i in 0..len {
+            start.add(i).write(0);
+        }
+        (*BOOT_INFO.0.get()) = BootInfo::default();
     }
 }
-
 pub(crate) unsafe fn edit_boot_info(f: impl FnOnce(&mut BootInfo)) {
     unsafe {
         let info = &mut *BOOT_INFO.0.get();
-        info.main_memory_free_start = PHYS_ALLOCATOR.highest_address();
-
         f(info);
     }
 }
 
 pub(crate) fn boot_info() -> BootInfo {
-    unsafe { &*BOOT_INFO.0.get() }.clone()
+    unsafe {
+        let info = &mut *BOOT_INFO.0.get();
+        early_err!(info.memory_regions.try_push(crate::MemoryRegion {
+            start: PHYS_ALLOCATOR.start.raw(),
+            end: PHYS_ALLOCATOR.highest_address().raw(),
+            kind: crate::MemoryKind::Reserved,
+        }));
+        info.highest_address = PHYS_ALLOCATOR.highest_address().raw();
+        info.clone()
+    }
 }
 
 pub(crate) fn init_phys_allocator() {

@@ -34,7 +34,6 @@ mod vec;
 mod config;
 
 use arch::*;
-use kmem_region::PhysAddr;
 use mem::boot_info;
 #[cfg(early_debug)]
 pub(crate) use somehal_macros::dbgln;
@@ -46,42 +45,7 @@ macro_rules! dbgln {
 
 pub use api::*;
 
-unsafe fn clean_bss() {
-    unsafe extern "C" {
-        fn __start_bss();
-        fn __stop_bss();
-    }
-    unsafe {
-        let start = __start_bss as *mut u8;
-        let end = __stop_bss as *mut u8;
-        let len = end as usize - start as usize;
-        for i in 0..len {
-            start.add(i).write(0);
-        }
-    }
-    mem::clean_boot_info();
-}
 
-#[derive(Default, Debug, Clone)]
-pub struct BootInfo {
-    pub cpu_id: usize,
-    pub kcode_offset: usize,
-    pub fdt: Option<NonNull<u8>>,
-    pub main_memory_free_start: PhysAddr,
-    pub main_memory_free_end: Option<PhysAddr>,
-}
-
-impl BootInfo {
-    pub const fn new() -> Self {
-        Self {
-            cpu_id: 0,
-            kcode_offset: 0,
-            fdt: None,
-            main_memory_free_start: PhysAddr::new(0),
-            main_memory_free_end: None,
-        }
-    }
-}
 
 pub(crate) fn relocate() {
     unsafe extern "Rust" {

@@ -4,6 +4,7 @@ use core::{
 };
 
 use crate::paging::TableGeneric;
+use crate::{archif::ArchIf, mem::clean_bss};
 use crate::{
     dbgln,
     mem::{edit_boot_info, init_phys_allocator, new_boot_table},
@@ -15,8 +16,6 @@ use aarch64_cpu::{
     },
     registers::*,
 };
-
-use crate::{archif::ArchIf, clean_bss};
 
 cfg_match! {
     feature = "vm" => {

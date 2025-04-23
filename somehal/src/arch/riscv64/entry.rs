@@ -5,15 +5,15 @@ use kmem_region::region::{
     AccessFlags, CacheConfig, MemConfig, MemRegionKind, STACK_TOP, kcode_offset,
     set_kcode_va_offset,
 };
-use pie_boot::BootInfo;
+use pie_boot::{BootInfo, MemoryKind};
 use riscv::register::satp;
 
 use crate::{
     arch::debug_init,
     handle_err,
     mem::{
-        kernal_load_start_link_addr, main_memory::RegionAllocator, page::new_mapped_table,
-        setup_memory_main, setup_memory_regions, stack_top_cpu0,
+        PhysMemory, kernal_load_start_link_addr, main_memory::RegionAllocator,
+        page::new_mapped_table, setup_memory_main, setup_memory_regions, stack_top_cpu0,
     },
     platform::*,
     printkv, println,
@@ -51,15 +51,22 @@ pub fn primary_entry(boot_info: BootInfo) {
     let cpu_count = handle_err!(cpu_count(), "could not get cpu count");
 
     printkv!("CPU count", "{}", cpu_count);
-    printkv!("Memory start", "{:?}", boot_info.main_memory_free_start);
+    printkv!("Memory start", "{:#x}", boot_info.highest_address);
 
     let memories = handle_err!(find_memory(), "could not get memories");
 
-    setup_memory_main(
-        boot_info.main_memory_free_start,
-        memories.into_iter(),
-        cpu_count,
-    );
+    let reserved_memories = boot_info.memory_regions.filter_map(|o| {
+        if matches!(o.kind, MemoryKind::Reserved) {
+            Some(PhysMemory {
+                addr: o.start.into(),
+                size: o.end - o.start,
+            })
+        } else {
+            None
+        }
+    });
+
+    setup_memory_main(reserved_memories, memories.into_iter(), cpu_count);
 
     let sp = stack_top_cpu0();
 

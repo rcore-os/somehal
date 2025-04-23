@@ -14,8 +14,12 @@ SECTIONS
         KEEP(*pie_boot-*.o(.text*))
     } 
     BootData : ALIGN(4K) {
-        *pie_boot-*.o(.rodata* .got* .data* .sdata* .bss* .sbss* COMMON)
+        *pie_boot-*.o(.rodata* .got* .data* .sdata*)
+        __start_BootBss = .;
+        *pie_boot-*.o(.bss* .sbss* COMMON)
+        __stop_BootBss = .;
     } 
+    
 
     text : ALIGN(4K) {
         *any_uart-*.o(.text*)

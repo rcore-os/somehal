@@ -61,19 +61,8 @@ pub(crate) fn init_heap() {
     }
 }
 
-pub(crate) fn set_memory_main(start: PhysAddr, end: PhysAddr) {
-    let memory_main = PhysMemory {
-        addr: start,
-        size: end.raw() - start.raw(),
-    };
-
-    unsafe {
-        (*MEMORY_MAIN.get()).replace(memory_main);
-    }
-}
-
 pub(crate) fn setup_memory_main(
-    main_memory_start: PhysAddr,
+    reserved_memories: impl Iterator<Item = PhysMemory>,
     memories: impl Iterator<Item = PhysMemory>,
     cpu_count: usize,
 ) {
@@ -81,41 +70,21 @@ pub(crate) fn setup_memory_main(
     unsafe {
         CPU_COUNT = cpu_count;
     };
+
+    let text_addr = text().as_ptr() as usize - kcode_offset();
+
+    let mut main_memory = None;
+
     for m in memories {
-        let mut phys_start = m.addr;
+        let phys_start = m.addr;
         let phys_raw = phys_start.raw();
         let size = m.size;
-        let mut phys_end = phys_start + size;
 
-        if phys_raw < main_memory_start.raw() && main_memory_start.raw() < phys_raw + m.size {
-            phys_start = main_memory_start;
-
-            let stack_all_size = cpu_count * STACK_SIZE;
-
-            phys_end = phys_end - stack_all_size;
-
-            let stack_all = PhysMemory {
-                addr: phys_end,
-                size: stack_all_size,
-            };
-
-            unsafe {
-                (*STACK_ALL.get()).replace(stack_all);
-
-                main_memory::init(phys_start, phys_end);
-                let memory_main = PhysMemory {
-                    addr: phys_start,
-                    size: phys_end.raw() - phys_start.raw(),
-                };
-
-                (*MEMORY_MAIN.get()).replace(memory_main);
-                printkv!(
-                    "Found main memory",
-                    "[{:?}, {:?})",
-                    MEMORY_MAIN.addr,
-                    MEMORY_MAIN.addr + MEMORY_MAIN.size
-                );
-            }
+        if phys_raw < text_addr && text_addr < phys_raw + m.size {
+            main_memory = Some(PhysMemory {
+                addr: phys_start,
+                size,
+            });
         } else {
             mem_region_add(MemRegion {
                 virt_start: (phys_start.raw() + OFFSET_LINER).into(),
@@ -129,6 +98,43 @@ pub(crate) fn setup_memory_main(
                 kind: MemRegionKind::Memory,
             });
         }
+    }
+
+    if let Some(mut main) = main_memory {
+        let mut main_end = main.addr + main.size;
+
+        for rsv in reserved_memories {
+            let rsv_end = rsv.addr + rsv.size;
+
+            if main.addr < rsv_end && rsv_end < main_end {
+                main.addr = rsv_end;
+            }
+        }
+
+        let stack_all_size = cpu_count * STACK_SIZE;
+
+        main_end = main_end - stack_all_size;
+
+        let stack_all = PhysMemory {
+            addr: main_end,
+            size: stack_all_size,
+        };
+
+        unsafe {
+            (*STACK_ALL.get()).replace(stack_all);
+
+            main_memory::init(main.addr, main_end);
+
+            printkv!(
+                "Found main memory",
+                "[{:?}, {:?})",
+                MEMORY_MAIN.addr,
+                MEMORY_MAIN.addr + MEMORY_MAIN.size
+            );
+        }
+    } else {
+        println!("main memory not found!");
+        panic!();
     }
 
     mem_region_add(MemRegion {
