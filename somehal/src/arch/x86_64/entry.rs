@@ -1,20 +1,24 @@
 use core::arch::asm;
 
-use kmem_region::region::set_kcode_va_offset;
+use kmem_region::region::{STACK_TOP, set_kcode_va_offset};
 use pie_boot::{BootInfo, MemoryKind};
 
 use crate::{
     ArchIf,
-    arch::{Arch, uart16550},
-    mem::{PhysMemory, setup_memory_main, setup_memory_regions, stack_top_cpu0},
+    arch::Arch,
+    mem::{
+        PhysMemory, clean_bss, page::new_mapped_table, setup_memory_main, setup_memory_regions,
+        stack_top_cpu0,
+    },
     platform::{self, cpu_list},
     printkv, println,
 };
 
 pub fn primary_entry(boot_info: BootInfo) -> ! {
     unsafe {
+        clean_bss();
         set_kcode_va_offset(boot_info.kcode_offset);
-        uart16550::init();
+        Arch::init_debugcon();
 
         println!("\r\nMMU ready");
 
@@ -69,5 +73,20 @@ fn phys_sp_entry() -> ! {
 
     setup_memory_regions(cpu_id, cpu_list());
 
-    unreachable!()
+    let table = new_mapped_table();
+
+    println!("Mov sp to {:#x}", STACK_TOP);
+
+    Arch::set_kernel_table(table);
+    Arch::flush_tlb(None);
+
+    unsafe {
+        asm!(
+            "mov rsp, {sp}",
+            "jmp {f}",
+            sp = const STACK_TOP,
+            f = sym crate::__somehal_main,
+            options(nostack, noreturn),
+        );
+    }
 }

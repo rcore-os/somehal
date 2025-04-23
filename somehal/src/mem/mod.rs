@@ -106,8 +106,6 @@ pub(crate) fn setup_memory_main(
         for rsv in reserved_memories {
             let rsv_end = rsv.addr + rsv.size;
 
-            println!("rsv: {:?}", rsv_end);
-
             if main.addr < rsv_end && rsv_end < main_end {
                 main.addr = rsv_end.align_up(page_size());
             }
@@ -115,6 +113,7 @@ pub(crate) fn setup_memory_main(
 
         let stack_all_size = cpu_count * STACK_SIZE;
 
+        main_end = main_end.align_down(2 * MB);
         main_end = main_end - stack_all_size;
 
         let stack_all = PhysMemory {

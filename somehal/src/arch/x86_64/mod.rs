@@ -1,13 +1,16 @@
 use core::arch::{asm, global_asm};
 
 use entry::primary_entry;
-use kmem_region::region::MemConfig;
+use kmem_region::{IntAlign, region::MemConfig};
+use log::trace;
 use page_table_generic::TableGeneric;
+use paging::new_pte_with_config;
 use pie_boot::BootInfo;
+use x86::controlregs;
 
 use crate::{
     ArchIf,
-    mem::{PhysAddr, VirtAddr},
+    mem::{PhysAddr, VirtAddr, page::page_size},
 };
 
 mod entry;
@@ -24,18 +27,24 @@ impl ArchIf for Arch {
     type PageTable = paging::Table;
 
     fn new_pte_with_config(config: MemConfig) -> <Self::PageTable as TableGeneric>::PTE {
-        todo!()
+        new_pte_with_config(config)
     }
 
     fn set_kernel_table(addr: PhysAddr) {
-        todo!()
+        let old_root = Self::get_kernel_table();
+        trace!("set page table root: {:?} => {:?}", old_root, addr);
+        if old_root != addr {
+            unsafe { controlregs::cr3_write(addr.raw() as _) }
+        }
     }
 
     fn get_kernel_table() -> PhysAddr {
-        todo!()
+        unsafe { controlregs::cr3() as usize }
+            .align_down(page_size())
+            .into()
     }
 
-    fn set_user_table(addr: PhysAddr) {
+    fn set_user_table(_addr: PhysAddr) {
         todo!()
     }
 
@@ -44,7 +53,7 @@ impl ArchIf for Arch {
     }
 
     fn flush_tlb(vaddr: Option<VirtAddr>) {
-        todo!()
+        Self::PageTable::flush(vaddr.map(|o| o.raw().into()));
     }
 
     fn wait_for_event() {
@@ -52,7 +61,7 @@ impl ArchIf for Arch {
     }
 
     fn init_debugcon() {
-        todo!()
+        uart16550::init();
     }
 
     fn cpu_id() -> crate::platform::CpuId {
