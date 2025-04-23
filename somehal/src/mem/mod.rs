@@ -311,6 +311,20 @@ fn link_section_to_kspace(name: &'static str, section: &[u8], config: MemConfig)
     }
 }
 
+pub(crate) fn clean_bss() {
+    unsafe extern "C" {
+        fn __start_bss();
+
+        fn __stop_bss();
+
+    }
+    unsafe {
+        let start = __start_bss as usize;
+        let stop = __stop_bss as usize;
+        core::slice::from_raw_parts_mut(start as *mut u8, stop - start).fill(0);
+    }
+}
+
 fn_link_section!(BootText);
 fn_link_section!(BootData);
 fn_link_section!(text);
