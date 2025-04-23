@@ -116,7 +116,7 @@ fn setup(hartid: usize, fdt: *mut u8) -> usize {
         vec.set_trap_mode(stvec::TrapMode::Direct);
         stvec::write(vec);
 
-        init_phys_allocator();
+        init_phys_allocator(0);
 
         kcode_offset
     }

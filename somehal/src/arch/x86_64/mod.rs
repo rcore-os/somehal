@@ -56,7 +56,10 @@ impl ArchIf for Arch {
     }
 
     fn cpu_id() -> crate::platform::CpuId {
-        todo!()
+        match raw_cpuid::CpuId::new().get_feature_info() {
+            Some(finfo) => (finfo.initial_local_apic_id() as usize).into(),
+            None => crate::platform::CpuId::new(0),
+        }
     }
 
     fn primary_entry(boot_info: BootInfo) {

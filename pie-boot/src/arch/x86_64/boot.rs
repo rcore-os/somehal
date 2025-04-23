@@ -57,7 +57,7 @@ global_asm!(
 fn rust_entry(magic: usize, mbi: usize) {
     unsafe {
         init_boot_info();
-        init_phys_allocator();
+        init_phys_allocator(KCODE_OFFSET);
 
         if magic == MULTIBOOT_BOOTLOADER_MAGIC {
             let mut memory = Memory {};

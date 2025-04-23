@@ -36,6 +36,7 @@ any-uart = "0.2"
 acpi = { version = "5.2", default-features = false, features = [
     "allocator_api",
 ] }
+raw-cpuid = "11.5.0"
 
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
 riscv = "0.13"

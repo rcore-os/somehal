@@ -1,11 +1,14 @@
+use core::arch::asm;
+
 use kmem_region::region::set_kcode_va_offset;
 use pie_boot::{BootInfo, MemoryKind};
 
 use crate::{
     ArchIf,
     arch::{Arch, uart16550},
-    mem::{PhysMemory, setup_memory_main},
-    platform, printkv, println,
+    mem::{PhysMemory, setup_memory_main, setup_memory_regions, stack_top_cpu0},
+    platform::{self, cpu_list},
+    printkv, println,
 };
 
 pub fn primary_entry(boot_info: BootInfo) -> ! {
@@ -43,9 +46,28 @@ pub fn primary_entry(boot_info: BootInfo) -> ! {
 
         setup_memory_main(reserved_memories, memories, cpu_count);
 
-        println!("main memory ok");
+        let sp = stack_top_cpu0();
 
-        Arch::wait_for_event();
-        unreachable!()
+        printkv!("Stack top", "{:?}", sp);
+
+        asm!(
+            "mov rsp, rdi",
+            "jmp {entry}",
+            entry = sym phys_sp_entry,
+            in("rdi") sp.raw(),
+            options(noreturn)
+        )
     }
+}
+
+fn phys_sp_entry() -> ! {
+    println!("SP moved");
+
+    let cpu_id = Arch::cpu_id();
+
+    printkv!("CPU ID", "{:?}", cpu_id);
+
+    setup_memory_regions(cpu_id, cpu_list());
+
+    unreachable!()
 }

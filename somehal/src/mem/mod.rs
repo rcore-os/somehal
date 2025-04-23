@@ -106,6 +106,8 @@ pub(crate) fn setup_memory_main(
         for rsv in reserved_memories {
             let rsv_end = rsv.addr + rsv.size;
 
+            println!("rsv: {:?}", rsv_end);
+
             if main.addr < rsv_end && rsv_end < main_end {
                 main.addr = rsv_end.align_up(page_size());
             }

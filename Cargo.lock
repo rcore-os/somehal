@@ -664,6 +664,7 @@ dependencies = [
  "pie-boot",
  "prettyplease",
  "quote",
+ "raw-cpuid 11.5.0",
  "riscv",
  "riscv_goldfish",
  "sbi-rt",

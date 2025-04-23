@@ -99,7 +99,7 @@ fn rust_boot(fdt_addr: *mut u8) -> ! {
         dbgln!("Current EL     : {}", CurrentEL.read(CurrentEL::EL));
         dbgln!("Fdt            : {}", fdt_addr);
 
-        init_phys_allocator();
+        init_phys_allocator(0);
 
         edit_boot_info(|info| {
             info.cpu_id = (MPIDR_EL1.get() as usize) & 0xffffff;

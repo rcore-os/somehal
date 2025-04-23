@@ -84,10 +84,17 @@ pub(crate) fn boot_info() -> BootInfo {
     }
 }
 
-pub(crate) fn init_phys_allocator() {
+/// 初始化物理内存管理器
+/// 
+/// # Safety
+/// 
+/// 若此时mmu未开启，则`va_offset`设为`0`，若开启了mmu，则`va_offset`设为`code`偏移量
+pub(crate) unsafe fn init_phys_allocator(va_offset: usize) {
     unsafe {
-        *PHYS_ALLOCATOR.0.get() =
-            LineAllocator::new(kmem_region::PhysAddr::from(kernel_code_end() as usize), GB);
+        *PHYS_ALLOCATOR.0.get() = LineAllocator::new(
+            kmem_region::PhysAddr::from(kernel_code_end() as usize - va_offset),
+            GB,
+        );
 
         reserved_alloc::<[u8; BOOT_STACK_SIZE]>();
     }
