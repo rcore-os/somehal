@@ -1,10 +1,14 @@
 use alloc::vec::Vec;
+use bit_field::BitField;
+use kmem_region::region::MemRegion;
 
 use core::ptr::NonNull;
 
 use acpi::{platform::ProcessorState, *};
 
 use crate::{
+    _alloc::vec,
+    handle_err,
     mem::{PhysMemory, heap::GlobalHeap},
     once_static::OnceStatic,
     println,
@@ -52,24 +56,44 @@ pub fn init() {
     }
 }
 
-pub fn cpu_list() -> impl Iterator<Item = CpuId> {
-    let info = ACPI_TABLE.platform_info_in(GlobalHeap {}).unwrap();
+pub fn cpu_count() -> usize {
+    let mut count = 0;
 
-    let mut ls = Vec::new_in(GlobalHeap {});
+    let madt = handle_err!(ACPI_TABLE.find_table::<madt::Madt>());
 
-    if let Some(info) = info.processor_info {
-        ls.push(info.boot_processor);
-
-        for p in info.application_processors.iter() {
-            ls.push(*p);
+    for one in madt.get().entries() {
+        match one {
+            madt::MadtEntry::LocalApic(v) => {
+                let is_disabled = !{ v.flags }.get_bit(0);
+                if !is_disabled {
+                    count += 1
+                }
+            }
+            madt::MadtEntry::LocalX2Apic(v) => {
+                let is_disabled = !{ v.flags }.get_bit(0);
+                if !is_disabled {
+                    count += 1
+                }
+            }
+            _ => {}
         }
     }
 
-    ls.into_iter().filter_map(|one| {
-        if matches!(one.state, ProcessorState::Disabled) {
-            None
-        } else {
-            Some((one.processor_uid as usize).into())
-        }
-    })
+    count
+}
+
+// pub fn cpu_list() -> impl Iterator<Item = CpuId> {
+//     let madt = handle_err!(ACPI_TABLE.find_table::<madt::Madt>());
+
+//     madt.get().entries().filter_map(|entry| match entry {
+//         madt::MadtEntry::LocalApic(local_apic_entry) => {
+//             Some((local_apic_entry.processor_id as usize).into())
+//         }
+//         madt::MadtEntry::LocalX2Apic(local_x2_apic_entry) => todo!(),
+//         _ => None,
+//     })
+// }
+
+pub(crate) fn memory_regions() -> vec::Vec<MemRegion> {
+    vec![]
 }

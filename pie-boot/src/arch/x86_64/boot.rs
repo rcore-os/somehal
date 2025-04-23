@@ -5,8 +5,8 @@ use multiboot::information::{MemoryManagement, MemoryType, Multiboot};
 use x86_64::registers::control::{Cr0Flags, Cr4Flags};
 use x86_64::registers::model_specific::EferFlags;
 
-use crate::mem::edit_boot_info;
-use crate::{clean_bss, relocate};
+use crate::mem::{clean_bss, edit_boot_info, init_boot_info};
+use crate::{MemoryRegion, early_err, relocate};
 
 const EFER_MSR: u32 = x86::msr::IA32_EFER;
 
@@ -56,7 +56,7 @@ global_asm!(
 
 fn rust_entry(magic: usize, mbi: usize) {
     unsafe {
-        clean_bss();
+        init_boot_info();
 
         if magic == MULTIBOOT_BOOTLOADER_MAGIC {
             let mut memory = Memory {};
@@ -65,17 +65,23 @@ fn rust_entry(magic: usize, mbi: usize) {
             edit_boot_info(|b| {
                 b.kcode_offset = KCODE_OFFSET;
                 let start = info.find_highest_address();
-                b.main_memory_free_start = (start as usize).into();
+                b.highest_address = start as _;
 
                 if let Some(regions) = info.memory_regions() {
                     for region in regions {
-                        if matches!(region.memory_type(), MemoryType::Available)
-                            && region.base_address() <= start
-                            && start <= region.base_address() + region.length()
-                        {
-                            b.main_memory_free_end =
-                                Some(((region.base_address() + region.length()) as usize).into());
-                        }
+                        let value = MemoryRegion {
+                            start: region.base_address() as _,
+                            end: (region.base_address() + region.length()) as _,
+                            kind: match region.memory_type() {
+                                MemoryType::Available => crate::MemoryKind::Avilable,
+                                MemoryType::Reserved => crate::MemoryKind::Reserved,
+                                _ => {
+                                    continue;
+                                }
+                            },
+                        };
+
+                        early_err!(b.memory_regions.try_push(value));
                     }
                 }
             });

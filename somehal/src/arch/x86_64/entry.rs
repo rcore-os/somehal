@@ -1,10 +1,10 @@
 use kmem_region::region::set_kcode_va_offset;
-use pie_boot::BootInfo;
+use pie_boot::{BootInfo, MemoryKind};
 
 use crate::{
     ArchIf,
     arch::{Arch, uart16550},
-    mem::{init_heap, set_memory_main},
+    mem::{PhysMemory, setup_memory_main},
     platform, printkv, println,
 };
 
@@ -15,24 +15,35 @@ pub fn primary_entry(boot_info: BootInfo) -> ! {
 
         println!("\r\nMMU ready");
 
-        if let Some(main_end) = boot_info.main_memory_free_end {
-            printkv!(
-                "main memory",
-                "[{:?}, {:?})",
-                boot_info.main_memory_free_start,
-                main_end
-            );
-            set_memory_main(boot_info.main_memory_free_start, main_end);
-            init_heap();
-        }
-
         platform::init();
 
-        let cpu_list = platform::cpu_list();
+        let cpu_count = platform::cpu_count();
 
-        for cpu in cpu_list {
-            println!("cpu {:?}", cpu);
-        }
+        let reserved_memories = boot_info.memory_regions.clone().filter_map(|o| {
+            if matches!(o.kind, MemoryKind::Reserved) {
+                Some(PhysMemory {
+                    addr: o.start.into(),
+                    size: o.end - o.start,
+                })
+            } else {
+                None
+            }
+        });
+
+        let memories = boot_info.memory_regions.filter_map(|o| {
+            if matches!(o.kind, MemoryKind::Avilable) {
+                Some(PhysMemory {
+                    addr: o.start.into(),
+                    size: o.end - o.start,
+                })
+            } else {
+                None
+            }
+        });
+
+        setup_memory_main(reserved_memories, memories, cpu_count);
+
+        println!("main memory ok");
 
         Arch::wait_for_event();
         unreachable!()

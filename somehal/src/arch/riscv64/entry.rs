@@ -8,14 +8,15 @@ use crate::{
     arch::debug_init,
     handle_err,
     mem::{
-        PhysMemory, kernal_load_start_link_addr, page::new_mapped_table, setup_memory_main,
-        setup_memory_regions, stack_top_cpu0,
+        PhysMemory, clean_bss, kernal_load_start_link_addr, page::new_mapped_table,
+        setup_memory_main, setup_memory_regions, stack_top_cpu0,
     },
     platform::*,
     printkv, println,
 };
 
 pub fn primary_entry(boot_info: BootInfo) {
+    clean_bss();
     let hartid = boot_info.cpu_id;
     let kcode_offset = boot_info.kcode_offset;
 

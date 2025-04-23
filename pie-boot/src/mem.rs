@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use core::{alloc::Layout, cell::UnsafeCell, mem::MaybeUninit, ops::Deref, ptr::NonNull};
 
 use crate::{config::BOOT_STACK_SIZE, paging::*};
@@ -51,9 +53,16 @@ pub unsafe fn clean_bss() {
         for i in 0..len {
             start.add(i).write(0);
         }
+        init_boot_info();
+    }
+}
+
+pub(crate) unsafe fn init_boot_info() {
+    unsafe {
         (*BOOT_INFO.0.get()) = BootInfo::default();
     }
 }
+
 pub(crate) unsafe fn edit_boot_info(f: impl FnOnce(&mut BootInfo)) {
     unsafe {
         let info = &mut *BOOT_INFO.0.get();

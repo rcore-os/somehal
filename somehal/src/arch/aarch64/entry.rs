@@ -13,8 +13,8 @@ use crate::{
     },
     handle_err,
     mem::{
-        PhysMemory, kernal_load_start_link_addr, page::new_mapped_table, setup_memory_main,
-        setup_memory_regions, stack_top_cpu0,
+        PhysMemory, clean_bss, kernal_load_start_link_addr, page::new_mapped_table,
+        setup_memory_main, setup_memory_regions, stack_top_cpu0,
     },
     platform::*,
     printkv, println,
@@ -22,6 +22,7 @@ use crate::{
 
 pub fn primary_entry(boot_info: BootInfo) {
     unsafe {
+        clean_bss();
         cache::dcache_all(cache::DcacheOp::CleanAndInvalidate);
 
         set_kcode_va_offset(boot_info.kcode_offset);
