@@ -432,6 +432,7 @@ dependencies = [
  "aarch64-cpu",
  "any-uart",
  "bitflags 2.9.0",
+ "cfg-if",
  "fdt-parser",
  "kmem-region",
  "multiboot",

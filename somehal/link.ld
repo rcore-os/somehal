@@ -8,7 +8,6 @@ INCLUDE memory.x
 SECTIONS
 {
     . = __kernel_load_vma;
-    
     BootText : {
         KEEP(*(.text.boot.header))
         KEEP(*pie_boot-*.o(.text*))
@@ -30,6 +29,7 @@ SECTIONS
 
     rodata : ALIGN(4K) {
         *(.rodata .rodata.*)
+        *(.srodata*)
         *(.got .got.*)
     } 
     

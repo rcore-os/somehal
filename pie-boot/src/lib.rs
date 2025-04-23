@@ -2,9 +2,7 @@
 #![feature(naked_functions)]
 #![feature(concat_idents)]
 #![feature(used_with_arg)]
-#![feature(cfg_match)]
 #![feature(fn_align)]
-#![feature(pointer_is_aligned_to)]
 
 #[cfg(target_arch = "aarch64")]
 #[path = "arch/aarch64/mod.rs"]
