@@ -64,3 +64,16 @@ pub fn boot_text() -> &'static [u8] {
         )
     }
 }
+
+pub fn boot_data() -> &'static [u8] {
+    unsafe extern "C" {
+        fn __start_boot_data();
+        fn __stop_boot_bss();
+    }
+    unsafe {
+        core::slice::from_raw_parts(
+            __start_boot_data as _,
+            __stop_boot_bss as usize - __start_boot_data as usize,
+        )
+    }
+}

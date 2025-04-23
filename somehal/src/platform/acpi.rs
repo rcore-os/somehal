@@ -34,6 +34,7 @@ impl AcpiHandler for AcpiImpl {
 
 static ACPI_TABLE: OnceStatic<acpi::AcpiTables<AcpiImpl>> = OnceStatic::new();
 
+#[allow(unused)]
 pub fn check_acpi() -> Result<(), AcpiError> {
     unsafe {
         AcpiTables::search_for_rsdp_bios(AcpiImpl)?;

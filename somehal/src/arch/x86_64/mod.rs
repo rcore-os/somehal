@@ -1,4 +1,4 @@
-use core::arch::{asm, global_asm};
+use core::arch::asm;
 
 use entry::primary_entry;
 use kmem_region::{IntAlign, region::MemConfig};

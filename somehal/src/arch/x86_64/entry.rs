@@ -1,14 +1,14 @@
 use core::arch::asm;
 
-use kmem_region::region::{STACK_TOP, set_kcode_va_offset};
+use kmem_region::region::{STACK_TOP, kcode_offset, set_kcode_va_offset};
 use pie_boot::{BootInfo, MemoryKind};
 
 use crate::{
     ArchIf,
     arch::Arch,
     mem::{
-        PhysMemory, clean_bss, page::new_mapped_table, setup_memory_main, setup_memory_regions,
-        stack_top_cpu0,
+        PhysMemory, clean_bss, kernal_load_start_link_addr, page::new_mapped_table,
+        setup_memory_main, setup_memory_regions, stack_top_cpu0,
     },
     platform::{self, cpu_list},
     printkv, println,
@@ -21,6 +21,14 @@ pub fn primary_entry(boot_info: BootInfo) -> ! {
         Arch::init_debugcon();
 
         println!("\r\nMMU ready");
+
+        printkv!(
+            "Kernel LMA",
+            "{:#X}",
+            kernal_load_start_link_addr() - boot_info.kcode_offset
+        );
+
+        printkv!("Code offst", "{:#X}", kcode_offset());
 
         platform::init();
 
