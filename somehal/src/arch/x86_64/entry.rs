@@ -1,9 +1,6 @@
 use core::arch::asm;
 
-use kmem_region::{
-    PhysAddr,
-    region::{STACK_TOP, kcode_offset, set_kcode_va_offset},
-};
+use kmem_region::region::{STACK_TOP, kcode_offset, set_kcode_va_offset};
 use pie_boot::{BootInfo, MemoryKind};
 
 use crate::{
@@ -11,7 +8,7 @@ use crate::{
     arch::{Arch, idt::init_idt},
     mem::{
         PhysMemory, clean_bss, kernal_load_start_link_addr,
-        page::{new_mapped_table, new_test_table, new_test_table2, set_is_relocated},
+        page::{new_mapped_table, set_is_relocated},
         setup_memory_main, setup_memory_regions, stack_top_cpu0,
     },
     platform::{self, cpu_list},

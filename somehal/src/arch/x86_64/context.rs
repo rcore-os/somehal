@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use core::fmt;
 /// Saved registers when a trap (interrupt or exception) occurs.
 #[allow(missing_docs)]

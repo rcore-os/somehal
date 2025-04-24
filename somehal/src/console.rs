@@ -37,21 +37,21 @@ pub fn _print(args: core::fmt::Arguments) {
 #[macro_export]
 macro_rules! print {
     ($($arg:tt)*) => {
-        $crate::console::_print(format_args!($($arg)*));
+        $crate::console::_print(format_args!($($arg)*))
     };
 }
 
 #[macro_export]
 macro_rules! println {
     ($($arg:tt)*) => {
-        $crate::print!("{}\r\n", format_args!($($arg)*));
+        $crate::print!("{}\r\n", format_args!($($arg)*))
     };
 }
 
 #[macro_export]
 macro_rules! printkv {
     ($key:expr, $($arg:tt)*) => {
-        $crate::print!("{:<24}: {}\r\n", $key, format_args!($($arg)*));
+        $crate::print!("{:<24}: {}\r\n", $key, format_args!($($arg)*))
     };
 }
 
