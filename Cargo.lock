@@ -424,6 +424,7 @@ dependencies = [
  "cfg-if",
  "fdt-parser",
  "kmem-region",
+ "linked_list_allocator",
  "multiboot",
  "num-align 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "prettyplease",

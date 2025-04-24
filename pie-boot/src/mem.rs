@@ -2,11 +2,11 @@
 
 use core::{alloc::Layout, cell::UnsafeCell, mem::MaybeUninit, ops::Deref, ptr::NonNull};
 
-use crate::{config::BOOT_STACK_SIZE, paging::*};
+use crate::{arch, config::BOOT_STACK_SIZE, paging::*};
 use kmem_region::{
     IntAlign,
     allocator::LineAllocator,
-    region::{AccessFlags, CacheConfig, MemConfig, PAGE_SIZE},
+    region::{AccessFlags, CacheConfig, KERNEL_LOAD_VADDR, MemConfig, PAGE_SIZE},
 };
 use num_align::NumAssertAlign;
 
@@ -27,11 +27,25 @@ impl<T> StaticCell<T> {
     }
 }
 
+#[unsafe(link_section = ".data.stack")]
+pub static STACK: [u8; BOOT_STACK_SIZE] = [0u8; BOOT_STACK_SIZE];
+
 static mut BOOT_TABLE: usize = 0;
 static BOOT_INFO: StaticCell<BootInfo> = StaticCell::new();
 static PHYS_ALLOCATOR: StaticCell<LineAllocator> = StaticCell::new();
 static mut FDT: usize = 0;
 static mut FDT_SIZE: usize = 0;
+
+fn loader_size() -> usize {
+    unsafe extern "C" {
+        fn __kernel_load_size();
+    }
+    __kernel_load_size as _
+}
+
+pub fn kernel_vaddr() -> usize {
+    KERNEL_LOAD_VADDR + loader_size().align_up(2 * MB)
+}
 
 impl<T> Deref for StaticCell<T> {
     type Target = T;
@@ -85,9 +99,9 @@ pub(crate) fn boot_info() -> BootInfo {
 }
 
 /// 初始化物理内存管理器
-/// 
+///
 /// # Safety
-/// 
+///
 /// 若此时mmu未开启，则`va_offset`设为`0`，若开启了mmu，则`va_offset`设为`code`偏移量
 pub(crate) unsafe fn init_phys_allocator(va_offset: usize) {
     unsafe {
@@ -122,9 +136,9 @@ fn kernel_code_end() -> *const u8 {
 
 fn kernal_kcode_start() -> usize {
     unsafe extern "C" {
-        fn __kernel_load_vma();
+        fn __start_boot_text();
     }
-    __kernel_load_vma as _
+    __start_boot_text as _
 }
 
 fn table_len() -> usize {

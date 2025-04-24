@@ -37,5 +37,16 @@
             "preLaunchTask": "qemu debug riscv64",
             "stopAtConnect": true
         },
+        {
+            "type": "cppdbg",
+            "name": "Debug aarch64 boot test",
+            "request": "launch",
+            "miDebuggerServerAddress": "localhost:1234",
+            "program": "${workspaceFolder}/target/kernel.elf",
+            "miDebuggerPath": "gdb-multiarch",
+            "cwd": "${workspaceRoot}",
+            "preLaunchTask": "qemu debug aarch64 boot",
+            "stopAtConnect": true
+        },
     ]
 }

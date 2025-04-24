@@ -1,5 +1,6 @@
 use core::arch::{asm, naked_asm};
 
+use crate::mem::kernel_vaddr;
 use crate::{archif::ArchIf, mem::clean_bss};
 use crate::{
     dbgln,
@@ -35,48 +36,53 @@ const FLAG_ANY_MEM: usize = 0b1000;
 ///
 /// # Safety
 pub unsafe extern "C" fn _start() -> ! {
-    naked_asm!(
-        // code0/code1
-        "nop",
-        "bl {entry}",
-        // text_offset
-        ".quad 0",
-        // image_size
-        ".quad __kernel_load_size",
-        // flags
-        ".quad {flags}",
-        // Reserved fields
-        ".quad 0",
-        ".quad 0",
-        ".quad 0",
-        // magic - yes 0x644d5241 is the same as ASCII string "ARM\x64"
-        ".ascii \"ARM\\x64\"",
-        // Another reserved field at the end of the header
-        ".byte 0, 0, 0, 0",
-        flags = const FLAG_LE | FLAG_PAGE_SIZE_4K | FLAG_ANY_MEM,
-        entry = sym primary_entry,
-    )
+    unsafe {
+        naked_asm!(
+            // code0/code1
+            "nop",
+            "bl {entry}",
+            // text_offset
+            ".quad 0",
+            // image_size
+            ".quad __kernel_load_size",
+            // flags
+            ".quad {flags}",
+            // Reserved fields
+            ".quad 0",
+            ".quad 0",
+            ".quad 0",
+            // magic - yes 0x644d5241 is the same as ASCII string "ARM\x64"
+            ".ascii \"ARM\\x64\"",
+            // Another reserved field at the end of the header
+            ".byte 0, 0, 0, 0",
+            flags = const FLAG_LE | FLAG_PAGE_SIZE_4K | FLAG_ANY_MEM,
+            entry = sym primary_entry,
+        )
+    }
 }
 
 #[naked]
 unsafe extern "C" fn primary_entry(_fdt_addr: *mut u8) -> ! {
-    naked_asm!(
-        // Save dtb address.
-        "MOV      x19, x0",
-        // Set the stack pointer.
-        "ADRP     x1,  __kernel_code_end",
-        "ADD      x1, x1, :lo12:__kernel_code_end",
-        "ADD      x1, x1, {stack_size}",
-        "MOV      sp, x1",
+    unsafe {
+        naked_asm!(
+            // Save dtb address.
+            "MOV      x19, x0",
+            // Set the stack pointer.
+            "ADRP     x1,  {stack}",
+            "ADD      x1, x1, :lo12:{stack}",
+            "ADD      x1, x1, {stack_size}",
+            "MOV      sp, x1",
 
-        "BL       {switch_to_elx}",
-        "MOV      x0,  x19",
-        "BL       {entry}",
-        "B        .",
-        stack_size = const crate::config::BOOT_STACK_SIZE,
-        switch_to_elx = sym switch_to_elx,
-        entry = sym rust_boot,
-    )
+            "BL       {switch_to_elx}",
+            "MOV      x0,  x19",
+            "BL       {entry}",
+            "B        .",
+            stack = sym crate::mem::STACK,
+            stack_size = const crate::config::BOOT_STACK_SIZE,
+            switch_to_elx = sym switch_to_elx,
+            entry = sym rust_boot,
+        )
+    }
 }
 
 fn rust_boot(fdt_addr: *mut u8) -> ! {
@@ -89,7 +95,7 @@ fn rust_boot(fdt_addr: *mut u8) -> ! {
         crate::debug::fdt::init_debugcon(fdt_addr);
 
         let lma = entry_lma();
-        let vma = entry_vma();
+        let vma = load_vma();
         let kcode_offset = vma - lma;
 
         dbgln!("Booting up");
@@ -119,12 +125,8 @@ fn enable_mmu(va: usize) -> ! {
     set_table(table);
     flush_tlb(None);
 
-    let jump_to: *mut u8;
     unsafe {
-        asm!("LDR {0}, ={entry}",
-            out(reg) jump_to,
-            entry = sym crate::relocate,
-        );
+        let jump_to = kernel_vaddr();
         dbgln!("relocate to pc: {}", jump_to);
         // Enable the MMU and turn on I-cache and D-cache
         setup_sctlr();
@@ -141,17 +143,23 @@ fn enable_mmu(va: usize) -> ! {
 
 #[naked]
 unsafe extern "C" fn entry_lma() -> usize {
-    naked_asm!(
-        "ADRP     x0,  __vma_relocate_entry",
-        "ADD      x0, x0, :lo12:__vma_relocate_entry",
-        "ret"
-    )
+    unsafe {
+        naked_asm!(
+            "ADRP     x0,  __start_boot_text",
+            "ADD      x0, x0, :lo12:__start_boot_text",
+            "ret"
+        )
+    }
 }
 
-#[naked]
-unsafe extern "C" fn entry_vma() -> usize {
-    naked_asm!("LDR      x0,  =__vma_relocate_entry", "ret")
+fn load_vma() -> usize {
+    kmem_region::region::KERNEL_LOAD_VADDR
 }
+
+// #[naked]
+// unsafe extern "C" fn entry_vma() -> usize {
+//     naked_asm!("LDR      x0,  =__kernel_load_vma", "ret")
+// }
 
 fn enable_fp() {
     CPACR_EL1.write(CPACR_EL1::FPEN::TrapNothing);

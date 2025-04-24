@@ -1,7 +1,9 @@
 [workspace]
-members = [ 
-    "kmem-region", "num-align",
-    "page-table-generic", "pie-boot",
+members = [
+    "kmem-region",
+    "num-align",
+    "page-table-generic",
+    "pie-boot",
     "platform-test",
     "somehal",
     "somehal-macros",

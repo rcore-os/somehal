@@ -5,8 +5,10 @@ rustflags = [
     "link-arg=-Map=target/kernel.map",
     "-C",
     "link-arg=-znostart-stop-gc",
+    # "-C",
+    # "link-arg=-Tlink.x",
     "-C",
-    "link-arg=-Tlink.x",
+    "link-arg=-Tpie_boot.x",
     "-C",
     "link-arg=-no-pie",
 ]

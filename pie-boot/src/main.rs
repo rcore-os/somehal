@@ -1,4 +1,5 @@
 #![cfg_attr(not(all(test, target_os = "none")), no_std)]
+#![no_main]
 #![feature(naked_functions)]
 #![feature(concat_idents)]
 #![feature(used_with_arg)]
@@ -28,6 +29,7 @@ mod mem;
 #[allow(unused)]
 mod paging;
 mod vec;
+mod lang_items;
 
 use arch::*;
 use mem::boot_info;
@@ -42,14 +44,15 @@ macro_rules! dbgln {
 pub use api::*;
 
 pub(crate) fn relocate() {
-    unsafe extern "Rust" {
-        fn __vma_relocate_entry(boot_info: BootInfo);
-    }
+    
+    // unsafe extern "Rust" {
+    //     fn __vma_relocate_entry(boot_info: BootInfo);
+    // }
 
-    unsafe {
-        mem::save_fdt();
-        __vma_relocate_entry(boot_info());
-    }
+    // unsafe {
+    //     mem::save_fdt();
+    //     __vma_relocate_entry(boot_info());
+    // }
 }
 
 pub fn boot_text() -> &'static [u8] {
