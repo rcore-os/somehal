@@ -1,21 +1,17 @@
 use core::arch::asm;
 
 use entry::primary_entry;
-use kmem_region::{IntAlign, region::MemConfig};
-use log::trace;
-use page_table_generic::TableGeneric;
+use kmem_region::IntAlign;
 use paging::new_pte_with_config;
-use pie_boot::BootInfo;
 use x86::controlregs;
 
-use crate::{
-    ArchIf,
-    mem::{PhysAddr, VirtAddr, page::page_size},
-    platform,
-};
+use crate::{archif::*, mem::page::page_size, platform};
 
+mod context;
 mod entry;
+mod idt;
 pub(crate) mod paging;
+mod trap;
 mod uart16550;
 
 pub struct Arch;
@@ -31,9 +27,9 @@ impl ArchIf for Arch {
         new_pte_with_config(config)
     }
 
+    #[inline(always)]
     fn set_kernel_table(addr: PhysAddr) {
         let old_root = Self::get_kernel_table();
-        trace!("set page table root: {:?} => {:?}", old_root, addr);
         if old_root != addr {
             unsafe { controlregs::cr3_write(addr.raw() as _) }
         }
@@ -53,8 +49,15 @@ impl ArchIf for Arch {
         todo!()
     }
 
+    #[inline(always)]
     fn flush_tlb(vaddr: Option<VirtAddr>) {
-        Self::PageTable::flush(vaddr.map(|o| o.raw().into()));
+        unsafe {
+            if let Some(vaddr) = vaddr {
+                x86::tlb::flush(vaddr.raw());
+            } else {
+                x86::tlb::flush_all();
+            }
+        }
     }
 
     fn wait_for_event() {

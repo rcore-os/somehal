@@ -1,13 +1,17 @@
 use core::arch::asm;
 
-use kmem_region::region::{STACK_TOP, kcode_offset, set_kcode_va_offset};
+use kmem_region::{
+    PhysAddr,
+    region::{STACK_TOP, kcode_offset, set_kcode_va_offset},
+};
 use pie_boot::{BootInfo, MemoryKind};
 
 use crate::{
     ArchIf,
-    arch::Arch,
+    arch::{Arch, idt::init_idt},
     mem::{
-        PhysMemory, clean_bss, kernal_load_start_link_addr, page::new_mapped_table,
+        PhysMemory, clean_bss, kernal_load_start_link_addr,
+        page::{new_mapped_table, new_test_table, new_test_table2, set_is_relocated},
         setup_memory_main, setup_memory_regions, stack_top_cpu0,
     },
     platform::{self, cpu_list},
@@ -74,27 +78,41 @@ pub fn primary_entry(boot_info: BootInfo) -> ! {
 
 fn phys_sp_entry() -> ! {
     println!("SP moved");
-
-    let cpu_id = Arch::cpu_id();
-
-    printkv!("CPU ID", "{:?}", cpu_id);
-
-    setup_memory_regions(cpu_id, cpu_list());
-
-    let table = new_mapped_table();
-
-    println!("Mov sp to {:#x}", STACK_TOP);
+    setup();
+    let table = new_mapped_table(true);
 
     Arch::set_kernel_table(table);
-    Arch::flush_tlb(None);
+    unsafe {
+        x86::tlb::flush_all();
+    }
+    let sp = STACK_TOP;
+    printkv!("Stack top", "{:#x}", sp);
 
     unsafe {
         asm!(
-            "mov rsp, {sp}",
-            "jmp {f}",
-            sp = const STACK_TOP,
-            f = sym crate::__somehal_main,
-            options(nostack, noreturn),
-        );
+            "mov rsp, rdi",
+            "jmp {entry}",
+            entry = sym virt_sp_entry,
+            in("rdi") sp,
+            options(noreturn)
+        )
     }
+}
+
+fn setup() {
+    init_idt();
+    let cpu_id = Arch::cpu_id();
+    printkv!("CPU ID", "{:?}", cpu_id);
+    setup_memory_regions(cpu_id, cpu_list());
+}
+
+fn virt_sp_entry() -> ! {
+    set_is_relocated();
+    let table = new_mapped_table(false);
+    Arch::set_kernel_table(table);
+    unsafe {
+        x86::tlb::flush_all();
+    }
+
+    unsafe { crate::__somehal_main() }
 }

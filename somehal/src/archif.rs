@@ -1,8 +1,9 @@
+pub use crate::_alloc::vec;
 pub use crate::mem::{PhysAddr, VirtAddr};
-use crate::platform::CpuId;
-use kmem_region::region::MemConfig;
+pub use crate::platform::CpuId;
+pub use kmem_region::region::{MemConfig, MemRegion};
 pub use page_table_generic::*;
-use pie_boot::BootInfo;
+pub use pie_boot::BootInfo;
 
 pub trait ArchIf {
     fn early_debug_put(byte: u8);
@@ -28,4 +29,8 @@ pub trait ArchIf {
     fn cpu_id() -> CpuId;
 
     fn primary_entry(boot_info: BootInfo);
+
+    fn memory_regions() -> vec::Vec<MemRegion> {
+        vec![]
+    }
 }

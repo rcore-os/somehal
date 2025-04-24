@@ -10,6 +10,8 @@ pub use kmem_region::{region::MemRegion, *};
 use somehal_macros::fn_link_section;
 
 use crate::{
+    ArchIf,
+    arch::Arch,
     once_static::OnceStatic,
     platform::{self, CpuId, CpuIdx},
     printkv, println,
@@ -204,6 +206,10 @@ pub(crate) fn setup_memory_regions(cpu0_id: CpuId, cpu_list: impl Iterator<Item 
         kind: MemRegionKind::Memory,
     });
 
+    for r in Arch::memory_regions() {
+        mem_region_add(r);
+    }
+
     for r in platform::memory_regions() {
         mem_region_add(r);
     }
@@ -250,12 +256,12 @@ fn detect_link_space() {
     unsafe {
         (*MEM_REGIONS.get()).replace(regions);
     }
-
+    //TODO x86_64 不加 Write 会崩溃，待查
     mem_region_add(link_section_to_kspace(
         ".text.boot",
         pie_boot::boot_text(),
         MemConfig {
-            access: AccessFlags::Read | AccessFlags::Execute,
+            access: AccessFlags::Read | AccessFlags::Execute | AccessFlags::Write,
             cache: CacheConfig::Normal,
         },
     ));
