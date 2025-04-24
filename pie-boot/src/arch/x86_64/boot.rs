@@ -5,7 +5,7 @@ use multiboot::information::{MemoryManagement, MemoryType, Multiboot};
 use x86_64::registers::control::{Cr0Flags, Cr4Flags};
 use x86_64::registers::model_specific::EferFlags;
 
-use crate::mem::{clean_bss, edit_boot_info, init_boot_info};
+use crate::mem::{edit_boot_info, init_boot_info, init_phys_allocator};
 use crate::{MemoryRegion, early_err, relocate};
 
 const EFER_MSR: u32 = x86::msr::IA32_EFER;
@@ -57,6 +57,7 @@ global_asm!(
 fn rust_entry(magic: usize, mbi: usize) {
     unsafe {
         init_boot_info();
+        init_phys_allocator(KCODE_OFFSET);
 
         if magic == MULTIBOOT_BOOTLOADER_MAGIC {
             let mut memory = Memory {};

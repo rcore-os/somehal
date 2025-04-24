@@ -1,17 +1,17 @@
-use core::arch::{asm, global_asm};
+use core::arch::asm;
 
 use entry::primary_entry;
-use kmem_region::region::MemConfig;
-use page_table_generic::TableGeneric;
-use pie_boot::BootInfo;
+use kmem_region::IntAlign;
+use paging::new_pte_with_config;
+use x86::controlregs;
 
-use crate::{
-    ArchIf,
-    mem::{PhysAddr, VirtAddr},
-};
+use crate::{archif::*, mem::page::page_size, platform};
 
+mod context;
 mod entry;
+mod idt;
 pub(crate) mod paging;
+mod trap;
 mod uart16550;
 
 pub struct Arch;
@@ -24,18 +24,24 @@ impl ArchIf for Arch {
     type PageTable = paging::Table;
 
     fn new_pte_with_config(config: MemConfig) -> <Self::PageTable as TableGeneric>::PTE {
-        todo!()
+        new_pte_with_config(config)
     }
 
+    #[inline(always)]
     fn set_kernel_table(addr: PhysAddr) {
-        todo!()
+        let old_root = Self::get_kernel_table();
+        if old_root != addr {
+            unsafe { controlregs::cr3_write(addr.raw() as _) }
+        }
     }
 
     fn get_kernel_table() -> PhysAddr {
-        todo!()
+        unsafe { controlregs::cr3() as usize }
+            .align_down(page_size())
+            .into()
     }
 
-    fn set_user_table(addr: PhysAddr) {
+    fn set_user_table(_addr: PhysAddr) {
         todo!()
     }
 
@@ -43,8 +49,15 @@ impl ArchIf for Arch {
         todo!()
     }
 
+    #[inline(always)]
     fn flush_tlb(vaddr: Option<VirtAddr>) {
-        todo!()
+        unsafe {
+            if let Some(vaddr) = vaddr {
+                x86::tlb::flush(vaddr.raw());
+            } else {
+                x86::tlb::flush_all();
+            }
+        }
     }
 
     fn wait_for_event() {
@@ -52,11 +65,16 @@ impl ArchIf for Arch {
     }
 
     fn init_debugcon() {
-        todo!()
+        uart16550::init();
+
+        platform::init_debugcon();
     }
 
     fn cpu_id() -> crate::platform::CpuId {
-        todo!()
+        match raw_cpuid::CpuId::new().get_feature_info() {
+            Some(finfo) => (finfo.initial_local_apic_id() as usize).into(),
+            None => crate::platform::CpuId::new(0),
+        }
     }
 
     fn primary_entry(boot_info: BootInfo) {

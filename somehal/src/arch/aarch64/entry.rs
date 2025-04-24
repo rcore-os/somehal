@@ -80,7 +80,7 @@ fn phys_sp_entry() -> ! {
 
     println!("Memory regions setup done!");
 
-    let table = new_mapped_table();
+    let table = new_mapped_table(false);
 
     println!("Mov sp to {:#x}", STACK_TOP);
 

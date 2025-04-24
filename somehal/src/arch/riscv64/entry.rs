@@ -91,7 +91,7 @@ fn phys_sp_entry(hartid: usize) -> ! {
 
     println!("Memory regions setup done!");
 
-    let table = new_mapped_table();
+    let table = new_mapped_table(false);
 
     println!("Mov sp to {:#x}", STACK_TOP);
     let mut old = satp::read();

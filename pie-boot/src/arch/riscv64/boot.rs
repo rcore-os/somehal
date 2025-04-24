@@ -116,7 +116,7 @@ fn setup(hartid: usize, fdt: *mut u8) -> usize {
         vec.set_trap_mode(stvec::TrapMode::Direct);
         stvec::write(vec);
 
-        init_phys_allocator();
+        init_phys_allocator(0);
 
         kcode_offset
     }
@@ -140,34 +140,18 @@ unsafe extern "C" fn entry_lma() -> usize {
     )
 }
 
-global_asm!(
-    "
-.option pic
-__entry_vma:
-    la      a0,  __vma_relocate_entry
-    ret
-"
-);
-
+/// The entry point of the kernel.
+///
+/// # Safety
+#[naked]
 pub unsafe extern "C" fn entry_vma() -> usize {
-    unsafe extern "C" {
-        fn __entry_vma() -> usize;
-    }
-    unsafe { __entry_vma() }
+    naked_asm!(
+        "
+    .option pic
+    la      a0,  __vma_relocate_entry
+    ret"
+    )
 }
-
-// /// The entry point of the kernel.
-// ///
-// /// # Safety
-// #[naked]
-// pub unsafe extern "C" fn entry_vma() -> usize {
-//     naked_asm!(
-//         "
-//     .option pic
-//     la      a0,  __vma_relocate_entry
-//     ret"
-//     )
-// }
 
 /// The entry point of the kernel.
 ///

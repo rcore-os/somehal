@@ -43,12 +43,12 @@ impl<T> Deref for StaticCell<T> {
 
 pub unsafe fn clean_bss() {
     unsafe extern "C" {
-        fn __start_BootBss();
-        fn __stop_BootBss();
+        fn __start_boot_bss();
+        fn __stop_boot_bss();
     }
     unsafe {
-        let start = __start_BootBss as *mut u8;
-        let end = __stop_BootBss as *mut u8;
+        let start = __start_boot_bss as *mut u8;
+        let end = __stop_boot_bss as *mut u8;
         let len = end as usize - start as usize;
         for i in 0..len {
             start.add(i).write(0);
@@ -84,10 +84,17 @@ pub(crate) fn boot_info() -> BootInfo {
     }
 }
 
-pub(crate) fn init_phys_allocator() {
+/// 初始化物理内存管理器
+/// 
+/// # Safety
+/// 
+/// 若此时mmu未开启，则`va_offset`设为`0`，若开启了mmu，则`va_offset`设为`code`偏移量
+pub(crate) unsafe fn init_phys_allocator(va_offset: usize) {
     unsafe {
-        *PHYS_ALLOCATOR.0.get() =
-            LineAllocator::new(kmem_region::PhysAddr::from(kernel_code_end() as usize), GB);
+        *PHYS_ALLOCATOR.0.get() = LineAllocator::new(
+            kmem_region::PhysAddr::from(kernel_code_end() as usize - va_offset),
+            GB,
+        );
 
         reserved_alloc::<[u8; BOOT_STACK_SIZE]>();
     }
@@ -115,9 +122,9 @@ fn kernel_code_end() -> *const u8 {
 
 fn kernal_kcode_start() -> usize {
     unsafe extern "C" {
-        fn __start_BootText();
+        fn __kernel_load_vma();
     }
-    __start_BootText as _
+    __kernel_load_vma as _
 }
 
 fn table_len() -> usize {

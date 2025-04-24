@@ -44,10 +44,10 @@ fn main() {
     let content = content.replace("${KERNAL_LOAD_VMA}", &format!("{:#x}", kernel_load_vaddr));
 
     let mut file =
-        std::fs::File::create(out_dir().join("memory.x")).expect("memory.x create failed");
+        std::fs::File::create(out_dir().join("kmem_region.x")).expect("kmem_region.x create failed");
 
     file.write_all(content.as_bytes())
-        .expect("memory.x write failed");
+        .expect("kmem_region.x write failed");
 }
 
 fn out_dir() -> PathBuf {

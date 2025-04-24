@@ -51,3 +51,29 @@ pub(crate) fn relocate() {
         __vma_relocate_entry(boot_info());
     }
 }
+
+pub fn boot_text() -> &'static [u8] {
+    unsafe extern "C" {
+        fn __start_boot_text();
+        fn __stop_boot_text();
+    }
+    unsafe {
+        core::slice::from_raw_parts(
+            __start_boot_text as _,
+            __stop_boot_text as usize - __start_boot_text as usize,
+        )
+    }
+}
+
+pub fn boot_data() -> &'static [u8] {
+    unsafe extern "C" {
+        fn __start_boot_data();
+        fn __stop_boot_bss();
+    }
+    unsafe {
+        core::slice::from_raw_parts(
+            __start_boot_data as _,
+            __stop_boot_bss as usize - __start_boot_data as usize,
+        )
+    }
+}

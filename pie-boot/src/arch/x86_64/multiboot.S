@@ -16,7 +16,7 @@ multiboot_header:
     .int    {mb_hdr_flags}                      # flags
     .int    -({mb_hdr_magic} + {mb_hdr_flags})  # checksum
     .int    multiboot_header - {offset}         # header_addr
-    .int    __start_BootText - {offset}         # load_addr
+    .int    __kernel_load_vma - {offset}        # load_addr
     .int    __start_percpu - {offset}           # load_end
     .int    __stop_bss - {offset}               # bss_end_addr
     .int    _start - {offset}                   # entry_addr

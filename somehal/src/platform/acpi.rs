@@ -1,4 +1,3 @@
-use alloc::vec::Vec;
 use bit_field::BitField;
 use kmem_region::region::MemRegion;
 
@@ -6,13 +5,7 @@ use core::ptr::NonNull;
 
 use acpi::{platform::ProcessorState, *};
 
-use crate::{
-    _alloc::vec,
-    handle_err,
-    mem::{PhysMemory, heap::GlobalHeap},
-    once_static::OnceStatic,
-    println,
-};
+use crate::{_alloc::vec, handle_err, mem::heap::GlobalHeap, once_static::OnceStatic, println};
 
 use super::CpuId;
 
@@ -41,6 +34,7 @@ impl AcpiHandler for AcpiImpl {
 
 static ACPI_TABLE: OnceStatic<acpi::AcpiTables<AcpiImpl>> = OnceStatic::new();
 
+#[allow(unused)]
 pub fn check_acpi() -> Result<(), AcpiError> {
     unsafe {
         AcpiTables::search_for_rsdp_bios(AcpiImpl)?;
@@ -51,7 +45,6 @@ pub fn check_acpi() -> Result<(), AcpiError> {
 pub fn init() {
     unsafe {
         let acpi_table = AcpiTables::search_for_rsdp_bios(AcpiImpl).unwrap();
-        println!("ACPI found!");
         ACPI_TABLE.init(acpi_table);
     }
 }
@@ -82,18 +75,34 @@ pub fn cpu_count() -> usize {
     count
 }
 
-// pub fn cpu_list() -> impl Iterator<Item = CpuId> {
-//     let madt = handle_err!(ACPI_TABLE.find_table::<madt::Madt>());
+pub fn cpu_list() -> impl Iterator<Item = CpuId> {
+    let info = handle_err!(ACPI_TABLE.platform_info_in(GlobalHeap {}));
+    let mut out = vec![];
 
-//     madt.get().entries().filter_map(|entry| match entry {
-//         madt::MadtEntry::LocalApic(local_apic_entry) => {
-//             Some((local_apic_entry.processor_id as usize).into())
-//         }
-//         madt::MadtEntry::LocalX2Apic(local_x2_apic_entry) => todo!(),
-//         _ => None,
-//     })
-// }
+    if let Some(info) = info.processor_info {
+        let boot_id = info.boot_processor.processor_uid as usize;
+        out.push(boot_id.into());
+
+        for precessor in info.application_processors.iter() {
+            if !matches!(precessor.state, ProcessorState::Disabled) {
+                out.push((precessor.processor_uid as usize).into());
+            }
+        }
+    }
+
+    out.into_iter()
+}
 
 pub(crate) fn memory_regions() -> vec::Vec<MemRegion> {
     vec![]
+}
+
+pub fn init_debugcon() -> Option<any_uart::Uart> {
+    let s = ACPI_TABLE.find_table::<spcr::Spcr>().ok()?;
+
+    let addr = s.base_address()?.ok()?;
+
+    println!("{:?}", addr);
+
+    None
 }
