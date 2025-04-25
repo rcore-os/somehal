@@ -1,11 +1,18 @@
 use bit_field::BitField;
 use kmem_region::region::MemRegion;
+use pie_boot::BootInfo;
 
 use core::ptr::NonNull;
 
 use acpi::{platform::ProcessorState, *};
 
-use crate::{_alloc::vec, handle_err, mem::heap::GlobalHeap, once_static::OnceStatic, println};
+use crate::{
+    _alloc::vec,
+    handle_err,
+    mem::{PhysMemoryArray, heap::GlobalHeap},
+    once_static::OnceStatic,
+    println,
+};
 
 use super::CpuId;
 
@@ -42,17 +49,21 @@ pub fn check_acpi() -> Result<(), AcpiError> {
     Ok(())
 }
 
-pub fn init() {
+pub fn init(_boot_info: &BootInfo) {
     unsafe {
         let acpi_table = AcpiTables::search_for_rsdp_bios(AcpiImpl).unwrap();
         ACPI_TABLE.init(acpi_table);
     }
 }
 
-pub fn cpu_count() -> usize {
+pub fn find_memory() -> AcpiResult<PhysMemoryArray> {
+    Ok(PhysMemoryArray::new())
+}
+
+pub fn cpu_count() -> AcpiResult<usize> {
     let mut count = 0;
 
-    let madt = handle_err!(ACPI_TABLE.find_table::<madt::Madt>());
+    let madt = ACPI_TABLE.find_table::<madt::Madt>()?;
 
     for one in madt.get().entries() {
         match one {
@@ -72,7 +83,7 @@ pub fn cpu_count() -> usize {
         }
     }
 
-    count
+    Ok(count)
 }
 
 pub fn cpu_list() -> impl Iterator<Item = CpuId> {

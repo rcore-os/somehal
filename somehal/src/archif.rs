@@ -6,7 +6,7 @@ pub use page_table_generic::*;
 pub use pie_boot::BootInfo;
 
 pub trait ArchIf {
-    fn early_debug_put(byte: u8);
+    fn early_debug_put(byte: &[u8]);
 
     type PageTable: TableGeneric;
 

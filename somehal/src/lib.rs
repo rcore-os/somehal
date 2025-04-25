@@ -32,8 +32,15 @@ pub(crate) mod platform;
 
 pub(crate) use archif::ArchIf;
 
+use mem::page::set_is_relocated;
 pub use somehal_macros::entry;
 
-unsafe extern "C" {
-    pub(crate) fn __somehal_main() -> !;
+pub(crate) fn to_main() -> ! {
+    unsafe extern "C" {
+        fn __somehal_main() -> !;
+    }
+    unsafe {
+        set_is_relocated();
+        __somehal_main();
+    }
 }

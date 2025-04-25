@@ -1,70 +1,34 @@
 use core::arch::asm;
 
-use kmem_region::region::{STACK_TOP, set_kcode_va_offset};
-use pie_boot::{BootInfo, MemoryKind};
+use kmem_region::region::STACK_TOP;
+use pie_boot::BootInfo;
 use riscv::register::satp;
 
 use crate::{
     arch::debug_init,
-    handle_err,
+    entry,
     mem::{
-        PhysMemory, clean_bss, kernal_load_start_link_addr, page::new_mapped_table,
-        setup_memory_main, setup_memory_regions, stack_top_cpu0,
+        page::new_mapped_table,
+        setup_memory_regions, stack_top_cpu0,
     },
     platform::*,
     printkv, println,
 };
 
 pub fn primary_entry(boot_info: BootInfo) {
-    clean_bss();
-    let hartid = boot_info.cpu_id;
-    let kcode_offset = boot_info.kcode_offset;
-
     debug_init();
     unsafe {
-        println!("MMU ready!");
+        println!();
 
         asm!(
             "add  gp, gp, {offset}",
-            offset = in(reg) kcode_offset,
+            offset = in(reg) boot_info.kcode_offset,
             options(nostack)
         );
-        set_kcode_va_offset(kcode_offset);
-        set_fdt_info(boot_info.fdt);
     }
+    let hartid = boot_info.cpu_id;
 
-    printkv!(
-        "Kernel LMA",
-        "{:#X}",
-        kernal_load_start_link_addr() - kcode_offset
-    );
-
-    printkv!("Code offst", "{:#X}", kcode_offset);
-    printkv!("Hart", "{:?}", hartid);
-
-    if let Some(fdt) = boot_info.fdt {
-        printkv!("FDT", "{:?}", fdt.0);
-    }
-
-    let cpu_count = handle_err!(cpu_count(), "could not get cpu count");
-
-    printkv!("CPU count", "{}", cpu_count);
-    printkv!("Memory start", "{:#x}", boot_info.highest_address);
-
-    let memories = handle_err!(find_memory(), "could not get memories");
-
-    let reserved_memories = boot_info.memory_regions.filter_map(|o| {
-        if matches!(o.kind, MemoryKind::Reserved) {
-            Some(PhysMemory {
-                addr: o.start.into(),
-                size: o.end - o.start,
-            })
-        } else {
-            None
-        }
-    });
-
-    setup_memory_main(reserved_memories, memories.into_iter(), cpu_count);
+    entry::setup(boot_info);
 
     let sp = stack_top_cpu0();
 
@@ -101,7 +65,7 @@ fn phys_sp_entry(hartid: usize) -> ! {
         asm!("mv    t1,  {satp}",
              "la     t2, {entry}",
             satp = in(reg) old.bits(),
-            entry = sym crate::__somehal_main
+            entry = sym crate::to_main
         );
         asm!(
             "li    sp, {sp}",

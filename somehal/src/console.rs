@@ -5,12 +5,10 @@ use spin::Mutex;
 use crate::{ArchIf, arch::Arch};
 
 pub fn __print_str(s: &str) {
-    for &b in s.as_bytes() {
-        Arch::early_debug_put(b);
-    }
+    write_bytes(s.as_bytes());
 }
 
-static TX: Mutex<()> = Mutex::new(());
+static TX: Mutex<u32> = Mutex::new(0);
 
 struct DebugTx;
 impl core::fmt::Write for DebugTx {
@@ -22,16 +20,12 @@ impl core::fmt::Write for DebugTx {
 
 pub fn write_bytes(s: &[u8]) {
     let g = TX.lock();
-    for &b in s {
-        Arch::early_debug_put(b);
-    }
+    Arch::early_debug_put(s);
     drop(g);
 }
 
 pub fn _print(args: core::fmt::Arguments) {
-    let g = TX.lock();
     let _ = DebugTx {}.write_fmt(args);
-    drop(g);
 }
 
 #[macro_export]
@@ -43,6 +37,9 @@ macro_rules! print {
 
 #[macro_export]
 macro_rules! println {
+    ()=>{
+        $crate::console::__print_str("\r\n");
+    };
     ($($arg:tt)*) => {
         $crate::print!("{}\r\n", format_args!($($arg)*))
     };

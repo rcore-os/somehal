@@ -8,25 +8,29 @@ INCLUDE pie_boot.x
 SECTIONS
 {
     text : ALIGN(4K) {
-        *any_uart-*.o(.text*)
-        *fdt-parser-*.o(.text*)
-        *page_table_generic-*.o(.text*)
+        *any_uart-*.o*(.text*)
+        *fdt-parser-*.o*(.text*)
         *(.text .text.*)
     } 
 
-    rodata : ALIGN(4K) {
+    .rodata : ALIGN(4K) {
+        __srodata = .;
         *(.rodata .rodata.*)
         *(.srodata*)
         *(.got .got.*)
     } 
+    __custom_rodata = .;
     
     .data : ALIGN(4K) {
+        __erodata = .;
         __srwdata = .;
         *(.data*)
         . = ALIGN(4K);
         __global_pointer$ = . + 0x800;
         *(.sdata.*)
     } 
+    . = ALIGN(4K);
+    __custom_rwdata = .;
 
     percpu : ALIGN(4K) {
         __kernel_load_size = . - __kernel_load_vma;

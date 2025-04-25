@@ -3,7 +3,6 @@ use core::arch::asm;
 use entry::primary_entry;
 use kmem_region::IntAlign;
 use paging::new_pte_with_config;
-use x86::controlregs;
 
 use crate::{archif::*, mem::page::page_size, platform};
 
@@ -17,8 +16,8 @@ mod uart16550;
 pub struct Arch;
 
 impl ArchIf for Arch {
-    fn early_debug_put(byte: u8) {
-        uart16550::write_bytes(&[byte]);
+    fn early_debug_put(bytes: &[u8]) {
+        uart16550::write_bytes(bytes);
     }
 
     type PageTable = paging::Table;
@@ -31,14 +30,21 @@ impl ArchIf for Arch {
     fn set_kernel_table(addr: PhysAddr) {
         let old_root = Self::get_kernel_table();
         if old_root != addr {
-            unsafe { controlregs::cr3_write(addr.raw() as _) }
+            unsafe {
+                asm!("mov {0}, %cr3", in(reg) addr.raw(), options(att_syntax));
+            }
         }
     }
 
+    #[inline(always)]
     fn get_kernel_table() -> PhysAddr {
-        unsafe { controlregs::cr3() as usize }
-            .align_down(page_size())
-            .into()
+        unsafe {
+            let ret: usize;
+            asm!("mov %cr3, {0}", out(reg) ret, options(att_syntax));
+            ret
+        }
+        .align_down(page_size())
+        .into()
     }
 
     fn set_user_table(_addr: PhysAddr) {

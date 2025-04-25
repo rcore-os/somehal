@@ -10,8 +10,9 @@ use core::arch::naked_asm;
 
 #[naked]
 pub unsafe extern "C" fn flush_dcache_range(start: usize, end: usize) {
-    naked_asm!(
-        "
+    unsafe {
+        naked_asm!(
+            "
     mrs	x3, ctr_el0
 	ubfx	x3, x3, #16, #4
 	mov	x2, #4
@@ -27,13 +28,15 @@ pub unsafe extern "C" fn flush_dcache_range(start: usize, end: usize) {
 	dsb	sy
 	ret
             "
-    )
+        )
+    }
 }
 
 #[naked]
 pub unsafe extern "C" fn flush_invalidate_range(start: usize, end: usize) {
-    naked_asm!(
-        "
+    unsafe {
+        naked_asm!(
+            "
     mrs	    x3, ctr_el0
 	ubfx	x3, x3, #16, #4
 	mov	    x2, #4
@@ -49,18 +52,21 @@ pub unsafe extern "C" fn flush_invalidate_range(start: usize, end: usize) {
 	dsb	sy
 	ret
             "
-    )
+        )
+    }
 }
 
 #[naked]
 pub unsafe extern "C" fn invalidate_icache_all() {
-    naked_asm!(
-        "
+    unsafe {
+        naked_asm!(
+            "
     ic	ialluis
 	isb	sy
 	ret
             "
-    )
+        )
+    }
 }
 
 /// Flush and invalidate all cache levels
@@ -69,8 +75,9 @@ pub unsafe extern "C" fn invalidate_icache_all() {
 /// x2~x9: clobbered
 #[naked]
 pub unsafe extern "C" fn dcache_level(cache_level: usize, op: DcacheOp) {
-    naked_asm!(
-        "
+    unsafe {
+        naked_asm!(
+            "
 	lsl	x12, x0, #1
 	msr	csselr_el1, x12		/* select cache level */
 	isb				/* sync change of cssidr_el1 */
@@ -110,14 +117,16 @@ pub unsafe extern "C" fn dcache_level(cache_level: usize, op: DcacheOp) {
 
 	ret
             "
-    )
+        )
+    }
 }
 
 /// Flush or invalidate all data cache by SET/WAY.
 #[naked]
 pub unsafe extern "C" fn dcache_all(op: DcacheOp) {
-    naked_asm!(
-                "
+    unsafe {
+        naked_asm!(
+                    "
 	mov	x1, x0
 	dsb	sy
 	mrs	x10, clidr_el1		/* read clidr_el1 */
@@ -154,6 +163,7 @@ pub unsafe extern "C" fn dcache_all(op: DcacheOp) {
 3:
 	ret
             ",
-    dcache_level = sym dcache_level
-            )
+        dcache_level = sym dcache_level
+                )
+    }
 }

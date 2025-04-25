@@ -1,6 +1,7 @@
 use aarch64_cpu::asm::wfe;
 use entry::primary_entry;
 use page_table_generic::TableGeneric;
+use pie_boot::BootInfo;
 
 use crate::{
     ArchIf,
@@ -20,8 +21,10 @@ pub struct Arch;
 use aarch64_cpu::registers::*;
 
 impl ArchIf for Arch {
-    fn early_debug_put(b: u8) {
-        debug::write_byte(b);
+    fn early_debug_put(b: &[u8]) {
+        for &b in b {
+            debug::write_byte(b);
+        }
     }
 
     type PageTable = paging::Table;
@@ -64,7 +67,7 @@ impl ArchIf for Arch {
         ((MPIDR_EL1.get() & 0xffffff) as usize).into()
     }
 
-    fn primary_entry(boot_info: pie_boot::BootInfo) {
+    fn primary_entry(boot_info: BootInfo) {
         primary_entry(boot_info);
     }
 }
