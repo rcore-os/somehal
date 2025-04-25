@@ -4,15 +4,9 @@ use kmem_region::region::{STACK_TOP, kcode_offset, set_kcode_va_offset};
 use pie_boot::{BootInfo, MemoryKind};
 
 use crate::{
-    ArchIf,
-    arch::{Arch, idt::init_idt},
-    mem::{
-        PhysMemory, clean_bss, kernal_load_start_link_addr,
-        page::{new_mapped_table, new_test_table, set_is_relocated},
-        setup_memory_main, setup_memory_regions, stack_top_cpu0,
-    },
-    platform::{self, cpu_list},
-    printkv, println,
+    arch::{idt::init_idt, Arch}, mem::{
+        clean_bss, kernal_load_start_link_addr, page::{new_mapped_table, set_is_relocated}, setup_memory_main, setup_memory_regions, stack_top_cpu0, PhysMemory
+    }, platform::{self, cpu_list}, printkv, println, ArchIf
 };
 
 pub fn primary_entry(boot_info: BootInfo) -> ! {
@@ -94,7 +88,7 @@ fn phys_sp_entry() -> ! {
 }
 
 fn setup() {
-    // init_idt();
+    init_idt();
     let cpu_id = Arch::cpu_id();
     printkv!("CPU ID", "{:?}", cpu_id);
     setup_memory_regions(cpu_id, cpu_list());
