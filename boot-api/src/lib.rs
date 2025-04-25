@@ -1,6 +1,10 @@
+#![no_std]
+
 use core::ptr::NonNull;
 
-pub use crate::vec::ArrayVec;
+pub mod vec;
+
+pub use vec::ArrayVec;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum MemoryKind {

@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "boot-api",
     "kmem-region",
     "num-align",
     "page-table-generic",
@@ -22,3 +23,4 @@ repository = "https://github.com/rcore-os/somehal"
 
 
 [workspace.dependencies]
+boot-api = { path = "boot-api" }

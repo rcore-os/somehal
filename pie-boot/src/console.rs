@@ -50,10 +50,10 @@ impl Print for PagingError {
     }
 }
 
-impl Print for crate::vec::Error {
+impl Print for boot_api::vec::Error {
     fn _print(self) {
         match self {
-            crate::vec::Error::Full => __print_str("Vec full"),
+            boot_api::vec::Error::Full => __print_str("Vec full"),
         }
     }
 }

@@ -22,14 +22,12 @@ pub(crate) mod console;
 #[cfg(early_uart)]
 pub(crate) mod debug;
 
-mod api;
 mod archif;
 mod config;
+mod lang_items;
 mod mem;
 #[allow(unused)]
 mod paging;
-mod vec;
-mod lang_items;
 
 use arch::*;
 use mem::boot_info;
@@ -41,10 +39,8 @@ macro_rules! dbgln {
     ($($arg:tt)*) => {};
 }
 
-pub use api::*;
-
 pub(crate) fn relocate() {
-    
+
     // unsafe extern "Rust" {
     //     fn __vma_relocate_entry(boot_info: BootInfo);
     // }

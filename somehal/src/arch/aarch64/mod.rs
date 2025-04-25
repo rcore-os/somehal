@@ -64,7 +64,7 @@ impl ArchIf for Arch {
         ((MPIDR_EL1.get() & 0xffffff) as usize).into()
     }
 
-    fn primary_entry(boot_info: pie_boot::BootInfo) {
+    fn primary_entry(boot_info: boot_api::BootInfo) {
         primary_entry(boot_info);
     }
 }

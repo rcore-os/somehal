@@ -148,6 +148,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c8214115b7bf84099f1309324e63141d4c5d7cc26862f97a0a857dbefe165bd"
 
 [[package]]
+name = "boot-api"
+version = "0.1.0"
+
+[[package]]
 name = "byteorder"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -421,6 +425,7 @@ dependencies = [
  "aarch64-cpu",
  "any-uart",
  "bitflags 2.9.0",
+ "boot-api",
  "cfg-if",
  "fdt-parser",
  "kmem-region",
@@ -655,6 +660,7 @@ dependencies = [
  "arm-gic-driver",
  "bit_field",
  "bitflags 2.9.0",
+ "boot-api",
  "cfg-if",
  "fdt-parser",
  "heapless",
@@ -662,7 +668,6 @@ dependencies = [
  "linked_list_allocator",
  "log",
  "page-table-generic",
- "pie-boot",
  "prettyplease",
  "quote",
  "raw-cpuid 11.5.0",

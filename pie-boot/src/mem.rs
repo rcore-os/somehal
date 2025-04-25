@@ -3,6 +3,7 @@
 use core::{alloc::Layout, cell::UnsafeCell, mem::MaybeUninit, ops::Deref, ptr::NonNull};
 
 use crate::{arch, config::BOOT_STACK_SIZE, paging::*};
+use boot_api::{BootInfo, MemoryKind, MemoryRegion};
 use kmem_region::{
     IntAlign,
     allocator::LineAllocator,
@@ -10,7 +11,7 @@ use kmem_region::{
 };
 use num_align::NumAssertAlign;
 
-use crate::{Arch, BootInfo, archif::ArchIf, dbgln};
+use crate::{Arch, archif::ArchIf, dbgln};
 
 type Table<'a> = PageTableRef<'a, <Arch as ArchIf>::PageTable>;
 
@@ -87,10 +88,10 @@ pub(crate) unsafe fn edit_boot_info(f: impl FnOnce(&mut BootInfo)) {
 pub(crate) fn boot_info() -> BootInfo {
     unsafe {
         let info = &mut *BOOT_INFO.0.get();
-        early_err!(info.memory_regions.try_push(crate::MemoryRegion {
+        early_err!(info.memory_regions.try_push(MemoryRegion {
             start: PHYS_ALLOCATOR.start.raw(),
             end: PHYS_ALLOCATOR.highest_address().raw(),
-            kind: crate::MemoryKind::Reserved,
+            kind: MemoryKind::Reserved,
         }));
         info.highest_address = PHYS_ALLOCATOR.highest_address().raw();
         info.fdt = get_fdt_ptr().map(|ptr| (ptr, FDT_SIZE));

@@ -2,7 +2,7 @@ use core::arch::asm;
 
 use aarch64_cpu::registers::*;
 use kmem_region::region::{STACK_TOP, set_kcode_va_offset};
-use pie_boot::{BootInfo, MemoryKind};
+use boot_api::{BootInfo, MemoryKind};
 
 use super::debug;
 use crate::{
@@ -20,6 +20,7 @@ use crate::{
     printkv, println,
 };
 
+#[unsafe(link_section = ".text.entry")]
 pub fn primary_entry(boot_info: BootInfo) {
     unsafe {
         clean_bss();

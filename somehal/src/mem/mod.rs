@@ -257,22 +257,22 @@ fn detect_link_space() {
         (*MEM_REGIONS.get()).replace(regions);
     }
     //TODO x86_64 不加 Write 会崩溃，待查
-    mem_region_add(link_section_to_kspace(
-        ".text.boot",
-        pie_boot::boot_text(),
-        MemConfig {
-            access: AccessFlags::Read | AccessFlags::Execute | AccessFlags::Write,
-            cache: CacheConfig::Normal,
-        },
-    ));
-    mem_region_add(link_section_to_kspace(
-        ".data.boot",
-        pie_boot::boot_data(),
-        MemConfig {
-            access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
-            cache: CacheConfig::Normal,
-        },
-    ));
+    // mem_region_add(link_section_to_kspace(
+    //     ".text.boot",
+    //     pie_boot::boot_text(),
+    //     MemConfig {
+    //         access: AccessFlags::Read | AccessFlags::Execute | AccessFlags::Write,
+    //         cache: CacheConfig::Normal,
+    //     },
+    // ));
+    // mem_region_add(link_section_to_kspace(
+    //     ".data.boot",
+    //     pie_boot::boot_data(),
+    //     MemConfig {
+    //         access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
+    //         cache: CacheConfig::Normal,
+    //     },
+    // ));
     mem_region_add(link_section_to_kspace(".text", text(), MemConfig {
         access: AccessFlags::Read | AccessFlags::Execute,
         cache: CacheConfig::Normal,

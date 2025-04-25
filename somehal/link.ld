@@ -1,16 +1,15 @@
 OUTPUT_ARCH(%ARCH%)
 
-ENTRY(_start)
-
-
-INCLUDE pie_boot.x
+INCLUDE kmem_region.x
 
 SECTIONS
 {
+    . = __kernel_load_vma;
+
     text : ALIGN(4K) {
-        *any_uart-*.o(.text*)
-        *fdt-parser-*.o(.text*)
-        *page_table_generic-*.o(.text*)
+        KEEP(*(.loader))
+        . = ALIGN(2M);
+        KEEP(*(.text.entry))
         *(.text .text.*)
     } 
 

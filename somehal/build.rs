@@ -1,4 +1,8 @@
-use std::path::PathBuf;
+use std::{
+    fs::{self, exists, remove_dir_all},
+    path::PathBuf,
+    process,
+};
 
 struct Config {
     addr_bits: usize,
@@ -38,6 +42,8 @@ fn main() {
     }
 
     arch.gen_linker_script(&config);
+
+    build_loader();
 }
 
 #[derive(Debug)]
@@ -81,4 +87,82 @@ impl Arch {
 
         std::fs::write(out_dir().join("link.x"), ld_content).expect("link.x write failed");
     }
+}
+
+fn build_loader() {
+    let outdir = out_dir();
+
+    let src_dir = target_dir().join("loader_src");
+
+    if !exists(&src_dir).unwrap() {
+        process::Command::new("git")
+            .args([
+                "clone",
+                "git@github.com:rcore-os/somehal.git",
+                "-b",
+                "test-bootloader",
+            ])
+            .arg(&src_dir)
+            .status()
+            .expect("git clone failed");
+    }
+    process::Command::new("git")
+        .current_dir(&src_dir)
+        .args(["pull", "--rebase"])
+        .status()
+        .expect("git pull failed");
+
+    process::Command::new("cargo")
+        .current_dir(&src_dir)
+        .args([
+            "build",
+            "--release",
+            "--target",
+            &std::env::var("TARGET").unwrap(),
+            "-p",
+            "pie-boot",
+            "--features",
+            "early-debug",
+        ])
+        .status()
+        .expect("cargo build failed");
+
+    let loader_elf = outdir.join("loader.elf");
+    let loader_bin = outdir.join("loader.bin");
+
+    let _ = fs::copy(
+        src_dir
+            .join("target")
+            .join(std::env::var("TARGET").unwrap())
+            .join("release")
+            .join("pie-boot"),
+        &loader_elf,
+    );
+
+    process::Command::new("rust-objcopy")
+        .arg(&loader_elf)
+        .args(["--strip-all", "-O", "binary"])
+        .arg(&loader_bin)
+        .status()
+        .unwrap();
+}
+
+fn target_dir() -> PathBuf {
+    // 获取 OUT_DIR 环境变量
+    let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR environment variable not set");
+
+    // 将 OUT_DIR 转换为 Path 对象
+    let out_path = PathBuf::from(out_dir);
+
+    // 推导 target 文件夹的位置
+    // OUT_DIR 的路径通常是：`<project_root>/target/<profile>/build/<crate_name>-<hash>/out`
+    // 因此，我们可以通过多次调用 `parent()` 来找到 target 文件夹
+    let target_dir = out_path
+        .ancestors() // 遍历所有父目录
+        .nth(5) // 第三个父目录就是 target 文件夹
+        .expect("Failed to find target directory");
+
+    println!("Target directory: {}", target_dir.display());
+
+    target_dir.into()
 }

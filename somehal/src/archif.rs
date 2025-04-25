@@ -3,7 +3,7 @@ pub use crate::mem::{PhysAddr, VirtAddr};
 pub use crate::platform::CpuId;
 pub use kmem_region::region::{MemConfig, MemRegion};
 pub use page_table_generic::*;
-pub use pie_boot::BootInfo;
+pub use boot_api::BootInfo;
 
 pub trait ArchIf {
     fn early_debug_put(byte: u8);

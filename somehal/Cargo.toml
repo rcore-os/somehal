@@ -4,8 +4,8 @@ version.workspace = true
 edition.workspace = true
 
 [features]
-vm = ["pie-boot/vm"]
-early-debug = ["pie-boot/early-debug"]
+vm = []
+early-debug = []
 sv39 = ["kmem-region/sv39"]
 
 [dependencies]
@@ -15,13 +15,13 @@ spin = "0.10.0"
 tock-registers = "0.9"
 log = "0.4"
 bitflags = "2.9"
-pie-boot = { path = "../pie-boot" }
 cfg-if = "1.0.0"
 linked_list_allocator = "0.10"
 heapless = "0.8"
 page-table-generic = { path = "../page-table-generic" }
 bit_field = "0.10"
 any-uart = "0.2"
+boot-api = { workspace = true }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "10.0"
