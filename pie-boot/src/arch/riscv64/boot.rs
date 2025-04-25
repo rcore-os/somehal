@@ -1,4 +1,4 @@
-use core::arch::{global_asm, naked_asm};
+use core::arch::naked_asm;
 
 use riscv::register::stvec::{self, Stvec};
 
@@ -26,69 +26,73 @@ const HEADER_VERSION: usize = (HEADER_VERSION_MAJOR << 16) | HEADER_VERSION_MINO
 #[unsafe(link_section = ".text.boot.header")]
 /// The entry point of the kernel.
 pub unsafe extern "C" fn _start() -> ! {
-    naked_asm!(
-        // code0/code1
-        "j  {entry}",
-        ".word 0",
-        // Image load offset, little endian
-        ".dword {offset}",
-        // Image size, little endian
-        ".dword  __kernel_load_size",
-        // flags
-        ".dword  {flags}",
-        ".word   {version}",
-        ".word   0",
-        // Reserved fields
-        ".dword 0",
-        // Magic number, little endian, "RISCV"
-        ".dword 0x5643534952",
-        // Magic number 2, little endian, "RSC\x05"
-        ".word  0x05435352",
-        ".word  0",
-        offset = const XLEN,
-        flags = const FLAG_LE ,
-        version = const HEADER_VERSION,
-        entry = sym primary_entry,
-    )
+    unsafe {
+        naked_asm!(
+            // code0/code1
+            "j  {entry}",
+            ".word 0",
+            // Image load offset, little endian
+            ".dword {offset}",
+            // Image size, little endian
+            ".dword  __kernel_load_size",
+            // flags
+            ".dword  {flags}",
+            ".word   {version}",
+            ".word   0",
+            // Reserved fields
+            ".dword 0",
+            // Magic number, little endian, "RISCV"
+            ".dword 0x5643534952",
+            // Magic number 2, little endian, "RSC\x05"
+            ".word  0x05435352",
+            ".word  0",
+            offset = const XLEN,
+            flags = const FLAG_LE ,
+            version = const HEADER_VERSION,
+            entry = sym primary_entry,
+        )
+    }
 }
 
 #[naked]
 unsafe extern "C" fn primary_entry(_hart_id: usize, _fdt_addr: *mut u8) -> ! {
-    naked_asm!(
-        "mv      s0, a0",                  // save hartid
-        "mv      s1, a1",                  // save DTB pointer
+    unsafe {
+        naked_asm!(
+            "mv      s0, a0",                  // save hartid
+            "mv      s1, a1",                  // save DTB pointer
 
-        // Set the stack pointer.
-        "la      sp, __kernel_code_end",
-        "li      t0, {stack_size}",
-        "add     sp, sp, t0",
+            // Set the stack pointer.
+            "la      sp, __kernel_code_end",
+            "li      t0, {stack_size}",
+            "add     sp, sp, t0",
 
-        "mv      a0, s0",
-        "mv      a1, s1",
-        "call    {setup}",
-        "mv      s2, a0",    // return kcode offset
+            "mv      a0, s0",
+            "mv      a1, s1",
+            "call    {setup}",
+            "mv      s2, a0",    // return kcode offset
 
-        "call    {init_mmu}",
+            "call    {init_mmu}",
 
-        "mv      a0, s0",  // hartid
-        "mv      a1, s2",  // kcode offset
-        "mv      a2, s1",  // fdt addr
-        "call    {setup_boot_info}",
+            "mv      a0, s0",  // hartid
+            "mv      a1, s2",  // kcode offset
+            "mv      a2, s1",  // fdt addr
+            "call    {setup_boot_info}",
 
-        "call    {entry_vma}",
-        "mv      t0, a0",
+            "call    {entry_vma}",
+            "mv      t0, a0",
 
-        "mv      gp, zero",
+            "mv      gp, zero",
 
-        "mv      a0, s0",
-        "jalr    t0",
-        "j       .",
-        stack_size = const crate::config::BOOT_STACK_SIZE,
-        setup = sym setup,
-        init_mmu = sym init_mmu,
-        setup_boot_info = sym setup_boot_info,
-        entry_vma = sym relocate_vma,
-    )
+            "mv      a0, s0",
+            "jalr    t0",
+            "j       .",
+            stack_size = const crate::config::BOOT_STACK_SIZE,
+            setup = sym setup,
+            init_mmu = sym init_mmu,
+            setup_boot_info = sym setup_boot_info,
+            entry_vma = sym relocate_vma,
+        )
+    }
 }
 fn setup(hartid: usize, fdt: *mut u8) -> usize {
     unsafe {
@@ -133,11 +137,13 @@ fn setup_boot_info(hartid: usize, kcode_offset: usize) {
 
 #[naked]
 unsafe extern "C" fn entry_lma() -> usize {
-    naked_asm!(
-        "
+    unsafe {
+        naked_asm!(
+            "
     la       a0,  __vma_relocate_entry
     ret"
-    )
+        )
+    }
 }
 
 /// The entry point of the kernel.
@@ -145,12 +151,14 @@ unsafe extern "C" fn entry_lma() -> usize {
 /// # Safety
 #[naked]
 pub unsafe extern "C" fn entry_vma() -> usize {
-    naked_asm!(
-        "
+    unsafe {
+        naked_asm!(
+            "
     .option pic
     la      a0,  __vma_relocate_entry
     ret"
-    )
+        )
+    }
 }
 
 /// The entry point of the kernel.
@@ -158,11 +166,13 @@ pub unsafe extern "C" fn entry_vma() -> usize {
 /// # Safety
 #[naked]
 pub unsafe extern "C" fn relocate_vma() -> usize {
-    naked_asm!(
-        "
+    unsafe {
+        naked_asm!(
+            "
     .option pic
     la      a0,  {}
     ret",
-    sym crate::relocate
-    )
+        sym crate::relocate
+        )
+    }
 }
