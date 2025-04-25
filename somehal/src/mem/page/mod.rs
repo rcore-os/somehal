@@ -15,6 +15,7 @@ static mut IS_RELOCATED: bool = false;
 
 pub type Table<'a> = PageTableRef<'a, <Arch as ArchIf>::PageTable>;
 
+#[allow(unused)]
 pub(crate) fn set_is_relocated() {
     unsafe {
         IS_RELOCATED = true;
