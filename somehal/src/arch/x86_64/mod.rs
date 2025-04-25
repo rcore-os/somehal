@@ -31,14 +31,21 @@ impl ArchIf for Arch {
     fn set_kernel_table(addr: PhysAddr) {
         let old_root = Self::get_kernel_table();
         if old_root != addr {
-            unsafe { controlregs::cr3_write(addr.raw() as _) }
+            unsafe {
+                asm!("mov {0}, %cr3", in(reg) addr.raw(), options(att_syntax));
+            }
         }
     }
 
+    #[inline(always)]
     fn get_kernel_table() -> PhysAddr {
-        unsafe { controlregs::cr3() as usize }
-            .align_down(page_size())
-            .into()
+        unsafe {
+            let ret: usize;
+            asm!("mov %cr3, {0}", out(reg) ret, options(att_syntax));
+            ret
+        }
+        .align_down(page_size())
+        .into()
     }
 
     fn set_user_table(_addr: PhysAddr) {

@@ -33,13 +33,11 @@ pub fn primary_entry(boot_info: BootInfo) -> ! {
 fn phys_sp_entry() -> ! {
     println!("SP moved");
     setup();
-    let table = new_mapped_table(true);
-    Arch::set_kernel_table(table);
-    unsafe {
-        x86::tlb::flush_all();
-    }
     let sp = STACK_TOP;
     printkv!("Stack top", "{:#x}", sp);
+
+    let table = new_mapped_table(true);
+    Arch::set_kernel_table(table);
 
     unsafe {
         asm!(
