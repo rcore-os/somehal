@@ -3,7 +3,6 @@ use core::arch::asm;
 use entry::primary_entry;
 use kmem_region::IntAlign;
 use paging::new_pte_with_config;
-use x86::controlregs;
 
 use crate::{archif::*, mem::page::page_size, platform};
 
