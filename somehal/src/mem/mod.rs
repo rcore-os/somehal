@@ -261,18 +261,20 @@ fn detect_link_space() {
         ".text.boot",
         pie_boot::boot_text(),
         MemConfig {
-            access: AccessFlags::Read | AccessFlags::Execute | AccessFlags::Write,
+            access: AccessFlags::Read  
+            // | AccessFlags::Write
+            | AccessFlags::Execute,
             cache: CacheConfig::Normal,
         },
     ));
-    mem_region_add(link_section_to_kspace(
-        ".data.boot",
-        pie_boot::boot_data(),
-        MemConfig {
-            access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
-            cache: CacheConfig::Normal,
-        },
-    ));
+    // mem_region_add(link_section_to_kspace(
+    //     ".data.boot",
+    //     pie_boot::boot_data(),
+    //     MemConfig {
+    //         access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
+    //         cache: CacheConfig::Normal,
+    //     },
+    // ));
     mem_region_add(link_section_to_kspace(".text", text(), MemConfig {
         access: AccessFlags::Read | AccessFlags::Execute,
         cache: CacheConfig::Normal,
@@ -320,8 +322,6 @@ pub(crate) fn clean_bss() {
     }
 }
 
-// fn_link_section!(BootText);
-// fn_link_section!(BootData);
 fn_link_section!(text);
 fn_link_section!(rodata);
 fn_link_section!(bss);

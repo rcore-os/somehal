@@ -230,25 +230,25 @@ pub fn new_test_table2() -> kmem_region::PhysAddr {
     let mut table = handle_err!(Table::create_empty(access));
 
     unsafe {
-        // handle_err!(table.map(
-        //     MapConfig {
-        //         vaddr: 0xffffe00000200000.into(),
-        //         paddr: 0x200000usize.into(),
-        //         size: GB,
-        //         pte: Arch::new_pte_with_config(MemConfig {
-        //             access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
-        //             cache: kmem_region::region::CacheConfig::Normal
-        //         }),
-        //         allow_huge: true,
-        //         flush: false,
-        //     },
-        //     access,
-        // ));
         handle_err!(table.map(
             MapConfig {
-                vaddr: 0xffffe00000200000.into(),
-                paddr: 0x200000usize.into(),
-                size: 0x251000 - 0x200000,
+                vaddr: 0x0.into(),
+                paddr: 0x0usize.into(),
+                size: 0x100000000,
+                pte: Arch::new_pte_with_config(MemConfig {
+                    access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
+                    cache: kmem_region::region::CacheConfig::Normal
+                }),
+                allow_huge: true,
+                flush: false,
+            },
+            access,
+        ));
+        handle_err!(table.map(
+            MapConfig {
+                vaddr: 0x0.into(),
+                paddr: 0x0usize.into(),
+                size: 0x100000000,
                 pte: Arch::new_pte_with_config(MemConfig {
                     access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
                     cache: kmem_region::region::CacheConfig::Normal
@@ -264,21 +264,6 @@ pub fn new_test_table2() -> kmem_region::PhysAddr {
                 vaddr: 0xffffefffffe00000.into(),
                 paddr: 0x0000000007a00000usize.into(),
                 size: 0x7c00000 - 0x7a00000,
-                pte: Arch::new_pte_with_config(MemConfig {
-                    access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
-                    cache: kmem_region::region::CacheConfig::Normal
-                }),
-                allow_huge: true,
-                flush: false,
-            },
-            access,
-        ));
-
-        handle_err!(table.map(
-            MapConfig {
-                vaddr: 0xffff800000352000.into(),
-                paddr: 0x352000usize.into(),
-                size: 0x0000000007a00000 - 0x0000000000352000,
                 pte: Arch::new_pte_with_config(MemConfig {
                     access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
                     cache: kmem_region::region::CacheConfig::Normal

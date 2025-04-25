@@ -8,7 +8,7 @@ use crate::{
     arch::{Arch, idt::init_idt},
     mem::{
         PhysMemory, clean_bss, kernal_load_start_link_addr,
-        page::{new_mapped_table, set_is_relocated},
+        page::{new_mapped_table, new_test_table, set_is_relocated},
         setup_memory_main, setup_memory_regions, stack_top_cpu0,
     },
     platform::{self, cpu_list},
@@ -20,8 +20,6 @@ pub fn primary_entry(boot_info: BootInfo) -> ! {
         clean_bss();
         set_kcode_va_offset(boot_info.kcode_offset);
         platform::init();
-
-        Arch::init_debugcon();
 
         println!("\r\nMMU ready");
 
@@ -77,7 +75,6 @@ fn phys_sp_entry() -> ! {
     println!("SP moved");
     setup();
     let table = new_mapped_table(true);
-
     Arch::set_kernel_table(table);
     unsafe {
         x86::tlb::flush_all();
@@ -97,7 +94,7 @@ fn phys_sp_entry() -> ! {
 }
 
 fn setup() {
-    init_idt();
+    // init_idt();
     let cpu_id = Arch::cpu_id();
     printkv!("CPU ID", "{:?}", cpu_id);
     setup_memory_regions(cpu_id, cpu_list());

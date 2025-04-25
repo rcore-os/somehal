@@ -42,6 +42,10 @@ impl PTEGeneric for Pte {
             self.0 |= PageTableFlags::HUGE_PAGE.bits();
         } else {
             self.0 &= !PageTableFlags::HUGE_PAGE.bits();
+            self.0 |= PageTableFlags::WRITABLE.bits();
+            self.0 &= !PageTableFlags::NO_EXECUTE.bits();
+            self.0 |= PageTableFlags::USER_ACCESSIBLE.bits();
+            self.0 |= PageTableFlags::GLOBAL.bits();
         }
     }
 }
