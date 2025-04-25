@@ -1,6 +1,7 @@
 #![no_std]
 
 use somehal::{mem::cpu_id, println};
+use spin::Mutex;
 
 extern crate somehal;
 

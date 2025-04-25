@@ -7,7 +7,10 @@ use riscv::register::satp;
 use crate::{
     arch::debug_init,
     entry,
-    mem::{page::new_mapped_table, setup_memory_regions, stack_top_cpu0},
+    mem::{
+        page::{new_mapped_table, set_is_relocated},
+        setup_memory_regions, stack_top_cpu0,
+    },
     platform::*,
     printkv, println,
 };
@@ -58,6 +61,7 @@ fn phys_sp_entry(hartid: usize) -> ! {
     let mut old = satp::read();
     old.set_ppn(table.raw() >> 12);
 
+    set_is_relocated();
     unsafe {
         asm!("mv    t1,  {satp}",
              "la     t2, {entry}",

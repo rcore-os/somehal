@@ -139,9 +139,11 @@ pub fn region_virt_to_phys<'a, I: Iterator<Item = &'a MemRegion> + 'a>(
     v: VirtAddr,
 ) -> PhysAddr {
     for region in regions {
-        if v >= region.virt_start && v < region.virt_start + region.size {
+        let end = region.virt_start + region.size;
+        if region.virt_start <= v && v < end {
             return region.phys_start + (v - region.virt_start);
         }
     }
+    
     panic!("region_virt_to_phys: not found")
 }

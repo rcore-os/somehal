@@ -15,11 +15,14 @@ static mut IS_RELOCATED: bool = false;
 
 pub type Table<'a> = PageTableRef<'a, <Arch as ArchIf>::PageTable>;
 
-#[allow(unused)]
 pub(crate) fn set_is_relocated() {
     unsafe {
         IS_RELOCATED = true;
     }
+}
+
+pub(crate) fn is_relocated() -> bool {
+    unsafe { IS_RELOCATED }
 }
 
 pub const fn page_size() -> usize {
@@ -68,7 +71,7 @@ pub fn new_mapped_table(is_line_map_main: bool) -> kmem_region::PhysAddr {
 
     let mut table = handle_err!(Table::create_empty(access));
 
-    for region in MEM_REGIONS.clone() {
+    for region in MEM_REGIONS.iter() {
         unsafe {
             handle_err!(table.map(
                 MapConfig {

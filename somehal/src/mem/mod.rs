@@ -34,7 +34,7 @@ pub type PhysMemoryArray = Vec<PhysMemory, 12>;
 
 static MEMORY_MAIN: OnceStatic<PhysMemory> = OnceStatic::new();
 static mut CPU_COUNT: usize = 1;
-static MEM_REGIONS: OnceStatic<Vec<MemRegion, 32>> = OnceStatic::new();
+static MEM_REGIONS: OnceStatic<Vec<MemRegion, 128>> = OnceStatic::new();
 static STACK_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
 // 除主CPU 外，其他CPU的独占Data
 static PERCPU_OTHER_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
@@ -213,6 +213,8 @@ pub(crate) fn setup_memory_regions(cpu0_id: CpuId, cpu_list: impl Iterator<Item 
     for r in platform::memory_regions() {
         mem_region_add(r);
     }
+
+    print_regions();
 }
 
 pub(crate) fn kernal_load_start_link_addr() -> usize {
@@ -223,21 +225,27 @@ pub(crate) fn kernal_load_start_link_addr() -> usize {
     __kernel_load_vma as _
 }
 
+fn print_regions() {
+    let mut regions = MEM_REGIONS.clone();
+    regions.sort_by(|a, b| a.phys_start.cmp(&b.phys_start));
+    for region in regions {
+        println!(
+            "region {:<17}: [{:?}, {:?}) -> [{:?}, {:?}) {:?} {:?} {}",
+            region.name,
+            region.virt_start,
+            region.virt_start + region.size,
+            region.phys_start,
+            region.phys_start + region.size,
+            region.config,
+            region.kind,
+            if region.size == 0 { "skip empty" } else { "" }
+        );
+    }
+}
+
 fn mem_region_add(mut region: MemRegion) {
     let size = region.size.align_up(page_size());
     region.size = size;
-
-    println!(
-        "region {:<17}: [{:?}, {:?}) -> [{:?}, {:?}) {:?} {:?} {}",
-        region.name,
-        region.virt_start,
-        region.virt_start + region.size,
-        region.phys_start,
-        region.phys_start + region.size,
-        region.config,
-        region.kind,
-        if size == 0 { "skip empty" } else { "" }
-    );
 
     if size == 0 {
         return;
@@ -256,14 +264,12 @@ fn detect_link_space() {
     unsafe {
         (*MEM_REGIONS.get()).replace(regions);
     }
-    //TODO x86_64 不加 Write 会崩溃，待查
+
     mem_region_add(link_section_to_kspace(
         ".text.boot",
         pie_boot::boot_text(),
         MemConfig {
-            access: AccessFlags::Read  
-            // | AccessFlags::Write
-            | AccessFlags::Execute,
+            access: AccessFlags::Read | AccessFlags::Execute,
             cache: CacheConfig::Normal,
         },
     ));

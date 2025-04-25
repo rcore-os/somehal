@@ -21,8 +21,10 @@ pub struct Arch;
 use aarch64_cpu::registers::*;
 
 impl ArchIf for Arch {
-    fn early_debug_put(b: u8) {
-        debug::write_byte(b);
+    fn early_debug_put(b: &[u8]) {
+        for &b in b {
+            debug::write_byte(b);
+        }
     }
 
     type PageTable = paging::Table;

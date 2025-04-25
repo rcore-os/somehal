@@ -5,7 +5,11 @@ use riscv::{
     register::satp,
 };
 
-use crate::{ArchIf, mem, platform::CpuId};
+use crate::{
+    ArchIf,
+    mem::{self, page::is_relocated, virt_to_phys},
+    platform::CpuId,
+};
 
 mod entry;
 
@@ -24,12 +28,29 @@ pub struct Arch;
 
 impl ArchIf for Arch {
     #[allow(deprecated)]
-    fn early_debug_put(byte: u8) {
+    fn early_debug_put(bytes: &[u8]) {
         unsafe {
             if EXT_CONSOLE {
-                sbi_rt::console_write_byte(byte);
+                if is_relocated() {
+                    let mut ptr = virt_to_phys(bytes.as_ptr().into());
+                    let end = ptr + bytes.len();
+                    while ptr < end {
+                        let ret =
+                            sbi_rt::console_write(sbi_rt::Physical::new(end - ptr, ptr.raw(), 0));
+                        if ret.is_err() {
+                            return;
+                        }
+                        ptr += ret.value;
+                    }
+                } else {
+                    for &byte in bytes {
+                        sbi_rt::console_write_byte(byte as _);
+                    }
+                }
             } else {
-                sbi_rt::legacy::console_putchar(byte as _);
+                for &b in bytes {
+                    sbi_rt::legacy::console_putchar(b as _);
+                }
             }
         }
     }
