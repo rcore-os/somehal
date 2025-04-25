@@ -21,6 +21,7 @@ pub(crate) fn set_is_relocated() {
     }
 }
 
+#[allow(unused)]
 pub(crate) fn is_relocated() -> bool {
     unsafe { IS_RELOCATED }
 }

@@ -23,7 +23,7 @@ pub fn setup(boot_info: BootInfo) {
 
     printkv!("Code offst", "{:#X}", kcode_offset());
 
-    printkv!("Hart", "{:?}", boot_info.cpu_id);
+    printkv!("Hart", "{:#x}", boot_info.cpu_id);
 
     let cpu_count = handle_err!(platform::cpu_count());
 

@@ -12,7 +12,10 @@ use crate::{
         paging::{set_kernel_table, set_user_table},
     },
     entry,
-    mem::{page::new_mapped_table, setup_memory_regions, stack_top_cpu0},
+    mem::{
+        page::{new_mapped_table, set_is_relocated},
+        setup_memory_regions, stack_top_cpu0,
+    },
     platform::*,
     printkv, println,
 };
@@ -62,7 +65,7 @@ fn phys_sp_entry() -> ! {
             "MOV SP, {sp}",
             "B {f}",
             sp = const STACK_TOP,
-            f = sym crate::__somehal_main,
+            f = sym crate::to_main,
             options(nostack, noreturn),
         );
     }

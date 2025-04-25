@@ -8,7 +8,7 @@ use crate::{
     arch::debug_init,
     entry,
     mem::{
-        page::{new_mapped_table, set_is_relocated},
+        page::new_mapped_table,
         setup_memory_regions, stack_top_cpu0,
     },
     platform::*,
@@ -61,12 +61,11 @@ fn phys_sp_entry(hartid: usize) -> ! {
     let mut old = satp::read();
     old.set_ppn(table.raw() >> 12);
 
-    set_is_relocated();
     unsafe {
         asm!("mv    t1,  {satp}",
              "la     t2, {entry}",
             satp = in(reg) old.bits(),
-            entry = sym crate::__somehal_main
+            entry = sym crate::to_main
         );
         asm!(
             "li    sp, {sp}",

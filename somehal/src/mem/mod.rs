@@ -322,11 +322,9 @@ pub(crate) fn clean_bss() {
 }
 
 fn_link_section!(text);
-fn_link_section!(rodata);
 fn_link_section!(bss);
 fn_link_section!(percpu);
 
-#[inline(always)]
 fn rwdata() -> &'static [u8] {
     unsafe extern "C" {
         fn __srwdata();
@@ -337,6 +335,20 @@ fn rwdata() -> &'static [u8] {
     unsafe {
         let start = __srwdata as usize;
         let stop = __erwdata as usize;
+        core::slice::from_raw_parts(start as *const u8, stop - start)
+    }
+}
+
+fn rodata() -> &'static [u8] {
+    unsafe extern "C" {
+        fn __srodata();
+
+        fn __erodata();
+
+    }
+    unsafe {
+        let start = __srodata as usize;
+        let stop = __erodata as usize;
         core::slice::from_raw_parts(start as *const u8, stop - start)
     }
 }

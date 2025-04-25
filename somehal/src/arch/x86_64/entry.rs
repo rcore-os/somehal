@@ -7,10 +7,7 @@ use crate::{
     ArchIf,
     arch::{Arch, idt::init_idt},
     entry,
-    mem::{
-        page::{new_mapped_table, set_is_relocated},
-        setup_memory_regions, stack_top_cpu0,
-    },
+    mem::{page::new_mapped_table, setup_memory_regions, stack_top_cpu0},
     platform::cpu_list,
     printkv, println,
 };
@@ -63,12 +60,11 @@ fn setup() {
 }
 
 fn virt_sp_entry() -> ! {
-    set_is_relocated();
     let table = new_mapped_table(false);
     Arch::set_kernel_table(table);
     unsafe {
         x86::tlb::flush_all();
     }
 
-    unsafe { crate::__somehal_main() }
+    unsafe { crate::to_main() }
 }

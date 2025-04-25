@@ -13,13 +13,16 @@ SECTIONS
         *(.text .text.*)
     } 
 
-    rodata : ALIGN(4K) {
+    .rodata : ALIGN(4K) {
+        __srodata = .;
         *(.rodata .rodata.*)
         *(.srodata*)
         *(.got .got.*)
     } 
+    __custom_rodata = .;
     
     .data : ALIGN(4K) {
+        __erodata = .;
         __srwdata = .;
         *(.data*)
         . = ALIGN(4K);
@@ -27,7 +30,7 @@ SECTIONS
         *(.sdata.*)
     } 
     . = ALIGN(4K);
-    __custom_data = .;
+    __custom_rwdata = .;
 
     percpu : ALIGN(4K) {
         __kernel_load_size = . - __kernel_load_vma;

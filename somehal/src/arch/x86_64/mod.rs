@@ -17,8 +17,8 @@ mod uart16550;
 pub struct Arch;
 
 impl ArchIf for Arch {
-    fn early_debug_put(byte: u8) {
-        uart16550::write_bytes(&[byte]);
+    fn early_debug_put(bytes: &[u8]) {
+        uart16550::write_bytes(bytes);
     }
 
     type PageTable = paging::Table;
