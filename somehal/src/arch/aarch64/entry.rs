@@ -1,8 +1,8 @@
 use core::arch::asm;
 
 use aarch64_cpu::registers::*;
-use kmem_region::region::{STACK_TOP, set_kcode_va_offset};
-use pie_boot::{BootInfo, MemoryKind};
+use kmem_region::region::STACK_TOP;
+use pie_boot::BootInfo;
 
 use super::debug;
 use crate::{
@@ -11,52 +11,20 @@ use crate::{
         Arch, cache,
         paging::{set_kernel_table, set_user_table},
     },
-    handle_err,
-    mem::{
-        PhysMemory, clean_bss, kernal_load_start_link_addr, page::new_mapped_table,
-        setup_memory_main, setup_memory_regions, stack_top_cpu0,
-    },
+    entry,
+    mem::{page::new_mapped_table, setup_memory_regions, stack_top_cpu0},
     platform::*,
     printkv, println,
 };
 
 pub fn primary_entry(boot_info: BootInfo) {
     unsafe {
-        clean_bss();
         cache::dcache_all(cache::DcacheOp::CleanAndInvalidate);
-
-        set_kcode_va_offset(boot_info.kcode_offset);
-        set_fdt_info(boot_info.fdt);
         debug::init();
-
-        println!("MMU ready!");
-
-        printkv!(
-            "Kernel LMA",
-            "{:#X}",
-            kernal_load_start_link_addr() - boot_info.kcode_offset
-        );
-
+        println!();
         printkv!("Current EL", "{}", CurrentEL.read(CurrentEL::EL));
 
-        let cpu_count = handle_err!(cpu_count(), "could not get cpu count");
-
-        printkv!("CPU count", "{}", cpu_count);
-
-        let reserved_memories = boot_info.memory_regions.filter_map(|o| {
-            if matches!(o.kind, MemoryKind::Reserved) {
-                Some(PhysMemory {
-                    addr: o.start.into(),
-                    size: o.end - o.start,
-                })
-            } else {
-                None
-            }
-        });
-
-        let memories = handle_err!(find_memory(), "could not get memories");
-
-        setup_memory_main(reserved_memories, memories.into_iter(), cpu_count);
+        entry::setup(boot_info);
 
         let sp = stack_top_cpu0();
 

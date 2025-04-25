@@ -43,6 +43,9 @@ macro_rules! print {
 
 #[macro_export]
 macro_rules! println {
+    ()=>{
+        $crate::console::write_bytes(b"\r\n");
+    };
     ($($arg:tt)*) => {
         $crate::print!("{}\r\n", format_args!($($arg)*))
     };

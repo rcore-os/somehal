@@ -1,6 +1,7 @@
 use aarch64_cpu::asm::wfe;
 use entry::primary_entry;
 use page_table_generic::TableGeneric;
+use pie_boot::BootInfo;
 
 use crate::{
     ArchIf,
@@ -64,7 +65,7 @@ impl ArchIf for Arch {
         ((MPIDR_EL1.get() & 0xffffff) as usize).into()
     }
 
-    fn primary_entry(boot_info: pie_boot::BootInfo) {
+    fn primary_entry(boot_info: BootInfo) {
         primary_entry(boot_info);
     }
 }

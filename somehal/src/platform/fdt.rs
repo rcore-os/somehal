@@ -5,6 +5,7 @@ use kmem_region::{
     IntAlign,
     region::{AccessFlags, CacheConfig, MemConfig, MemRegionKind, kcode_offset},
 };
+use pie_boot::BootInfo;
 
 use crate::{
     _alloc::*,
@@ -17,6 +18,15 @@ use crate::{
 static mut FDT_ADDR: usize = 0;
 static mut FDT_LEN: usize = 0;
 static MEM_REGION_DEBUG_CON: OnceStatic<MemRegion> = OnceStatic::new();
+
+pub(crate) unsafe fn init(boot_info: &BootInfo) {
+    unsafe {
+        if let Some((ptr, len)) = boot_info.fdt {
+            FDT_ADDR = ptr.as_ptr() as _;
+            FDT_LEN = len;
+        }
+    };
+}
 
 pub fn find_memory() -> Result<PhysMemoryArray, FdtError<'static>> {
     let mut mems = PhysMemoryArray::new();
@@ -97,14 +107,6 @@ pub fn init_debugcon() -> Option<any_uart::Uart> {
     unsafe { MEM_REGION_DEBUG_CON.init(region) };
 
     Some(uart)
-}
-pub(crate) unsafe fn set_fdt_info(info: Option<(NonNull<u8>, usize)>) {
-    unsafe {
-        if let Some((ptr, len)) = info {
-            FDT_ADDR = ptr.as_ptr() as _;
-            FDT_LEN = len;
-        }
-    };
 }
 
 fn fdt_ptr() -> *mut u8 {

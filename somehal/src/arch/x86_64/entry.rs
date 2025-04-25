@@ -1,55 +1,23 @@
 use core::arch::asm;
 
-use kmem_region::region::{STACK_TOP, kcode_offset, set_kcode_va_offset};
-use pie_boot::{BootInfo, MemoryKind};
+use kmem_region::region::STACK_TOP;
+use pie_boot::BootInfo;
 
 use crate::{
-    arch::{idt::init_idt, Arch}, mem::{
-        clean_bss, kernal_load_start_link_addr, page::{new_mapped_table, set_is_relocated}, setup_memory_main, setup_memory_regions, stack_top_cpu0, PhysMemory
-    }, platform::{self, cpu_list}, printkv, println, ArchIf
+    ArchIf,
+    arch::{Arch, idt::init_idt},
+    entry,
+    mem::{
+        page::{new_mapped_table, set_is_relocated},
+        setup_memory_regions, stack_top_cpu0,
+    },
+    platform::cpu_list,
+    printkv, println,
 };
 
 pub fn primary_entry(boot_info: BootInfo) -> ! {
     unsafe {
-        clean_bss();
-        set_kcode_va_offset(boot_info.kcode_offset);
-        platform::init();
-
-        println!("\r\nMMU ready");
-
-        printkv!(
-            "Kernel LMA",
-            "{:#X}",
-            kernal_load_start_link_addr() - boot_info.kcode_offset
-        );
-
-        printkv!("Code offst", "{:#X}", kcode_offset());
-
-        let cpu_count = platform::cpu_count();
-
-        let reserved_memories = boot_info.memory_regions.clone().filter_map(|o| {
-            if matches!(o.kind, MemoryKind::Reserved) {
-                Some(PhysMemory {
-                    addr: o.start.into(),
-                    size: o.end - o.start,
-                })
-            } else {
-                None
-            }
-        });
-
-        let memories = boot_info.memory_regions.filter_map(|o| {
-            if matches!(o.kind, MemoryKind::Avilable) {
-                Some(PhysMemory {
-                    addr: o.start.into(),
-                    size: o.end - o.start,
-                })
-            } else {
-                None
-            }
-        });
-
-        setup_memory_main(reserved_memories, memories, cpu_count);
+        entry::setup(boot_info);
 
         let sp = stack_top_cpu0();
 

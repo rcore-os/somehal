@@ -10,7 +10,6 @@ SECTIONS
     text : ALIGN(4K) {
         *any_uart-*.o*(.text*)
         *fdt-parser-*.o*(.text*)
-        *page_table_generic-*.o*(.text*)
         *(.text .text.*)
     } 
 
@@ -27,6 +26,8 @@ SECTIONS
         __global_pointer$ = . + 0x800;
         *(.sdata.*)
     } 
+    . = ALIGN(4K);
+    __custom_data = .;
 
     percpu : ALIGN(4K) {
         __kernel_load_size = . - __kernel_load_vma;
