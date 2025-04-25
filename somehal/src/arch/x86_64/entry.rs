@@ -66,5 +66,5 @@ fn virt_sp_entry() -> ! {
         x86::tlb::flush_all();
     }
 
-    unsafe { crate::to_main() }
+    crate::to_main()
 }
