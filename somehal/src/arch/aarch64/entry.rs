@@ -23,7 +23,6 @@ use crate::{
 pub fn primary_entry(boot_info: BootInfo) {
     unsafe {
         cache::dcache_all(cache::DcacheOp::CleanAndInvalidate);
-        debug::init();
         println!();
         printkv!("Current EL", "{}", CurrentEL.read(CurrentEL::EL));
 

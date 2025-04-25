@@ -10,7 +10,7 @@ pub unsafe extern "Rust" fn __vma_relocate_entry(boot_info: BootInfo) {
         set_kcode_va_offset(boot_info.kcode_offset);
         platform::init(&boot_info);
     }
-
+    Arch::init_debugcon();
     Arch::primary_entry(boot_info);
 }
 

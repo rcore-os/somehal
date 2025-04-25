@@ -1,5 +1,6 @@
 use core::arch::asm;
 
+use any_uart::Uart;
 use kmem_region::region::STACK_TOP;
 use pie_boot::BootInfo;
 
@@ -14,6 +15,8 @@ use crate::{
 
 pub fn primary_entry(boot_info: BootInfo) -> ! {
     unsafe {
+        println!();
+       
         entry::setup(boot_info);
 
         let sp = stack_top_cpu0();

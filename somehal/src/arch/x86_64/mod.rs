@@ -7,17 +7,19 @@ use paging::new_pte_with_config;
 use crate::{archif::*, mem::page::page_size, platform};
 
 mod context;
+mod debug;
 mod entry;
 mod idt;
 pub(crate) mod paging;
 mod trap;
-mod uart16550;
 
 pub struct Arch;
 
 impl ArchIf for Arch {
     fn early_debug_put(bytes: &[u8]) {
-        uart16550::write_bytes(bytes);
+        for &b in bytes {
+            debug::write_byte(b);
+        }
     }
 
     type PageTable = paging::Table;
@@ -71,8 +73,7 @@ impl ArchIf for Arch {
     }
 
     fn init_debugcon() {
-        uart16550::init();
-
+        debug::init();
         platform::init_debugcon();
     }
 

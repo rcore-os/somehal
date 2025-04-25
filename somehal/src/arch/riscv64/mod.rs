@@ -17,13 +17,6 @@ pub(crate) mod paging;
 
 static mut EXT_CONSOLE: bool = false;
 
-fn debug_init() {
-    let info = sbi_rt::probe_extension(sbi_rt::Console);
-    unsafe {
-        EXT_CONSOLE = info.is_available();
-    }
-}
-
 pub struct Arch;
 
 impl ArchIf for Arch {
@@ -93,7 +86,12 @@ impl ArchIf for Arch {
         riscv::asm::wfi();
     }
 
-    fn init_debugcon() {}
+    fn init_debugcon() {
+        let info = sbi_rt::probe_extension(sbi_rt::Console);
+        unsafe {
+            EXT_CONSOLE = info.is_available();
+        }
+    }
 
     fn cpu_id() -> CpuId {
         mem::cpu_id()

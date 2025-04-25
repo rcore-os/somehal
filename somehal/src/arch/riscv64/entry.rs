@@ -5,18 +5,13 @@ use pie_boot::BootInfo;
 use riscv::register::satp;
 
 use crate::{
-    arch::debug_init,
     entry,
-    mem::{
-        page::new_mapped_table,
-        setup_memory_regions, stack_top_cpu0,
-    },
+    mem::{page::new_mapped_table, setup_memory_regions, stack_top_cpu0},
     platform::*,
     printkv, println,
 };
 
 pub fn primary_entry(boot_info: BootInfo) {
-    debug_init();
     unsafe {
         println!();
 

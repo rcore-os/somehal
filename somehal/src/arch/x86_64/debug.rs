@@ -1,11 +1,7 @@
 use core::cell::UnsafeCell;
 
-use crate::{mem::MemRegion, once_static::OnceStatic};
-
 use any_uart::Sender;
-use kmem::region::OFFSET_LINER;
 
-pub(super) static MEM_REGION_DEBUG_CON: OnceStatic<MemRegion> = OnceStatic::new();
 static UART: UartWapper = UartWapper(UnsafeCell::new(None));
 
 struct UartWapper(UnsafeCell<Option<Sender>>);
@@ -27,8 +23,8 @@ impl UartWapper {
 }
 
 pub(crate) fn init() {
-    unsafe {
-    }
+    let uart = any_uart::Uart::new_port_8250(0x3f8);
+    set_uart(uart);
 }
 
 fn set_uart(uart: any_uart::Uart) -> Option<()> {
