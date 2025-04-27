@@ -1,6 +1,5 @@
 use core::arch::asm;
 
-use any_uart::Uart;
 use kmem_region::region::STACK_TOP;
 use pie_boot::BootInfo;
 

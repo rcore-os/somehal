@@ -110,6 +110,7 @@ pub(crate) fn memory_regions() -> vec::Vec<MemRegion> {
 
 pub fn init_debugcon() -> Option<any_uart::Uart> {
     let s = ACPI_TABLE.find_table::<spcr::Spcr>().ok()?;
+    println!("found spcr");
 
     let addr = s.base_address()?.ok()?;
 
