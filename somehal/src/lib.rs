@@ -2,7 +2,6 @@
 #![feature(naked_functions)]
 #![feature(concat_idents)]
 #![feature(used_with_arg)]
-#![feature(cfg_match)]
 #![feature(fn_align)]
 #![feature(allocator_api)]
 
@@ -44,3 +43,8 @@ pub(crate) fn to_main() -> ! {
         __somehal_main();
     }
 }
+
+/// Init hal
+/// # Safety
+/// This function must be called after the `#[global_allocater]` is initialized, and before device usages.
+pub unsafe fn init() {}

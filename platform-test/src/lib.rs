@@ -11,5 +11,10 @@ fn main(_cpu_id: usize, _dtb: usize) -> ! {
     println!("Hello, world!");
     println!("cpu_id: {:?}", cpu_id());
 
+    lang_items::init_heap();
+    unsafe {
+        somehal::init();
+    }
+
     unimplemented!()
 }

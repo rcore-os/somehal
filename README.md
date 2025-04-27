@@ -1,5 +1,10 @@
 # Somehal
 
+## Requirements
+
+* Rust nightly
+* #[global_allocator] impl
+
 ## Test
 
 ```bash

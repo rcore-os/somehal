@@ -88,6 +88,12 @@ pub(crate) fn setup_memory_main(
                 size,
             });
         } else {
+            let kind = if phys_start.raw() + size < text().as_ptr() as usize {
+                MemRegionKind::Reserved
+            } else {
+                MemRegionKind::Memory
+            };
+
             mem_region_add(MemRegion {
                 virt_start: (phys_start.raw() + OFFSET_LINER).into(),
                 size,
@@ -97,7 +103,7 @@ pub(crate) fn setup_memory_main(
                     access: AccessFlags::Read | AccessFlags::Write,
                     cache: CacheConfig::Normal,
                 },
-                kind: MemRegionKind::Memory,
+                kind,
             });
         }
     }
