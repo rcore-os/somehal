@@ -90,7 +90,7 @@ pub fn init_debugcon() -> Option<any_uart::Uart> {
     let uart = any_uart::Uart::new_by_fdt_node(&node, phys_to_virt)?;
 
     let reg = node.reg()?.next()?;
-    let phys_start = reg.address as usize;
+    let phys_start = (reg.address as usize).align_down(page_size());
 
     let region = MemRegion {
         virt_start: (phys_start + OFFSET_LINER).into(),
