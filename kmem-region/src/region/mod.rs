@@ -132,7 +132,7 @@ pub fn region_phys_to_virt<'a, I: Iterator<Item = &'a MemRegion> + 'a>(
             return region.virt_start + (p - region.phys_start);
         }
     }
-    panic!("region_phys_to_virt: not found")
+    (p.raw() + OFFSET_LINER).into()
 }
 
 pub fn region_virt_to_phys<'a, I: Iterator<Item = &'a MemRegion> + 'a>(
@@ -145,6 +145,5 @@ pub fn region_virt_to_phys<'a, I: Iterator<Item = &'a MemRegion> + 'a>(
             return region.phys_start + (v - region.virt_start);
         }
     }
-
-    panic!("region_virt_to_phys: not found")
+    (v.raw() - OFFSET_LINER).into()
 }

@@ -220,3 +220,8 @@ pub fn aarch64_trap_handler(args: TokenStream, input: TokenStream) -> TokenStrea
         Aarch64TrapHandlerKind::SError => arch::aarch64::trap_handle_irq(func).into(),
     }
 }
+
+#[proc_macro]
+pub fn module_driver(input: TokenStream) -> TokenStream {
+    rdrive_macro_utils::module_driver_with_linker(input, "rdrive", None)
+}

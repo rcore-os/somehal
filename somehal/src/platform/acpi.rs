@@ -118,3 +118,5 @@ pub fn init_debugcon() -> Option<any_uart::Uart> {
 
     None
 }
+
+pub fn init_rdrive() {}

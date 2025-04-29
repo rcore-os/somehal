@@ -13,6 +13,7 @@ repository.workspace = true
 somehal = { path = "../somehal" }
 linked_list_allocator = "0.10"
 spin = "0.10"
+log = "0.4"
 
 [[test]]
 name = "test"

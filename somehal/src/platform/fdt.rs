@@ -9,7 +9,10 @@ use pie_boot::BootInfo;
 
 use crate::{
     _alloc::*,
-    mem::{page::page_size, *},
+    mem::{
+        page::{is_relocated, page_size},
+        *,
+    },
     once_static::OnceStatic,
     platform::CpuId,
     println,
@@ -110,7 +113,7 @@ pub fn init_debugcon() -> Option<any_uart::Uart> {
 }
 
 fn fdt_ptr() -> *mut u8 {
-    unsafe { FDT_ADDR as _ }
+    (unsafe { FDT_ADDR + if is_relocated() { kcode_offset() } else { 0 } }) as _
 }
 
 fn get_fdt<'a>() -> Option<Fdt<'a>> {
@@ -144,4 +147,13 @@ pub(crate) fn memory_regions() -> vec::Vec<MemRegion> {
 
         vec
     }
+}
+
+pub fn init_rdrive() {
+    let fdt = fdt_ptr();
+    assert!(!fdt.is_null(), "fdt addr is null");
+
+    rdrive::init(rdrive::DriverInfoKind::Fdt {
+        addr: NonNull::new(fdt).unwrap(),
+    });
 }

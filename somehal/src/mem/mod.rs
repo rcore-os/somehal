@@ -1,4 +1,4 @@
-use core::alloc::Layout;
+use core::{alloc::Layout, ops::Deref};
 
 use heap::HEAP;
 use heapless::Vec;
@@ -7,6 +7,7 @@ use kmem_region::region::{
     kcode_offset, region_phys_to_virt, region_virt_to_phys,
 };
 pub use kmem_region::{region::MemRegion, *};
+use rdrive::{DriverRegister, DriverRegisterSlice};
 use somehal_macros::fn_link_section;
 
 use crate::{
@@ -370,4 +371,22 @@ pub fn phys_to_virt(p: PhysAddr) -> VirtAddr {
 
 pub fn virt_to_phys(v: VirtAddr) -> PhysAddr {
     region_virt_to_phys(MEM_REGIONS.iter(), v)
+}
+
+pub fn driver_registers() -> impl Deref<Target = [DriverRegister]> {
+    unsafe extern "C" {
+        fn __sdriver_register();
+        fn __edriver_register();
+    }
+
+    unsafe {
+        let len = __edriver_register as usize - __sdriver_register as usize;
+
+        if len == 0 {
+            return DriverRegisterSlice::empty();
+        }
+
+        let data = core::slice::from_raw_parts(__sdriver_register as _, len);
+        DriverRegisterSlice::from_raw(data)
+    }
 }

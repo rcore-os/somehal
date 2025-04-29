@@ -25,14 +25,17 @@ pub mod arch;
 mod archif;
 pub mod console;
 mod entry;
+pub mod irq;
 pub mod mem;
 pub(crate) mod once_static;
 pub(crate) mod platform;
 
 pub(crate) use archif::ArchIf;
 
+use log::info;
 use mem::page::set_is_relocated;
-pub use somehal_macros::entry;
+pub use rdrive as driver;
+pub use somehal_macros::{entry, module_driver};
 
 pub(crate) fn to_main() -> ! {
     unsafe extern "C" {
@@ -47,4 +50,12 @@ pub(crate) fn to_main() -> ! {
 /// Init hal
 /// # Safety
 /// This function must be called after the `#[global_allocater]` is initialized, and before device usages.
-pub unsafe fn init() {}
+pub unsafe fn init() {
+    platform::init_rdrive();
+
+    driver::register_append(&mem::driver_registers());
+
+    irq::init();
+
+    info!("probe intc done");
+}

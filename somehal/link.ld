@@ -18,6 +18,10 @@ SECTIONS
         *(.rodata .rodata.*)
         *(.srodata*)
         *(.got .got.*)
+
+        __sdriver_register = .;
+        *(.driver.register*)
+        __edriver_register = .;
     } 
     
     .data : ALIGN(__page_size) {

@@ -58,6 +58,7 @@ pub struct PageTableRef<'a, T: TableGeneric> {
 }
 
 impl<'a, T: TableGeneric> PageTableRef<'a, T> {
+
     #[inline(always)]
     /// Creates a new page table reference.
     pub fn create_empty(access: &mut impl Access) -> PagingResult<Self> {
@@ -72,6 +73,11 @@ impl<'a, T: TableGeneric> PageTableRef<'a, T> {
         assert!(level > 0);
         let addr = unsafe { Self::alloc_table(access)? };
         Ok(PageTableRef::from_addr(addr, level))
+    }
+
+    #[inline(always)]
+    pub fn root_from_addr(addr: PhysAddr) -> Self {
+        PageTableRef::from_addr(addr, T::LEVEL)
     }
 
     #[inline(always)]
