@@ -6,7 +6,5 @@ rustflags = [
     "-C",
     "link-arg=-znostart-stop-gc",
     "-C",
-    "link-arg=-Tlink.x",
-    "-C",
     "link-arg=-no-pie",
 ]

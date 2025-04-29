@@ -8,7 +8,7 @@ SECTIONS{
         KEEP(*pie_boot-*.o*(.text*))
         __stop_boot_text = .;
     } 
-    .boot.data : ALIGN(4K) {
+    .boot.data : ALIGN(__page_size) {
         __start_boot_data = .;
         *pie_boot-*.o*(.rodata* .srodata*  .got* .data* .sdata* .tdata*)
         __stop_boot_data = .;

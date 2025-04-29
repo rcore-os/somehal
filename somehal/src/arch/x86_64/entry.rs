@@ -60,6 +60,7 @@ fn setup() {
 }
 
 fn virt_sp_entry() -> ! {
+    // 移除低地址空间线性映射
     let table = new_mapped_table(false);
     Arch::set_kernel_table(table);
     unsafe {

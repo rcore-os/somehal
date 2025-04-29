@@ -42,6 +42,7 @@ fn main() {
 
     let content = content.replace("${VCODE}", &format!("{:#x}", kernel_load_vaddr));
     let content = content.replace("${KERNAL_LOAD_VMA}", &format!("{:#x}", kernel_load_vaddr));
+    let content = content.replace("${PAGE_SIZE}", &format!("{:#x}", page_size));
 
     let mut file =
         std::fs::File::create(out_dir().join("kmem_region.x")).expect("kmem_region.x create failed");
