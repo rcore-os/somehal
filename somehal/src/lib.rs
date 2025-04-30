@@ -30,6 +30,7 @@ pub mod mem;
 pub(crate) mod once_static;
 pub(crate) mod platform;
 pub mod power;
+pub mod systime;
 
 pub(crate) use archif::ArchIf;
 

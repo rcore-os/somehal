@@ -5,6 +5,8 @@ pub use kmem_region::region::{MemConfig, MemRegion};
 pub use page_table_generic::*;
 pub use pie_boot::BootInfo;
 
+const NANO_PER_SEC: u128 = 1_000_000_000;
+
 pub trait ArchIf {
     fn early_debug_put(byte: &[u8]);
 
@@ -34,5 +36,17 @@ pub trait ArchIf {
         vec![]
     }
 
-    
+    fn current_ticks() -> u64;
+
+    fn tick_hz() -> u64;
+
+    /// Converts hardware ticks to nanoseconds.
+    fn ticks_to_nanos(ticks: u64) -> u128 {
+        ticks as u128 * NANO_PER_SEC / Self::tick_hz() as u128
+    }
+
+    /// Converts nanoseconds to hardware ticks.
+    fn nanos_to_ticks(nanos: u128) -> u64 {
+        (nanos * Self::tick_hz() as u128 / NANO_PER_SEC) as _
+    }
 }

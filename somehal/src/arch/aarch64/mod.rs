@@ -70,4 +70,12 @@ impl ArchIf for Arch {
     fn primary_entry(boot_info: BootInfo) {
         primary_entry(boot_info);
     }
+
+    fn current_ticks() -> u64 {
+        CNTPCT_EL0.get()
+    }
+
+    fn tick_hz() -> u64 {
+        CNTFRQ_EL0.get()
+    }
 }
