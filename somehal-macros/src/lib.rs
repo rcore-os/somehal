@@ -223,5 +223,5 @@ pub fn aarch64_trap_handler(args: TokenStream, input: TokenStream) -> TokenStrea
 
 #[proc_macro]
 pub fn module_driver(input: TokenStream) -> TokenStream {
-    rdrive_macro_utils::module_driver_with_linker(input, "rdrive", None)
+    rdrive_macro_utils::module_driver_with_linker(input, "somehal::driver", None)
 }

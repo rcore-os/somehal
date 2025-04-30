@@ -521,6 +521,8 @@ checksum = "f1525e2b3fb72098cb2b882ded25829fb68f153f6408fa4a27fbba5098f890ac"
 [[package]]
 name = "rdif-base"
 version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "88dfa4f4f43bb0a7d0464c4bcbbd7e8d2aa7c8db551f9fd18e609729e1e9b481"
 
 [[package]]
 name = "rdif-intc"
@@ -534,6 +536,8 @@ dependencies = [
 [[package]]
 name = "rdif-intc"
 version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "470d6a4241e7c45d032306259a41c823fd2fa88eb659ada5ce9e3a30c0d7d10a"
 dependencies = [
  "cfg-if",
  "rdif-base 0.2.0",
@@ -542,6 +546,8 @@ dependencies = [
 [[package]]
 name = "rdif-power"
 version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ac69ef4be015f79135b77c99a24950191f82e1a04e79dd46c904097df2d041a"
 dependencies = [
  "rdif-base 0.2.0",
 ]
@@ -549,6 +555,8 @@ dependencies = [
 [[package]]
 name = "rdif-timer"
 version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8bb6bfbc9d19ff79da426f1a88b7bd5063977b9c144da44ee0b3847e9032055e"
 dependencies = [
  "rdif-base 0.2.0",
 ]
@@ -556,6 +564,8 @@ dependencies = [
 [[package]]
 name = "rdrive"
 version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3a9b28a91d7f0950b21118642471a9fc6e2628d58fda0bfe00dc24a6464a0af"
 dependencies = [
  "fdt-parser",
  "log",
@@ -569,9 +579,9 @@ dependencies = [
 
 [[package]]
 name = "rdrive-macro-utils"
-version = "0.2.1"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "977fcecf5b5fe8d7189d497d8754d27a4ffaedeac904cce1b7ea7bdfb5280934"
+checksum = "3fc3b642edb4cacf905ba9e193ca5eebc15fcc3695dc1b583e1f8ac2512d9f8b"
 dependencies = [
  "proc-macro2",
  "quote",
