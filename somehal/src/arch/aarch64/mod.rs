@@ -14,6 +14,7 @@ mod context;
 pub mod debug;
 mod entry;
 mod paging;
+mod psci;
 mod trap;
 
 pub struct Arch;

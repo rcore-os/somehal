@@ -589,6 +589,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rdrive-macros"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "226e248fbde1ba2e5789811572b02c57cf60e2ee0d5a0511c67463f63aea3a23"
+dependencies = [
+ "rdrive-macro-utils",
+]
+
+[[package]]
 name = "regex"
 version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -731,6 +740,7 @@ dependencies = [
  "quote",
  "raw-cpuid 11.5.0",
  "rdrive",
+ "rdrive-macros",
  "riscv",
  "riscv_goldfish",
  "sbi-rt",
