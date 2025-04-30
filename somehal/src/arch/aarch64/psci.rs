@@ -66,6 +66,7 @@ impl Interface for Psci {
 }
 
 fn probe(node: Node<'_>, dev: ProbeDevInfo) -> Result<Vec<HardwareKind>, Box<dyn Error>> {
+    drop(dev);
     let method = node
         .find_property("method")
         .ok_or("fdt no method property")?
