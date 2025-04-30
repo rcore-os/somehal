@@ -29,6 +29,7 @@ pub mod irq;
 pub mod mem;
 pub(crate) mod once_static;
 pub(crate) mod platform;
+pub mod power;
 
 pub(crate) use archif::ArchIf;
 
@@ -56,6 +57,8 @@ pub unsafe fn init() {
     driver::register_append(&mem::driver_registers());
 
     irq::init();
+
+    power::init();
 
     info!("probe intc done");
 }

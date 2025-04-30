@@ -6,7 +6,7 @@ mod macros;
 mod boot;
 mod context;
 mod mmu;
-mod trap;
+// mod trap;
 
 use crate::paging::TableGeneric;
 use mmu::new_pte_with_config;
