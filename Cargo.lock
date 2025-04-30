@@ -533,8 +533,9 @@ dependencies = [
 
 [[package]]
 name = "rdif-intc"
-version = "0.4.0"
+version = "0.4.2"
 dependencies = [
+ "cfg-if",
  "rdif-base 0.2.0",
 ]
 
@@ -559,7 +560,7 @@ dependencies = [
  "fdt-parser",
  "log",
  "rdif-base 0.2.0",
- "rdif-intc 0.4.0",
+ "rdif-intc 0.4.2",
  "rdif-power",
  "rdif-timer",
  "spin",

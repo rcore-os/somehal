@@ -1,6 +1,5 @@
 use core::alloc::Layout;
 use core::panic;
-use core::ptr::NonNull;
 
 use kmem_region::IntAlign;
 use kmem_region::allocator::LineAllocator;
