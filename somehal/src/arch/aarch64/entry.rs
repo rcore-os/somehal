@@ -43,6 +43,8 @@ pub fn primary_entry(boot_info: BootInfo) {
 fn phys_sp_entry() -> ! {
     println!("SP moved");
 
+    setup_timer();
+
     setup_memory_regions(Arch::cpu_id(), cpu_list().unwrap());
 
     println!("Memory regions setup done!");
@@ -64,5 +66,23 @@ fn phys_sp_entry() -> ! {
             f = sym crate::to_main,
             options(nostack, noreturn),
         );
+    }
+}
+
+fn setup_timer() {
+    #[cfg(not(feature = "vm"))]
+    {
+        CNTP_CTL_EL0.write(CNTP_CTL_EL0::ENABLE::SET);
+        CNTP_TVAL_EL0.set(0);
+    }
+    #[cfg(feature = "vm")]
+    {
+        unsafe {
+            // ENABLE, bit [0], Enables the timer.
+            // * 0b0: Timer disabled.
+            // * 0b1: Timer enabled.
+            core::arch::asm!("msr CNTHP_CTL_EL2, {0:x}", in(reg) 0b1);
+            core::arch::asm!("msr CNTHP_TVAL_EL2, {0:x}", in(reg) 0);
+        }
     }
 }
