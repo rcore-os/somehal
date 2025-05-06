@@ -11,7 +11,7 @@ mod debug;
 mod entry;
 mod idt;
 pub(crate) mod paging;
-mod trap;
+// mod trap;
 
 pub struct Arch;
 
@@ -86,5 +86,21 @@ impl ArchIf for Arch {
 
     fn primary_entry(boot_info: BootInfo) {
         primary_entry(boot_info);
+    }
+
+    fn current_ticks() -> u64 {
+        unsafe { core::arch::x86_64::_rdtsc() } 
+    }
+
+    fn tick_hz() -> u64 {
+        4_000_000_000
+    }
+
+    fn start_secondary_cpu(
+        cpu: CpuId,
+        entry: usize,
+        stack: usize,
+    ) -> Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        todo!()
     }
 }
