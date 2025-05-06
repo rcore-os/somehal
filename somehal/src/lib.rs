@@ -34,7 +34,6 @@ pub mod systime;
 
 pub(crate) use archif::ArchIf;
 
-use log::info;
 use mem::page::set_is_relocated;
 pub use rdrive as driver;
 pub use somehal_macros::{entry, module_driver};
@@ -61,5 +60,5 @@ pub unsafe fn init() {
 
     power::init();
 
-    info!("probe intc done");
+    systime::init();
 }
