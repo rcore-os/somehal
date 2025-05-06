@@ -13,6 +13,7 @@ mod cache;
 mod context;
 pub mod debug;
 mod entry;
+mod mp;
 mod paging;
 mod psci;
 mod trap;
@@ -78,5 +79,13 @@ impl ArchIf for Arch {
 
     fn tick_hz() -> u64 {
         CNTFRQ_EL0.get()
+    }
+
+    fn start_secondary_cpu(
+        cpu: CpuId,
+        entry: usize,
+        stack_top: usize,
+    ) -> Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        mp::cpu_on(cpu, entry, stack_top)
     }
 }

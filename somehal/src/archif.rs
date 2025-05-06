@@ -1,3 +1,5 @@
+use core::error::Error;
+
 pub use crate::_alloc::vec;
 pub use crate::mem::{PhysAddr, VirtAddr};
 pub use crate::platform::CpuId;
@@ -49,4 +51,10 @@ pub trait ArchIf {
     fn nanos_to_ticks(nanos: u128) -> u64 {
         (nanos * Self::tick_hz() as u128 / NANO_PER_SEC) as _
     }
+
+    fn start_secondary_cpu(
+        cpu: CpuId,
+        entry: usize,
+        stack: usize,
+    ) -> Result<(), alloc::boxed::Box<dyn Error>>;
 }

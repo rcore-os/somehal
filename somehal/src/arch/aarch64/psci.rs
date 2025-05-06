@@ -1,15 +1,21 @@
 use core::error::Error;
 
-use crate::driver::{
-    DriverGeneric, DriverResult,
-    power::*,
-    probe::{HardwareKind, ProbeDevInfo},
-    register::*,
+use crate::{
+    archif::CpuId,
+    driver::{
+        DriverGeneric, DriverResult,
+        power::*,
+        probe::{HardwareKind, ProbeDevInfo},
+        register::*,
+    },
+    once_static::OnceStatic,
 };
 
 use alloc::{boxed::Box, format, vec::Vec};
 use log::{debug, error};
 use smccc::{Hvc, Smc, psci};
+
+static METHOD: OnceStatic<Method> = OnceStatic::new();
 
 rdrive_macros::module_driver!(
     name: "ARM PSCI",
@@ -72,8 +78,25 @@ fn probe(node: Node<'_>, dev: ProbeDevInfo) -> Result<Vec<HardwareKind>, Box<dyn
         .ok_or("fdt no method property")?
         .str();
     let method = Method::try_from(method)?;
+    unsafe {
+        METHOD.init(method);
 
+        super::mp::init(cpu_on);
+    }
     let dev = HardwareKind::Power(Box::new(Psci { method }));
     debug!("PCSI [{:?}]", method);
     Ok(alloc::vec![dev])
+}
+
+fn cpu_on(
+    cpu_id: CpuId,
+    entry: usize,
+    stack_top: usize,
+) -> Result<(), alloc::boxed::Box<dyn Error>> {
+    let method = *METHOD;
+    match method {
+        Method::Smc => psci::cpu_on::<Smc>(cpu_id.raw() as _, entry as _, stack_top as _)?,
+        Method::Hvc => psci::cpu_on::<Hvc>(cpu_id.raw() as _, entry as _, stack_top as _)?,
+    };
+    Ok(())
 }

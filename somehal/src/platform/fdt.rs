@@ -116,7 +116,7 @@ fn fdt_ptr() -> *mut u8 {
     (unsafe { FDT_ADDR + if is_relocated() { kcode_offset() } else { 0 } }) as _
 }
 
-fn get_fdt<'a>() -> Option<Fdt<'a>> {
+pub fn get_fdt<'a>() -> Option<Fdt<'a>> {
     Fdt::from_ptr(NonNull::new(fdt_ptr())?).ok()
 }
 

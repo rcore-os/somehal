@@ -106,20 +106,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "arm-gic-driver"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e233ce5f0f51ff96685a9a094918f827fef4d78abb6c2861e23424c77956ba93"
-dependencies = [
- "aarch64-cpu",
- "bitflags 2.9.0",
- "enum_dispatch",
- "log",
- "rdif-intc 0.2.0",
- "tock-registers",
-]
-
-[[package]]
 name = "autocfg"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -222,18 +208,6 @@ checksum = "fba4268c14288c828995299e59b12babdbe170f6c6d73731af1b4648142e8605"
 dependencies = [
  "embedded-hal",
  "nb",
-]
-
-[[package]]
-name = "enum_dispatch"
-version = "0.3.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa18ce2bc66555b3218614519ac839ddb759a7d6720732f979ef8d13be147ecd"
-dependencies = [
- "once_cell",
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]
@@ -514,24 +488,9 @@ dependencies = [
 
 [[package]]
 name = "rdif-base"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1525e2b3fb72098cb2b882ded25829fb68f153f6408fa4a27fbba5098f890ac"
-
-[[package]]
-name = "rdif-base"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "88dfa4f4f43bb0a7d0464c4bcbbd7e8d2aa7c8db551f9fd18e609729e1e9b481"
-
-[[package]]
-name = "rdif-intc"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b99ea6f537664cb853acf4f265a3167edab285e866fc596fca52796d2ce8b114"
-dependencies = [
- "rdif-base 0.1.4",
-]
 
 [[package]]
 name = "rdif-intc"
@@ -540,7 +499,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "470d6a4241e7c45d032306259a41c823fd2fa88eb659ada5ce9e3a30c0d7d10a"
 dependencies = [
  "cfg-if",
- "rdif-base 0.2.0",
+ "rdif-base",
 ]
 
 [[package]]
@@ -549,7 +508,7 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ac69ef4be015f79135b77c99a24950191f82e1a04e79dd46c904097df2d041a"
 dependencies = [
- "rdif-base 0.2.0",
+ "rdif-base",
 ]
 
 [[package]]
@@ -558,7 +517,7 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8bb6bfbc9d19ff79da426f1a88b7bd5063977b9c144da44ee0b3847e9032055e"
 dependencies = [
- "rdif-base 0.2.0",
+ "rdif-base",
 ]
 
 [[package]]
@@ -569,8 +528,8 @@ checksum = "e3a9b28a91d7f0950b21118642471a9fc6e2628d58fda0bfe00dc24a6464a0af"
 dependencies = [
  "fdt-parser",
  "log",
- "rdif-base 0.2.0",
- "rdif-intc 0.4.2",
+ "rdif-base",
+ "rdif-intc",
  "rdif-power",
  "rdif-timer",
  "spin",
@@ -725,7 +684,6 @@ dependencies = [
  "aarch64-cpu",
  "acpi",
  "any-uart",
- "arm-gic-driver",
  "bit_field",
  "bitflags 2.9.0",
  "cfg-if",

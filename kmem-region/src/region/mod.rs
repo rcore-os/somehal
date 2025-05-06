@@ -14,6 +14,9 @@ pub const STACK_TOP: usize = ADDR_BASE + REGION_ONE * 15;
 
 static mut KCODE_VA_OFFSET: usize = 0;
 
+pub const KERNEL_ADDR_SPACE_START: usize = ADDR_BASE;
+pub const KERNEL_ADDR_SPACE_SIZE: usize = (1 << ADDR_BITS) - 1;
+
 /// 设置内核代码的虚拟地址偏移量
 ///
 /// # Safety

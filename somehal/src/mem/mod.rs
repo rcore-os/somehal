@@ -6,8 +6,11 @@ use kmem_region::region::{
     AccessFlags, CacheConfig, MemConfig, MemRegionKind, OFFSET_LINER, STACK_SIZE, STACK_TOP,
     kcode_offset, region_phys_to_virt, region_virt_to_phys,
 };
-pub use kmem_region::{region::MemRegion, *};
-use log::trace;
+pub use kmem_region::{
+    region::{KERNEL_ADDR_SPACE_SIZE, KERNEL_ADDR_SPACE_START, MemRegion},
+    *,
+};
+use main_memory::RegionAllocator;
 use rdrive::{DriverRegister, DriverRegisterSlice};
 use somehal_macros::fn_link_section;
 
@@ -25,6 +28,7 @@ pub mod page;
 mod percpu;
 
 use page::page_size;
+pub use percpu::{cpu_id_to_idx, cpu_idx_to_id};
 
 #[derive(Debug, Clone)]
 pub struct PhysMemory {
@@ -188,7 +192,20 @@ pub(crate) fn setup_memory_regions(cpu0_id: CpuId, cpu_list: impl Iterator<Item 
     };
 
     unsafe { (*PERCPU_OTHER_ALL.get()).replace(percpu_all) };
-    percpu::init(cpu0_id, cpu_list);
+
+    let mut dyn_rodata_region = RegionAllocator::new(
+        "dyn ro",
+        MemConfig {
+            access: AccessFlags::Read,
+            cache: CacheConfig::Normal,
+        },
+        MemRegionKind::Code,
+        kcode_offset(),
+    );
+
+    percpu::init(cpu0_id, cpu_list, &mut dyn_rodata_region);
+
+    mem_region_add(dyn_rodata_region.into());
 
     mem_region_add(MemRegion {
         virt_start: percpu().as_ptr().into(),

@@ -28,7 +28,6 @@ rdrive-macros = "0.3"
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "10.0"
 smccc = "0.2"
-arm-gic-driver = "0.7"
 fdt-parser = "0.4"
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]

@@ -9,6 +9,8 @@ use kmem_region::{
     region::{MemConfig, MemRegion, MemRegionKind},
 };
 
+use crate::mem::page::page_size;
+
 use super::{MEMORY_MAIN, PhysMemory};
 
 pub unsafe fn init(start: PhysAddr, end: PhysAddr) {
@@ -66,13 +68,17 @@ impl From<RegionAllocator> for MemRegion {
         let m = unsafe { &mut *MEMORY_MAIN.get() }.as_mut().unwrap();
         assert_eq!(m.addr, al.start, "parrel `RegionAllocator` allocator");
 
-        m.addr = al.highest_address();
-        m.size -= al.used();
+        let end = m.addr + m.size;
+
+        let start = al.highest_address().align_up(page_size());
+
+        m.addr = start;
+        m.size = end - start;
 
         MemRegion {
             name: value.name,
             phys_start: al.start,
-            size: al.used(),
+            size: al.used().align_up(page_size()),
             config: value.config,
             kind: value.kind,
             virt_start: (al.start.raw() + value.va_offset).into(),

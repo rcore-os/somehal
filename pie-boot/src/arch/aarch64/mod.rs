@@ -170,6 +170,7 @@ impl ArchIf for Arch {
     fn early_debug_put(byte: u8) {
         #[cfg(early_debug)]
         crate::debug::write_byte(byte);
+        let _ = byte;
     }
 
     fn wait_for_event() {

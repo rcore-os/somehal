@@ -27,6 +27,7 @@ pub mod console;
 mod entry;
 pub mod irq;
 pub mod mem;
+pub mod mp;
 pub(crate) mod once_static;
 pub(crate) mod platform;
 pub mod power;
