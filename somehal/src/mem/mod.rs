@@ -7,6 +7,7 @@ use kmem_region::region::{
     kcode_offset, region_phys_to_virt, region_virt_to_phys,
 };
 pub use kmem_region::{region::MemRegion, *};
+use log::trace;
 use rdrive::{DriverRegister, DriverRegisterSlice};
 use somehal_macros::fn_link_section;
 
@@ -385,6 +386,11 @@ pub fn driver_registers() -> impl Deref<Target = [DriverRegister]> {
         if len == 0 {
             return DriverRegisterSlice::empty();
         }
+
+        trace!(
+            "driver register @{:p} len: {}",
+            __sdriver_register as *const u8, len
+        );
 
         let data = core::slice::from_raw_parts(__sdriver_register as _, len);
         DriverRegisterSlice::from_raw(data)
