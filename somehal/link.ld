@@ -18,16 +18,17 @@ SECTIONS
         *(.rodata .rodata.*)
         *(.srodata*)
         *(.got .got.*)
-
-        __sdriver_register = .;
-        *(.driver.register*)
-        __edriver_register = .;
     } 
     
     .data : ALIGN(__page_size) {
         __erodata = .;
         __srwdata = .;
         *(.data*)
+
+        __sdriver_register = .;
+        KEEP(*(.driver.register*))
+        __edriver_register = .;
+
         . = ALIGN(__page_size);
         __global_pointer$ = . + 0x800;
         *(.sdata.*)

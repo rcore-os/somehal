@@ -387,12 +387,8 @@ pub fn driver_registers() -> impl Deref<Target = [DriverRegister]> {
             return DriverRegisterSlice::empty();
         }
 
-        trace!(
-            "driver register @{:p} len: {}",
-            __sdriver_register as *const u8, len
-        );
-
         let data = core::slice::from_raw_parts(__sdriver_register as _, len);
+
         DriverRegisterSlice::from_raw(data)
     }
 }

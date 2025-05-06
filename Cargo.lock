@@ -579,9 +579,9 @@ dependencies = [
 
 [[package]]
 name = "rdrive-macro-utils"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3fc3b642edb4cacf905ba9e193ca5eebc15fcc3695dc1b583e1f8ac2512d9f8b"
+checksum = "7975dcafc3f8ab7838442217541feac8454421518a6b9c32baf9d3217e5f6b0a"
 dependencies = [
  "proc-macro2",
  "quote",
