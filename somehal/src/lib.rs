@@ -34,6 +34,7 @@ pub mod systime;
 
 pub(crate) use archif::ArchIf;
 
+use log::trace;
 use mem::page::set_is_relocated;
 pub use rdrive as driver;
 pub use somehal_macros::{entry, module_driver};
@@ -55,6 +56,8 @@ pub unsafe fn init() {
     platform::init_rdrive();
 
     driver::register_append(&mem::driver_registers());
+
+    trace!("driver register append");
 
     irq::init();
 
