@@ -157,9 +157,6 @@ pub fn init(
                 let id_ptr = (phys_iter + id_offset) as *mut CpuId;
 
                 idx_ptr.write(idx.into());
-
-                println!("write {:p} :{:?}", id_ptr, id);
-
                 id_ptr.write(id);
 
                 phys_iter += len;
