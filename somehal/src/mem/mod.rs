@@ -1,4 +1,4 @@
-use core::{alloc::Layout, ops::Deref, ptr::addr_of};
+use core::{alloc::Layout, ops::Deref};
 
 use heap::HEAP;
 use heapless::Vec;
@@ -397,7 +397,18 @@ fn rodata() -> &'static [u8] {
 
 /// Returns an iterator over all physical memory regions.
 pub fn memory_regions() -> impl Iterator<Item = MemRegion> {
-    MEM_REGIONS.clone().into_iter()
+    let cpu_idx = cpu_idx();
+
+    MEM_REGIONS.clone().into_iter().map(move |mut m| {
+        if !cpu_idx.is_primary() {
+            match m.kind {
+                MemRegionKind::Stack => m.phys_start = stack_top_cpu(cpu_idx) - STACK_SIZE,
+                MemRegionKind::PerCpu => m.phys_start = percpu_data_phys(cpu_idx),
+                _ => {}
+            };
+        }
+        m
+    })
 }
 
 pub fn phys_to_virt(p: PhysAddr) -> VirtAddr {

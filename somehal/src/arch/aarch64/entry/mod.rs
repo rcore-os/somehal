@@ -129,6 +129,10 @@ unsafe fn enable_fp() {
 }
 
 fn relocate(arg: &CpuOnArg) {
+    //  disable interrupt
+    unsafe { asm!("msr daifset, #2") };
+    CNTP_CTL_EL0.modify(CNTP_CTL_EL0::IMASK::SET);
+
     set_kernel_table(arg.page_table.raw().into());
     set_user_table(0usize.into());
     crate::to_main(arg)

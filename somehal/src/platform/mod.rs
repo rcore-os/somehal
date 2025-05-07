@@ -46,3 +46,9 @@ macro_rules! def_id {
 
 def_id!(CpuIdx, usize);
 def_id!(CpuId, usize);
+
+impl CpuIdx {
+    pub fn is_primary(&self) -> bool {
+        self.0 == 0
+    }
+}

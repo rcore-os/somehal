@@ -1,7 +1,4 @@
-use core::arch::asm;
-
 use aarch64_cpu::{asm::barrier, registers::*};
-use kmem_region::region::{STACK_TOP, kcode_offset};
 
 use crate::{
     arch::paging::{flush_tlb, set_mair},
