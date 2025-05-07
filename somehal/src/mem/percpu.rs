@@ -57,7 +57,13 @@ impl CPUMap {
         unsafe { core::slice::from_raw_parts(self.ptr(), self.len) }
     }
 }
-
+pub fn cpu_list() -> impl Iterator<Item = (CpuIdx, CpuId)> {
+    CPU_MAP
+        .as_slice()
+        .iter()
+        .enumerate()
+        .map(|(idx, &one)| (idx.into(), one.into()))
+}
 pub fn cpu_id_to_idx(cpu_id: CpuId) -> CpuIdx {
     for (idx, &one) in CPU_MAP.as_slice().iter().enumerate() {
         if one == cpu_id.raw() {

@@ -1,3 +1,4 @@
+pub use crate::mem::percpu::cpu_list;
 use kmem_region::PhysAddr;
 
 use crate::{

@@ -63,11 +63,11 @@ pub(crate) fn stack_top_cpu(cpu_idx: CpuIdx) -> PhysAddr {
 }
 
 fn percpu_data_phys(cpu_idx: CpuIdx) -> PhysAddr {
-    if cpu_idx == CpuIdx::new(0) {
+    if cpu_idx.is_primary() {
         return (percpu().as_ptr() as usize - kcode_offset()).into();
     }
 
-    PERCPU_OTHER_ALL.addr + percpu().len() * (cpu_idx.raw() - 1)
+    PERCPU_OTHER_ALL.addr + percpu().len().align_up(page_size()) * (cpu_idx.raw() - 1)
 }
 
 pub(crate) fn init_heap() {
