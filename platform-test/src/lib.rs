@@ -1,7 +1,9 @@
 #![no_std]
 
+use core::hint::spin_loop;
+
 use log::{LevelFilter, info};
-use somehal::{mem::cpu_id, println};
+use somehal::println;
 
 extern crate somehal;
 
@@ -28,7 +30,9 @@ fn main(cpu_id: usize, cpu_idx: usize) -> ! {
         somehal::mp::cpu_on(1.into());
 
         info!("per id : {:?}", somehal::mem::cpu_id());
-        loop {}
+        loop {
+            spin_loop();
+        }
     } else {
         info!("per id: {:?}", somehal::mem::cpu_id());
     }
