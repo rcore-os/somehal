@@ -54,7 +54,6 @@ pub trait ArchIf {
 
     fn start_secondary_cpu(
         cpu: CpuId,
-        entry: usize,
-        stack: usize,
+        stack: PhysAddr,
     ) -> Result<(), alloc::boxed::Box<dyn Error>>;
 }

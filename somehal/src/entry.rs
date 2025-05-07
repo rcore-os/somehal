@@ -1,7 +1,13 @@
 use kmem_region::region::*;
 use pie_boot::{BootInfo, MemoryKind};
 
-use crate::{ArchIf, arch::Arch, handle_err, mem::*, platform, printkv};
+use crate::{
+    ArchIf, CpuOnArg,
+    arch::Arch,
+    handle_err,
+    mem::{page::new_mapped_table, *},
+    platform, printkv,
+};
 
 #[unsafe(no_mangle)]
 pub unsafe extern "Rust" fn __vma_relocate_entry(boot_info: BootInfo) {
@@ -56,4 +62,20 @@ pub fn setup(boot_info: BootInfo) {
     let memories = memories1.chain(memories2);
 
     setup_memory_main(reserved_memories, memories, cpu_count);
+}
+
+pub fn entry_virt_and_liner() {
+    crate::mem::percpu::setup_stack_and_table();
+
+    // 移除低地址空间线性映射
+    let table = new_mapped_table(false);
+    Arch::set_kernel_table(table);
+    Arch::set_user_table(0usize.into());
+    let arg = CpuOnArg {
+        cpu_id: cpu_id(),
+        cpu_idx: 0.into(),
+        page_table: 0usize.into(),
+        page_table_with_liner: 0usize.into(),
+    };
+    crate::to_main(&arg)
 }

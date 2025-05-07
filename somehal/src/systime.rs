@@ -20,20 +20,17 @@ pub fn get() -> &'static HardwareCPU {
     &TIMER
 }
 
-pub fn init() {
+pub fn init() -> Option<()> {
     rdrive::probe_with_kind(DriverKind::Timer).unwrap();
 
     let ls = rdrive::read(|m| m.timer.all());
 
-    let timer = ls
-        .first()
-        .expect("No timer driver found")
-        .1
-        .upgrade()
-        .expect("Timer driver droped");
+    let timer = ls.first()?.1.upgrade().expect("Timer driver droped");
     let mut g = timer.spin_try_borrow_by(0.into());
 
     let cpu = g.get_current_cpu();
 
     unsafe { TIMER.init(cpu) };
+
+    Some(())
 }

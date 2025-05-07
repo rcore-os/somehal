@@ -1,4 +1,4 @@
-use core::{alloc::Layout, ops::Deref};
+use core::{alloc::Layout, ops::Deref, ptr::addr_of};
 
 use heap::HEAP;
 use heapless::Vec;
@@ -25,7 +25,7 @@ use crate::{
 pub(crate) mod heap;
 pub(crate) mod main_memory;
 pub mod page;
-mod percpu;
+pub(crate) mod percpu;
 
 use page::page_size;
 pub use percpu::{cpu_id_to_idx, cpu_idx_to_id};
@@ -39,6 +39,7 @@ pub struct PhysMemory {
 pub type PhysMemoryArray = Vec<PhysMemory, 12>;
 
 static MEMORY_MAIN: OnceStatic<PhysMemory> = OnceStatic::new();
+static MEMORY_MAIN_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
 static mut CPU_COUNT: usize = 1;
 static MEM_REGIONS: OnceStatic<Vec<MemRegion, 128>> = OnceStatic::new();
 static STACK_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
@@ -55,6 +56,18 @@ pub fn cpu_id() -> CpuId {
 
 pub(crate) fn stack_top_cpu0() -> PhysAddr {
     STACK_ALL.addr + STACK_SIZE
+}
+
+pub(crate) fn stack_top_cpu(cpu_idx: CpuIdx) -> PhysAddr {
+    STACK_ALL.addr + STACK_SIZE * (cpu_idx.raw() + 1)
+}
+
+fn percpu_data_phys(cpu_idx: CpuIdx) -> PhysAddr {
+    if cpu_idx == CpuIdx::new(0) {
+        return (percpu().as_ptr() as usize - kcode_offset()).into();
+    }
+
+    PERCPU_OTHER_ALL.addr + percpu().len() * (cpu_idx.raw() - 1)
 }
 
 pub(crate) fn init_heap() {
@@ -89,10 +102,12 @@ pub(crate) fn setup_memory_main(
         let size = m.size;
 
         if phys_raw < text_addr && text_addr < phys_raw + m.size {
-            main_memory = Some(PhysMemory {
+            let phys = PhysMemory {
                 addr: phys_start,
                 size,
-            });
+            };
+            main_memory = Some(phys.clone());
+            unsafe { MEMORY_MAIN_ALL.init(phys) };
         } else {
             let kind = if phys_start.raw() + size < text().as_ptr() as usize {
                 MemRegionKind::Reserved
@@ -192,6 +207,8 @@ pub(crate) fn setup_memory_regions(cpu0_id: CpuId, cpu_list: impl Iterator<Item 
     };
 
     unsafe { (*PERCPU_OTHER_ALL.get()).replace(percpu_all) };
+
+    percpu::clean();
 
     let mut dyn_rodata_region = RegionAllocator::new(
         "dyn ro",

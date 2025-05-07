@@ -4,6 +4,20 @@ use aarch64_cpu::registers::*;
 use kmem_region::region::AccessFlags;
 use page_table_generic::{PTEGeneric, PhysAddr, TableGeneric, VirtAddr};
 
+pub fn set_mair() {
+    // Device-nGnRnE
+    let attr0 = MAIR_EL1::Attr0_Device::nonGathering_nonReordering_noEarlyWriteAck;
+    // Normal
+    let attr1 = MAIR_EL1::Attr1_Normal_Inner::WriteBack_NonTransient_ReadWriteAlloc
+        + MAIR_EL1::Attr1_Normal_Outer::WriteBack_NonTransient_ReadWriteAlloc;
+    // WriteThrough
+    let attr2 = MAIR_EL1::Attr2_Normal_Inner::WriteThrough_Transient_WriteAlloc
+        + MAIR_EL1::Attr2_Normal_Outer::WriteThrough_Transient_WriteAlloc;
+
+    MAIR_EL1.write(attr0 + attr1 + attr2);
+}
+
+#[inline(always)]
 pub fn set_kernel_table(addr: crate::mem::PhysAddr) {
     TTBR1_EL1.set_baddr(addr.raw() as _);
     flush_tlb(None);

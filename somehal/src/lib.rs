@@ -35,18 +35,21 @@ pub mod systime;
 
 pub(crate) use archif::ArchIf;
 
+pub use archif::CpuId;
 use log::trace;
 use mem::page::set_is_relocated;
+use mp::CpuOnArg;
+pub use platform::CpuIdx;
 pub use rdrive as driver;
 pub use somehal_macros::{entry, module_driver};
 
-pub(crate) fn to_main() -> ! {
+pub(crate) fn to_main(arg: &CpuOnArg) -> ! {
     unsafe extern "C" {
-        fn __somehal_main() -> !;
+        fn __somehal_main(cpu_id: CpuId, cpu_idx: CpuIdx) -> !;
     }
     unsafe {
         set_is_relocated();
-        __somehal_main();
+        __somehal_main(arg.cpu_id, arg.cpu_idx);
     }
 }
 

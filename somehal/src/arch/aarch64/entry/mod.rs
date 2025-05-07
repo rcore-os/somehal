@@ -1,12 +1,12 @@
-use core::arch::asm;
+use core::arch::{asm, naked_asm};
 
-use aarch64_cpu::registers::*;
+use aarch64_cpu::{asm::barrier, registers::*};
 use kmem_region::region::STACK_TOP;
 use pie_boot::BootInfo;
 
 use super::debug;
 use crate::{
-    ArchIf,
+    ArchIf, CpuOnArg,
     arch::{
         Arch, cache,
         paging::{set_kernel_table, set_user_table},
@@ -16,6 +16,16 @@ use crate::{
     platform::*,
     printkv, println,
 };
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "vm")] {
+        mod el2;
+        use el2::*;
+    }else{
+        mod el1;
+        use el1::*;
+    }
+}
 
 pub fn primary_entry(boot_info: BootInfo) {
     unsafe {
@@ -49,21 +59,21 @@ fn phys_sp_entry() -> ! {
 
     println!("Memory regions setup done!");
 
-    let table = new_mapped_table(false);
+    let table = new_mapped_table(true);
 
     println!("Mov sp to {:#x}", STACK_TOP);
 
     debug::reloacte();
 
     set_kernel_table(table);
-    set_user_table(0usize.into());
+    set_user_table(table);
 
     unsafe {
         asm!(
             "MOV SP, {sp}",
             "B {f}",
             sp = const STACK_TOP,
-            f = sym crate::to_main,
+            f = sym crate::entry::entry_virt_and_liner,
             options(nostack, noreturn),
         );
     }
@@ -85,4 +95,40 @@ fn setup_timer() {
             core::arch::asm!("msr CNTHP_TVAL_EL2, {0:x}", in(reg) 0);
         }
     }
+}
+#[naked]
+pub(crate) unsafe extern "C" fn secondary_entry() {
+    unsafe {
+        naked_asm!(
+            "
+        mov  sp, x0
+        bl  {switch_el}
+        mov  x0, sp
+        bl  {init_mmu}
+        bl  {enable_fp}
+        mov  x0, {sp_top}
+        sub  x0, x0, {arg_size}
+        mov  sp, x0
+        LDR  x9, ={to_main}
+        BLR  x9
+        B    .
+    ",
+        switch_el = sym switch_to_elx,
+        init_mmu = sym init_mmu,
+        enable_fp = sym enable_fp,
+        sp_top = const STACK_TOP,
+        arg_size = const size_of::<CpuOnArg>(),
+        to_main = sym relocate,
+        )
+    }
+}
+
+unsafe fn enable_fp() {
+    CPACR_EL1.write(CPACR_EL1::FPEN::TrapNothing);
+    barrier::isb(barrier::SY);
+}
+
+fn relocate(arg: &CpuOnArg) {
+    set_user_table(0usize.into());
+    crate::to_main(arg)
 }

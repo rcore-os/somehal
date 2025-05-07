@@ -12,6 +12,7 @@ use crate::{
 };
 
 use alloc::{boxed::Box, format, vec::Vec};
+use kmem_region::PhysAddr;
 use log::{debug, error};
 use smccc::{Hvc, Smc, psci};
 
@@ -91,12 +92,12 @@ fn probe(node: Node<'_>, dev: ProbeDevInfo) -> Result<Vec<HardwareKind>, Box<dyn
 fn cpu_on(
     cpu_id: CpuId,
     entry: usize,
-    stack_top: usize,
+    stack_top: PhysAddr,
 ) -> Result<(), alloc::boxed::Box<dyn Error>> {
     let method = *METHOD;
     match method {
-        Method::Smc => psci::cpu_on::<Smc>(cpu_id.raw() as _, entry as _, stack_top as _)?,
-        Method::Hvc => psci::cpu_on::<Hvc>(cpu_id.raw() as _, entry as _, stack_top as _)?,
+        Method::Smc => psci::cpu_on::<Smc>(cpu_id.raw() as _, entry as _, stack_top.raw() as _)?,
+        Method::Hvc => psci::cpu_on::<Hvc>(cpu_id.raw() as _, entry as _, stack_top.raw() as _)?,
     };
     Ok(())
 }

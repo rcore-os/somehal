@@ -8,19 +8,29 @@ extern crate somehal;
 pub mod lang_items;
 
 #[somehal::entry]
-fn main(_cpu_id: usize, _dtb: usize) -> ! {
+fn main(cpu_id: usize, cpu_idx: usize) -> ! {
     println!("Hello, world!");
-    println!("cpu_id: {:?}", cpu_id());
+    println!("cpu_id: {:?}", cpu_id);
+    println!("cpu_idx: {:?}", cpu_idx);
 
-    lang_items::init_heap();
+    if cpu_idx == 0 {
+        lang_items::init_heap();
 
-    log::set_logger(&Logger).unwrap();
-    log::set_max_level(LevelFilter::Trace);
+        log::set_logger(&Logger).unwrap();
+        log::set_max_level(LevelFilter::Trace);
 
-    info!("log init");
+        info!("log init");
 
-    unsafe {
-        somehal::init();
+        unsafe {
+            somehal::init();
+        }
+
+        somehal::mp::cpu_on(1.into());
+
+        info!("per id : {:?}", somehal::mem::cpu_id());
+        loop {}
+    } else {
+        info!("per id: {:?}", somehal::mem::cpu_id());
     }
 
     unimplemented!()

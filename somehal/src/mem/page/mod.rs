@@ -3,12 +3,13 @@ use core::panic;
 
 use kmem_region::IntAlign;
 use kmem_region::allocator::LineAllocator;
-use kmem_region::region::{AccessFlags, MemConfig, OFFSET_LINER, STACK_SIZE};
+use kmem_region::region::{AccessFlags, CacheConfig, MemConfig, OFFSET_LINER, STACK_SIZE};
 use page_table_generic::*;
 
 use crate::arch::Arch;
 use crate::archif::ArchIf;
-use crate::mem::{MEM_REGIONS, stack_top_cpu0};
+use crate::mem::{MEM_REGIONS, percpu_data_phys, stack_top_cpu, stack_top_cpu0};
+use crate::platform::CpuIdx;
 use crate::{handle_err, printkv, println};
 
 static mut IS_RELOCATED: bool = false;
@@ -95,8 +96,8 @@ pub fn new_mapped_table(is_line_map_main: bool) -> kmem_region::PhysAddr {
     }
 
     if is_line_map_main {
-        let mut start = super::MEMORY_MAIN.addr.raw();
-        let end = (start + super::MEMORY_MAIN.size).align_up(GB);
+        let mut start = super::MEMORY_MAIN_ALL.addr.raw();
+        let end = (start + super::MEMORY_MAIN_ALL.size).align_up(GB);
         start = start.align_down(GB);
         let size = end - start;
 
@@ -108,7 +109,7 @@ pub fn new_mapped_table(is_line_map_main: bool) -> kmem_region::PhysAddr {
                     size,
                     pte: Arch::new_pte_with_config(MemConfig {
                         access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
-                        cache: kmem_region::region::CacheConfig::Normal
+                        cache: CacheConfig::Normal
                     }),
                     allow_huge: true,
                     flush: false,
@@ -121,6 +122,100 @@ pub fn new_mapped_table(is_line_map_main: bool) -> kmem_region::PhysAddr {
     println!("Table size {:#x}", tmp_alloc.0.used());
 
     table.paddr().raw().into()
+}
+
+pub fn new_mapped_secondary_table(stack_bottom: PhysAddr, cpu_idx: CpuIdx) -> (PhysAddr, PhysAddr) {
+    let start = stack_bottom.raw().into();
+    let tmp_size = STACK_SIZE;
+    let mut tmp_alloc = PageTableAccess(LineAllocator::new(start, tmp_size));
+
+    printkv!(
+        "Tmp page allocator",
+        "[{:?}, {:?})",
+        tmp_alloc.0.start,
+        tmp_alloc.0.end
+    );
+
+    let access = &mut tmp_alloc;
+
+    let mut table = handle_err!(Table::create_empty(access));
+
+    for region in MEM_REGIONS.iter() {
+        unsafe {
+            let paddr = match region.kind {
+                kmem_region::region::MemRegionKind::Stack => stack_top_cpu(cpu_idx) - STACK_SIZE,
+                kmem_region::region::MemRegionKind::PerCpu => percpu_data_phys(cpu_idx),
+                _ => region.phys_start,
+            }
+            .raw();
+
+            println!(
+                "cpu{:?} `{}` {:?}->{:#x}",
+                cpu_idx, region.name, region.virt_start, paddr
+            );
+
+            handle_err!(table.map(
+                MapConfig {
+                    vaddr: region.virt_start.raw().into(),
+                    paddr: paddr.into(),
+                    size: region.size,
+                    pte: Arch::new_pte_with_config(region.config),
+                    allow_huge: true,
+                    flush: false,
+                },
+                access,
+            ));
+        }
+    }
+    let mut start = super::MEMORY_MAIN_ALL.addr.raw();
+    let end = (start + super::MEMORY_MAIN_ALL.size).align_up(GB);
+    start = start.align_down(GB);
+    let size = end - start;
+
+    unsafe {
+        handle_err!(table.map(
+            MapConfig {
+                vaddr: start.into(),
+                paddr: start.into(),
+                size,
+                pte: Arch::new_pte_with_config(MemConfig {
+                    access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
+                    cache: CacheConfig::Normal
+                }),
+                allow_huge: true,
+                flush: false,
+            },
+            access,
+        ));
+    }
+    let table1 = table.paddr().raw().into();
+
+    let mut table = handle_err!(Table::create_empty(access));
+
+    for region in MEM_REGIONS.iter() {
+        unsafe {
+            let paddr = match region.kind {
+                kmem_region::region::MemRegionKind::Stack => stack_top_cpu(cpu_idx),
+                kmem_region::region::MemRegionKind::PerCpu => percpu_data_phys(cpu_idx),
+                _ => region.phys_start,
+            }
+            .raw();
+
+            handle_err!(table.map(
+                MapConfig {
+                    vaddr: region.virt_start.raw().into(),
+                    paddr: paddr.into(),
+                    size: region.size,
+                    pte: Arch::new_pte_with_config(region.config),
+                    allow_huge: true,
+                    flush: false,
+                },
+                access,
+            ));
+        }
+    }
+    let table2 = table.paddr().raw().into();
+    (table1, table2)
 }
 
 struct PageTableAccess(LineAllocator);

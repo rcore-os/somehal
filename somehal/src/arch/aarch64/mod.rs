@@ -1,5 +1,7 @@
 use aarch64_cpu::asm::wfe;
 use entry::primary_entry;
+use kmem_region::region::kcode_offset;
+use log::trace;
 use page_table_generic::TableGeneric;
 use pie_boot::BootInfo;
 
@@ -83,9 +85,10 @@ impl ArchIf for Arch {
 
     fn start_secondary_cpu(
         cpu: CpuId,
-        entry: usize,
-        stack_top: usize,
+        stack_top: PhysAddr,
     ) -> Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        let entry = (entry::secondary_entry as usize) - kcode_offset();
+        trace!("cpu_on: entry={:#x} stack_top={:?}", entry, stack_top);
         mp::cpu_on(cpu, entry, stack_top)
     }
 }
