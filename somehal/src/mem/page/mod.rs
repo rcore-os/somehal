@@ -140,10 +140,10 @@ fn new_boot_table_secondary(
             }
             .raw();
 
-            println!(
-                "cpu{:?} `{}` {:?}->{:#x}",
-                cpu_idx, region.name, region.virt_start, paddr
-            );
+            // println!(
+            //     "cpu{:?} `{}` {:?}->{:#x}",
+            //     cpu_idx, region.name, region.virt_start, paddr
+            // );
 
             handle_err!(table.map(
                 MapConfig {

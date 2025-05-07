@@ -97,8 +97,6 @@ pub fn init(
         data_alloc.allocate(Layout::from_size_align(cpu_map_size, size_of::<usize>()).unwrap())
     );
 
-    println!("ptr = {:#p}", cpu_map_ptr.as_ptr());
-
     let mut cpu_map = CPUMap::new(cpu_map_ptr);
 
     let len = percpu().len().align_up(page_size());

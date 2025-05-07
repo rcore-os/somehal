@@ -412,11 +412,11 @@ pub fn memory_regions() -> impl Iterator<Item = MemRegion> {
 }
 
 pub fn phys_to_virt(p: PhysAddr) -> VirtAddr {
-    region_phys_to_virt(MEM_REGIONS.iter(), p)
+    region_phys_to_virt(memory_regions(), p)
 }
 
 pub fn virt_to_phys(v: VirtAddr) -> PhysAddr {
-    region_virt_to_phys(MEM_REGIONS.iter(), v)
+    region_virt_to_phys(memory_regions(), v)
 }
 
 pub fn driver_registers() -> impl Deref<Target = [DriverRegister]> {

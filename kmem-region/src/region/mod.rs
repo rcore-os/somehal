@@ -126,10 +126,7 @@ pub enum MemRegionKind {
     Reserved,
 }
 
-pub fn region_phys_to_virt<'a, I: Iterator<Item = &'a MemRegion> + 'a>(
-    regions: I,
-    p: PhysAddr,
-) -> VirtAddr {
+pub fn region_phys_to_virt<I: Iterator<Item = MemRegion>>(regions: I, p: PhysAddr) -> VirtAddr {
     for region in regions {
         if p >= region.phys_start && p < region.phys_start + region.size {
             return region.virt_start + (p - region.phys_start);
@@ -138,10 +135,7 @@ pub fn region_phys_to_virt<'a, I: Iterator<Item = &'a MemRegion> + 'a>(
     (p.raw() + OFFSET_LINER).into()
 }
 
-pub fn region_virt_to_phys<'a, I: Iterator<Item = &'a MemRegion> + 'a>(
-    regions: I,
-    v: VirtAddr,
-) -> PhysAddr {
+pub fn region_virt_to_phys<I: Iterator<Item = MemRegion>>(regions: I, v: VirtAddr) -> PhysAddr {
     for region in regions {
         let end = region.virt_start + region.size;
         if region.virt_start <= v && v < end {
