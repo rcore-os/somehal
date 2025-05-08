@@ -63,9 +63,11 @@ pub unsafe fn init() {
 
     trace!("driver register append");
 
+    driver::probe_pre_kernel().unwrap();
+
     irq::init();
 
-    power::init();
-
     systime::init();
+
+    driver::probe().unwrap();
 }

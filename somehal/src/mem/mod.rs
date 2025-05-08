@@ -11,7 +11,7 @@ pub use kmem_region::{
     *,
 };
 use main_memory::RegionAllocator;
-use rdrive::{DriverRegister, DriverRegisterSlice};
+use rdrive::register::{DriverRegister, DriverRegisterSlice};
 use somehal_macros::fn_link_section;
 
 use crate::{

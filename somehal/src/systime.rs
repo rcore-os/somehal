@@ -1,4 +1,4 @@
-use rdrive::{DriverKind, timer::HardwareCPU};
+use rdrive::timer::HardwareCPU;
 
 use crate::{ArchIf, arch::Arch, once_static::OnceStatic};
 
@@ -21,12 +21,9 @@ pub fn get() -> &'static HardwareCPU {
 }
 
 pub fn init() -> Option<()> {
-    rdrive::probe_with_kind(DriverKind::Timer).unwrap();
+    let timer = rdrive::get_dev!(Timer)?;
 
-    let ls = rdrive::read(|m| m.timer.all());
-
-    let timer = ls.first()?.1.upgrade().expect("Timer driver droped");
-    let mut g = timer.spin_try_borrow_by(0.into());
+    let mut g = timer.spin_try_borrow_by(0.into()).ok()?;
 
     let cpu = g.get_current_cpu();
 

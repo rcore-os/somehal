@@ -38,6 +38,7 @@ SECTIONS
         __erwdata = .;
 
         *(.percpu*)
+        . = ALIGN(__page_size);
     } 
 
     bss (NOLOAD) : ALIGN(__page_size)  {

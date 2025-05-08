@@ -1,21 +1,18 @@
 use alloc::collections::BTreeMap;
 
-pub use rdrive::intc_all;
-use rdrive::{DeviceId, DriverKind, intc};
+use rdrive::{DeviceId, intc};
 
 use crate::once_static::OnceStatic;
 
 static IRQ_CPU_MAP: OnceStatic<BTreeMap<DeviceId, intc::HardwareCPU>> = OnceStatic::new();
 
 pub(crate) fn init() {
-    rdrive::probe_with_kind(DriverKind::Intc).unwrap();
     let mut all = BTreeMap::new();
-    for (id, chip) in rdrive::intc_all() {
-        let ptr = chip.upgrade().unwrap();
-        let mut chip = ptr.spin_try_borrow_by(0.into());
-        chip.open().unwrap();
-        let cpu = chip.cpu_interface();
-        all.insert(id, cpu);
+    for chip in rdrive::dev_list!(Intc) {
+        let mut g = chip.spin_try_borrow_by(0.into()).unwrap();
+        g.open().unwrap();
+        let cpu = g.cpu_interface();
+        all.insert(chip.descriptor.device_id, cpu);
     }
     unsafe { IRQ_CPU_MAP.init(all) };
 }

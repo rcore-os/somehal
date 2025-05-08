@@ -2,25 +2,22 @@ use core::error::Error;
 
 use crate::{
     archif::CpuId,
-    driver::{
-        DriverGeneric, DriverResult,
-        power::*,
-        probe::{HardwareKind, ProbeDevInfo},
-        register::*,
-    },
+    driver::{DriverGeneric, DriverResult, power::*, register::*},
     once_static::OnceStatic,
 };
 
-use alloc::{boxed::Box, format, vec::Vec};
+use alloc::{boxed::Box, format};
 use kmem_region::PhysAddr;
 use log::{debug, error};
+use rdrive::{Descriptor, HardwareKind};
 use smccc::{Hvc, Smc, psci};
 
 static METHOD: OnceStatic<Method> = OnceStatic::new();
 
 rdrive_macros::module_driver!(
     name: "ARM PSCI",
-    kind: DriverKind::Power,
+    level: ProbeLevel::PostKernel,
+    priority: ProbePriority::INTC,
     probe_kinds: &[
         ProbeKind::Fdt {
             compatibles: &["arm,psci-1.0","arm,psci-0.2","arm,psci"],
@@ -72,8 +69,7 @@ impl Interface for Psci {
     }
 }
 
-fn probe(node: Node<'_>, dev: ProbeDevInfo) -> Result<Vec<HardwareKind>, Box<dyn Error>> {
-    drop(dev);
+fn probe(node: Node<'_>, _dev: &Descriptor) -> Result<HardwareKind, Box<dyn Error>> {
     let method = node
         .find_property("method")
         .ok_or("fdt no method property")?
@@ -86,7 +82,7 @@ fn probe(node: Node<'_>, dev: ProbeDevInfo) -> Result<Vec<HardwareKind>, Box<dyn
     }
     let dev = HardwareKind::Power(Box::new(Psci { method }));
     debug!("PCSI [{:?}]", method);
-    Ok(alloc::vec![dev])
+    Ok(dev)
 }
 
 fn cpu_on(

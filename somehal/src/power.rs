@@ -1,25 +1,14 @@
-use rdrive::DriverKind;
 use rdrive::power::*;
 
 use crate::ArchIf;
 use crate::arch::Arch;
 
-pub fn init() {
-    rdrive::probe_with_kind(DriverKind::Power).unwrap();
-
-    use_power(|p| p.open()).unwrap();
-}
-
 fn use_power<T, F: FnOnce(&mut Hardware) -> T>(f: F) -> T {
-    let power_list = rdrive::read(|m| m.power.all());
+    let power_list = rdrive::dev_list!(Power);
 
-    let power = power_list
-        .first()
-        .expect("No power driver found")
-        .1
-        .upgrade()
-        .expect("Power driver droped");
-    let mut g = power.spin_try_borrow_by(0.into());
+    let power = power_list.first().expect("No power driver found");
+
+    let mut g = power.spin_try_borrow_by(0.into()).unwrap();
     (f)(&mut g)
 }
 
