@@ -17,6 +17,13 @@ pub(crate) fn init() {
     unsafe { IRQ_CPU_MAP.init(all) };
 }
 
+pub(crate) fn init_secondary() {
+    for chip in rdrive::dev_list!(Intc) {
+        let g = chip.spin_try_borrow_by(0.into()).unwrap();
+        g.cpu_interface();
+    }
+}
+
 pub fn interface(chip: DeviceId) -> Option<&'static intc::HardwareCPU> {
     IRQ_CPU_MAP.as_ref().get(&chip)
 }

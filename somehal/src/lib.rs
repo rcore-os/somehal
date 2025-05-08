@@ -49,6 +49,8 @@ pub(crate) fn to_main(arg: &CpuOnArg) -> ! {
     }
     unsafe {
         set_is_relocated();
+        irq::init_secondary();
+
         __somehal_main(arg.cpu_id, arg.cpu_idx);
     }
 }
