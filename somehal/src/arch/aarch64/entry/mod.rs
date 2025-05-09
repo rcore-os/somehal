@@ -135,5 +135,5 @@ fn relocate(arg: &CpuOnArg) {
 
     set_kernel_table(arg.page_table.raw().into());
     set_user_table(0usize.into());
-    crate::to_main(arg)
+    crate::init_secondary(arg)
 }

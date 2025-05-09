@@ -22,7 +22,7 @@ heapless = "0.8"
 page-table-generic = { path = "../page-table-generic" }
 bit_field = "0.10"
 any-uart = "0.2"
-rdrive = { version = "0.5.1" }
+rdrive = { version = "0.5.3" }
 # rdrive = { path = "/home/zhourui/opensource/rdrive/rdrive" }
 rdrive-macros = "0.3"
 

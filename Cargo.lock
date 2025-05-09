@@ -494,9 +494,9 @@ checksum = "88dfa4f4f43bb0a7d0464c4bcbbd7e8d2aa7c8db551f9fd18e609729e1e9b481"
 
 [[package]]
 name = "rdif-intc"
-version = "0.4.2"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "470d6a4241e7c45d032306259a41c823fd2fa88eb659ada5ce9e3a30c0d7d10a"
+checksum = "d31c6f9b12d94d654d0b5746cba2ea958d103f3e61a4824b2156283450d62492"
 dependencies = [
  "cfg-if",
  "rdif-base",
@@ -522,9 +522,9 @@ dependencies = [
 
 [[package]]
 name = "rdrive"
-version = "0.5.1"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fff41497a0ca68ad296a7b3f67988dd2592325c67e0deb6b1eece89ba1c8adb"
+checksum = "16f4a3fd519e91d89fd9b37c83bb905107f0276dbbbc6e55bee8c3888cd16fb5"
 dependencies = [
  "fdt-parser",
  "log",

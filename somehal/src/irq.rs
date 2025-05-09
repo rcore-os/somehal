@@ -12,6 +12,7 @@ pub(crate) fn init() {
         let mut g = chip.spin_try_borrow_by(0.into()).unwrap();
         g.open().unwrap();
         let cpu = g.cpu_interface();
+
         all.insert(chip.descriptor.device_id, cpu);
     }
     unsafe { IRQ_CPU_MAP.init(all) };
@@ -19,8 +20,9 @@ pub(crate) fn init() {
 
 pub(crate) fn init_secondary() {
     for chip in rdrive::dev_list!(Intc) {
-        let g = chip.spin_try_borrow_by(0.into()).unwrap();
-        g.cpu_interface();
+        if let Some(i) = interface(chip.descriptor.device_id) {
+            i.setup();
+        }
     }
 }
 
