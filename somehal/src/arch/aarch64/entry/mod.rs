@@ -12,7 +12,7 @@ use crate::{
         paging::{set_kernel_table, set_user_table},
     },
     entry,
-    mem::{page::new_mapped_table, setup_memory_regions, stack_top_cpu0},
+    mem::{page::new_mapped_table, setup_memory_regions, stack_top_phys, stack_top_virt},
     platform::*,
     printkv, println,
 };
@@ -35,7 +35,7 @@ pub fn primary_entry(boot_info: BootInfo) {
 
         entry::setup(boot_info);
 
-        let sp = stack_top_cpu0();
+        let sp = stack_top_phys(CpuIdx::primary());
 
         printkv!("Stack top", "{:?}", sp);
 
@@ -60,8 +60,8 @@ fn phys_sp_entry() -> ! {
     println!("Memory regions setup done!");
 
     let table = new_mapped_table(true);
-
-    println!("Mov sp to {:#x}", STACK_TOP);
+    let sp = stack_top_virt(CpuIdx::primary());
+    println!("Mov sp to {:?}", sp);
 
     debug::reloacte();
 
@@ -72,7 +72,7 @@ fn phys_sp_entry() -> ! {
         asm!(
             "MOV SP, {sp}",
             "B {f}",
-            sp = const STACK_TOP,
+            sp = in(reg) sp.raw(),
             f = sym crate::entry::entry_virt_and_liner,
             options(nostack, noreturn),
         );
@@ -106,21 +106,26 @@ pub(crate) unsafe extern "C" fn secondary_entry() {
         mov  x0, sp
         bl  {init_mmu}
         bl  {enable_fp}
-        mov  x0, {sp_top}
+        mov  x0, sp
+        bl  {sp_top}
         sub  x0, x0, {arg_size}
         mov  sp, x0
-        LDR  x9, ={to_main}
+        LDR  x9, ={reloc}
         BLR  x9
         B    .
     ",
         switch_el = sym switch_to_elx,
         init_mmu = sym init_mmu,
         enable_fp = sym enable_fp,
-        sp_top = const STACK_TOP,
+        sp_top = sym get_sp_top,
         arg_size = const size_of::<CpuOnArg>(),
-        to_main = sym relocate,
+        reloc = sym relocate,
         )
     }
+}
+
+fn get_sp_top(arg: &CpuOnArg) -> usize {
+    arg.stack_top_virt.raw()
 }
 
 unsafe fn enable_fp() {
@@ -129,11 +134,11 @@ unsafe fn enable_fp() {
 }
 
 fn relocate(arg: &CpuOnArg) {
-    //  disable interrupt
     unsafe { asm!("msr daifset, #2") };
     CNTP_CTL_EL0.modify(CNTP_CTL_EL0::IMASK::SET);
 
     set_kernel_table(arg.page_table.raw().into());
     set_user_table(0usize.into());
+
     crate::init_secondary(arg)
 }

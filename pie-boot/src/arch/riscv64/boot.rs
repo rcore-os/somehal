@@ -1,6 +1,6 @@
 use core::arch::naked_asm;
 
-use riscv::register::stvec::{self, Stvec};
+use riscv::register::{mhartid, stvec::{self, Stvec}};
 
 use crate::{
     arch::debug_init,
@@ -112,13 +112,13 @@ fn setup(hartid: usize, fdt: *mut u8) -> usize {
 
         set_fdt_ptr(fdt);
 
-        unsafe extern "C" {
-            fn trap_vector_base();
-        }
-        let mut vec = Stvec::from_bits(0);
-        vec.set_address(trap_vector_base as usize);
-        vec.set_trap_mode(stvec::TrapMode::Direct);
-        stvec::write(vec);
+        // unsafe extern "C" {
+        //     fn trap_vector_base();
+        // }
+        // let mut vec = Stvec::from_bits(0);
+        // vec.set_address(trap_vector_base as usize);
+        // vec.set_trap_mode(stvec::TrapMode::Direct);
+        // stvec::write(vec);
 
         init_phys_allocator(0);
 

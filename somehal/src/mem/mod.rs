@@ -1,4 +1,4 @@
-use core::{alloc::Layout, ops::Deref};
+use core::ops::Deref;
 
 use heap::HEAP;
 use heapless::Vec;
@@ -43,8 +43,6 @@ static MEMORY_MAIN_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
 static mut CPU_COUNT: usize = 1;
 static MEM_REGIONS: OnceStatic<Vec<MemRegion, 128>> = OnceStatic::new();
 static STACK_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
-// 除主CPU 外，其他CPU的独占Data
-static PERCPU_OTHER_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
 
 pub fn cpu_idx() -> CpuIdx {
     unsafe { percpu::CPU_IDX }
@@ -54,20 +52,12 @@ pub fn cpu_id() -> CpuId {
     unsafe { percpu::CPU_ID }
 }
 
-pub(crate) fn stack_top_cpu0() -> PhysAddr {
-    STACK_ALL.addr + STACK_SIZE
-}
-
-pub(crate) fn stack_top_cpu(cpu_idx: CpuIdx) -> PhysAddr {
+pub(crate) fn stack_top_phys(cpu_idx: CpuIdx) -> PhysAddr {
     STACK_ALL.addr + STACK_SIZE * (cpu_idx.raw() + 1)
 }
-
-fn percpu_data_phys(cpu_idx: CpuIdx) -> PhysAddr {
-    if cpu_idx.is_primary() {
-        return (percpu().as_ptr() as usize - kcode_offset()).into();
-    }
-
-    PERCPU_OTHER_ALL.addr + percpu().len().align_up(page_size()) * (cpu_idx.raw() - 1)
+pub(crate) fn stack_top_virt(cpu_idx: CpuIdx) -> VirtAddr {
+    let start = STACK_TOP - STACK_SIZE * unsafe { CPU_COUNT - 1 };
+    (start + STACK_SIZE * cpu_idx.raw()).into()
 }
 
 pub(crate) fn init_heap() {
@@ -151,7 +141,7 @@ pub(crate) fn setup_memory_main(
         };
 
         unsafe {
-            (*STACK_ALL.get()).replace(stack_all);
+            STACK_ALL.init(stack_all);
 
             main_memory::init(main.addr, main_end);
 
@@ -168,9 +158,9 @@ pub(crate) fn setup_memory_main(
     }
 
     mem_region_add(MemRegion {
-        virt_start: (STACK_TOP - STACK_SIZE).into(),
-        size: STACK_SIZE,
-        phys_start: stack_top_cpu0() - STACK_SIZE,
+        virt_start: stack_top_virt(CpuIdx::primary()) - STACK_SIZE,
+        size: STACK_ALL.size,
+        phys_start: stack_top_phys(CpuIdx::primary()) - STACK_SIZE,
         name: "stack",
         config: MemConfig {
             access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
@@ -183,32 +173,7 @@ pub(crate) fn setup_memory_main(
 }
 
 pub(crate) fn setup_memory_regions(cpu0_id: CpuId, cpu_list: impl Iterator<Item = CpuId>) {
-    let percpu_one_size = percpu().len().align_up(page_size());
-    let percpu_cpu0_start = percpu().as_ptr() as usize - kcode_offset();
-
-    let cpu_other_count = unsafe { CPU_COUNT - 1 };
-
-    let percpu_all = if cpu_other_count > 0 {
-        let percpu_other_all_size = percpu_one_size * cpu_other_count;
-
-        let percpu_start = main_memory::alloc(
-            Layout::from_size_align(percpu_other_all_size, page_size()).unwrap(),
-        );
-
-        PhysMemory {
-            addr: percpu_start,
-            size: percpu_other_all_size,
-        }
-    } else {
-        PhysMemory {
-            addr: 0usize.into(),
-            size: 0,
-        }
-    };
-
-    unsafe { (*PERCPU_OTHER_ALL.get()).replace(percpu_all) };
-
-    percpu::clean();
+    percpu::init_percpu_data();
 
     let mut dyn_rodata_region = RegionAllocator::new(
         "dyn ro",
@@ -223,18 +188,6 @@ pub(crate) fn setup_memory_regions(cpu0_id: CpuId, cpu_list: impl Iterator<Item 
     percpu::init(cpu0_id, cpu_list, &mut dyn_rodata_region);
 
     mem_region_add(dyn_rodata_region.into());
-
-    mem_region_add(MemRegion {
-        virt_start: percpu().as_ptr().into(),
-        size: percpu_one_size,
-        phys_start: percpu_cpu0_start.into(),
-        name: ".percpu",
-        config: MemConfig {
-            access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
-            cache: CacheConfig::Normal,
-        },
-        kind: MemRegionKind::PerCpu,
-    });
 
     mem_region_add(MemRegion {
         virt_start: (MEMORY_MAIN.addr.raw() + OFFSET_LINER).into(),
@@ -405,19 +358,8 @@ fn rodata() -> &'static [u8] {
 }
 
 /// Returns an iterator over all physical memory regions.
-pub fn memory_regions() -> impl Iterator<Item = MemRegion> {
-    let cpu_idx = cpu_idx();
-
-    MEM_REGIONS.clone().into_iter().map(move |mut m| {
-        if !cpu_idx.is_primary() {
-            match m.kind {
-                MemRegionKind::Stack => m.phys_start = stack_top_cpu(cpu_idx) - STACK_SIZE,
-                MemRegionKind::PerCpu => m.phys_start = percpu_data_phys(cpu_idx),
-                _ => {}
-            };
-        }
-        m
-    })
+pub fn memory_regions<'a>() -> impl Iterator<Item = &'a MemRegion> + 'a {
+    MEM_REGIONS.iter()
 }
 
 pub fn phys_to_virt(p: PhysAddr) -> VirtAddr {

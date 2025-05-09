@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use core::fmt::Debug;
+use core::{fmt::Debug, ops::Deref};
 
 use crate::{PhysAddr, VirtAddr};
 
@@ -11,6 +11,7 @@ const REGION_ONE: usize = (1 << ADDR_BITS) / 16;
 
 pub const OFFSET_LINER: usize = ADDR_BASE + REGION_ONE * 8;
 pub const STACK_TOP: usize = ADDR_BASE + REGION_ONE * 15;
+pub const PERCPU_TOP: usize = ADDR_BASE + REGION_ONE * 14;
 
 static mut KCODE_VA_OFFSET: usize = 0;
 
@@ -126,7 +127,10 @@ pub enum MemRegionKind {
     Reserved,
 }
 
-pub fn region_phys_to_virt<I: Iterator<Item = MemRegion>>(regions: I, p: PhysAddr) -> VirtAddr {
+pub fn region_phys_to_virt<D: Deref<Target = MemRegion>, I: Iterator<Item = D>>(
+    regions: I,
+    p: PhysAddr,
+) -> VirtAddr {
     for region in regions {
         if p >= region.phys_start && p < region.phys_start + region.size {
             return region.virt_start + (p - region.phys_start);
@@ -135,7 +139,10 @@ pub fn region_phys_to_virt<I: Iterator<Item = MemRegion>>(regions: I, p: PhysAdd
     (p.raw() + OFFSET_LINER).into()
 }
 
-pub fn region_virt_to_phys<I: Iterator<Item = MemRegion>>(regions: I, v: VirtAddr) -> PhysAddr {
+pub fn region_virt_to_phys<D: Deref<Target = MemRegion>, I: Iterator<Item = D>>(
+    regions: I,
+    v: VirtAddr,
+) -> PhysAddr {
     for region in regions {
         let end = region.virt_start + region.size;
         if region.virt_start <= v && v < end {

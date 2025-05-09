@@ -2,18 +2,21 @@ use kmem_region::region::*;
 use pie_boot::{BootInfo, MemoryKind};
 
 use crate::{
-    ArchIf, CpuOnArg,
+    ArchIf, CpuId, CpuIdx, CpuOnArg,
     arch::Arch,
     handle_err,
     mem::{page::new_mapped_table, *},
     platform, printkv,
 };
 
+static mut BOOT_CPU: CpuId = CpuId::new(0);
+
 #[unsafe(no_mangle)]
 pub unsafe extern "Rust" fn __vma_relocate_entry(boot_info: BootInfo) {
     unsafe {
         clean_bss();
         set_kcode_va_offset(boot_info.kcode_offset);
+        BOOT_CPU = boot_info.cpu_id.into();
         platform::init(&boot_info);
     }
     Arch::init_debugcon();
@@ -65,17 +68,21 @@ pub fn setup(boot_info: BootInfo) {
 }
 
 pub fn entry_virt_and_liner() {
-    crate::mem::percpu::setup_stack_and_table();
-
     // 移除低地址空间线性映射
     let table = new_mapped_table(false);
+
+    crate::mem::percpu::setup_stack_and_table();
+
     Arch::set_kernel_table(table);
     Arch::set_user_table(0usize.into());
+    let cpu_idx = CpuIdx::primary();
+
     let arg = CpuOnArg {
-        cpu_id: cpu_id(),
-        cpu_idx: 0.into(),
+        cpu_id: unsafe { BOOT_CPU },
+        cpu_idx,
         page_table: 0usize.into(),
         page_table_with_liner: 0usize.into(),
+        stack_top_virt: stack_top_virt(cpu_idx),
     };
     crate::to_main(&arg)
 }

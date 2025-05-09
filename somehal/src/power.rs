@@ -1,3 +1,5 @@
+use core::hint::spin_loop;
+
 use rdrive::power::*;
 
 use crate::ArchIf;
@@ -13,6 +15,12 @@ fn use_power<T, F: FnOnce(&mut Hardware) -> T>(f: F) -> T {
 
 pub fn terminate() -> ! {
     use_power(|p| p.shutdown());
+    loop {
+        Arch::wait_for_event();
+    }
+}
+
+pub fn idle() -> ! {
     loop {
         Arch::wait_for_event();
     }
