@@ -181,8 +181,8 @@ pub(crate) fn setup_memory_regions(cpu0_id: CpuId, cpu_list: impl Iterator<Item 
             access: AccessFlags::Read,
             cache: CacheConfig::Normal,
         },
-        MemRegionKind::Code,
-        kcode_offset(),
+        MemRegionKind::Reserved,
+        OFFSET_LINER,
     );
 
     percpu::init(cpu0_id, cpu_list, &mut dyn_rodata_region);

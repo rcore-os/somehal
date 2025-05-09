@@ -30,8 +30,8 @@ use super::{
 use kmem_region::{
     IntAlign, PhysAddr,
     region::{
-        AccessFlags, CacheConfig, MemConfig, MemRegion, MemRegionKind, PERCPU_TOP, STACK_SIZE,
-        kcode_offset,
+        AccessFlags, CacheConfig, MemConfig, MemRegion, MemRegionKind, OFFSET_LINER, PERCPU_TOP,
+        STACK_SIZE, kcode_offset,
     },
 };
 use somehal_macros::percpu_data;
@@ -41,8 +41,13 @@ pub static mut CPU_IDX: CpuIdx = CpuIdx::new(0);
 #[percpu_data]
 pub static mut CPU_ID: CpuId = CpuId::new(0);
 
+/// .
+///
+/// # Safety
+///
+/// .
 pub unsafe fn percpu_data() -> NonNull<[u8]> {
-    PERCPU_DATA.clone()
+    *PERCPU_DATA
 }
 
 struct CPUMap {
@@ -66,7 +71,7 @@ impl CPUMap {
     }
 
     fn ptr(&self) -> *mut usize {
-        (self.ptr.raw() + if is_relocated() { kcode_offset() } else { 0 }) as *mut usize
+        (self.ptr.raw() + if is_relocated() { OFFSET_LINER } else { 0 }) as *mut usize
     }
 
     fn as_slice(&self) -> &[usize] {
@@ -155,6 +160,18 @@ fn add_data_region() {
             size,
         ));
     };
+
+    mem_region_add(MemRegion {
+        virt_start: (percpu().as_ptr() as usize).into(),
+        size: PERCPU_0.size,
+        phys_start: PERCPU_0.addr,
+        name: ".percpul",
+        config: MemConfig {
+            access: AccessFlags::Read | AccessFlags::Execute,
+            cache: CacheConfig::Normal,
+        },
+        kind: MemRegionKind::PerCpu,
+    });
 
     mem_region_add(MemRegion {
         virt_start: start0.into(),
