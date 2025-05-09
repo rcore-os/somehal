@@ -1,5 +1,6 @@
 use core::{
     alloc::Layout,
+    cell::UnsafeCell,
     ptr::{NonNull, addr_of},
 };
 
@@ -76,6 +77,31 @@ impl CPUMap {
 
     fn as_slice(&self) -> &[usize] {
         unsafe { core::slice::from_raw_parts(self.ptr(), self.len) }
+    }
+}
+
+pub struct PerCpuData<T> {
+    data: UnsafeCell<T>,
+}
+
+impl<T> PerCpuData<T> {
+    pub const fn new(data: T) -> PerCpuData<T> {
+        PerCpuData {
+            data: UnsafeCell::new(data),
+        }
+    }
+
+    fn offset(&self) -> usize {
+        self.data.get() as usize - percpu().as_ptr() as usize
+    }
+
+    fn get_ptr(&self, cpu_idx: CpuIdx) -> *mut T {
+        unsafe {
+            let addr = percpu_data().as_mut().as_ptr() as usize
+                + cpu_idx.raw() * PERCPU_0.size
+                + self.offset();
+            addr as *mut T
+        }
     }
 }
 

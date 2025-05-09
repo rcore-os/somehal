@@ -28,7 +28,7 @@ pub mod page;
 pub(crate) mod percpu;
 
 use page::page_size;
-pub use percpu::{cpu_id_to_idx, cpu_idx_to_id};
+pub use percpu::{PerCpuData, cpu_id_to_idx, cpu_idx_to_id};
 
 #[derive(Debug, Clone)]
 pub struct PhysMemory {
