@@ -3,7 +3,7 @@ use core::ptr::NonNull;
 use fdt_parser::{Fdt, FdtError, Status};
 use kmem_region::{
     IntAlign,
-    region::{AccessFlags, CacheConfig, MemConfig, MemRegionKind, OFFSET_LINER, kcode_offset},
+    region::{AccessFlags, CacheConfig, MemConfig, MemRegionKind, OFFSET_LINER},
 };
 use pie_boot::BootInfo;
 

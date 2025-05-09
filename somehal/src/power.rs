@@ -1,5 +1,3 @@
-use core::hint::spin_loop;
-
 use rdrive::power::*;
 
 use crate::ArchIf;

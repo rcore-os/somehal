@@ -31,7 +31,7 @@ use kmem_region::{
     IntAlign, PhysAddr,
     region::{
         AccessFlags, CacheConfig, MemConfig, MemRegion, MemRegionKind, OFFSET_LINER, PERCPU_TOP,
-        STACK_SIZE, kcode_offset,
+        kcode_offset,
     },
 };
 use somehal_macros::percpu_data;
@@ -78,6 +78,7 @@ impl CPUMap {
         unsafe { core::slice::from_raw_parts(self.ptr(), self.len) }
     }
 }
+
 pub fn cpu_list() -> impl Iterator<Item = (CpuIdx, CpuId)> {
     CPU_MAP
         .as_slice()
