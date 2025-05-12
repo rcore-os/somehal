@@ -117,7 +117,7 @@ pub fn cpu_id_to_idx(cpu_id: CpuId) -> CpuIdx {
             return idx.into();
         }
     }
-    unreachable!()
+    panic!("cpu_id_to_idx: ID [{:?}] not found", cpu_id);
 }
 
 pub fn cpu_idx_to_id(cpu_idx: CpuIdx) -> CpuId {
@@ -291,6 +291,14 @@ fn setup_stack_and_table_one(cpu_idx: CpuIdx, cpu_id: CpuId) {
 
     unsafe {
         let arg_ptr = arg_addr.raw() as *mut CpuOnArg;
+        println!("stack setup @{:p}", arg_ptr);
+        println!("  cpu idx   {:?}", arg.cpu_idx);
+        println!("  cpu id    {:?}", arg.cpu_id);
+        println!("  stack top @{:?}", arg.stack_top_virt);
+
+        println!("  tb1       @{:?}", arg.page_table_with_liner);
+        println!("  tb2       @{:?}", arg.page_table);
+
         arg_ptr.write(arg);
     }
 }

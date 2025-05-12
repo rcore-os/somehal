@@ -50,6 +50,51 @@ pub const fn page_valid_addr_mask() -> usize {
     (1 << page_valid_bits()) - 1
 }
 
+pub fn new_line_table(cpu: CpuIdx) -> kmem_region::PhysAddr {
+    let mut tmp_alloc = unsafe {
+        let start = stack_top_phys(cpu) - STACK_SIZE;
+        let tmp_size = STACK_SIZE;
+        PageTableAccess(LineAllocator::new(start, tmp_size))
+    };
+
+    let access = &mut tmp_alloc;
+
+    let mut table = handle_err!(Table::create_empty(access));
+
+    for region in MEM_REGIONS.iter() {
+        unsafe {
+            handle_err!(table.map(
+                MapConfig {
+                    vaddr: region.virt_start.raw().into(),
+                    paddr: region.phys_start.raw().into(),
+                    size: region.size,
+                    pte: Arch::new_pte_with_config(region.config),
+                    allow_huge: true,
+                    flush: false,
+                },
+                access,
+            ));
+
+            handle_err!(table.map(
+                MapConfig {
+                    vaddr: region.phys_start.raw().into(),
+                    paddr: region.phys_start.raw().into(),
+                    size: region.size,
+                    pte: Arch::new_pte_with_config(MemConfig {
+                        access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
+                        cache: CacheConfig::Normal
+                    }),
+                    allow_huge: true,
+                    flush: false,
+                },
+                access,
+            ));
+        }
+    }
+
+    table.paddr().raw().into()
+}
+
 pub fn new_mapped_table(is_line_map_main: bool) -> kmem_region::PhysAddr {
     let mut tmp_alloc = unsafe {
         if TMP_STACK_ITER == 0 {
@@ -92,7 +137,7 @@ pub fn new_mapped_table(is_line_map_main: bool) -> kmem_region::PhysAddr {
         let mut start = super::MEMORY_MAIN_ALL.addr.raw();
         let end = (start + super::MEMORY_MAIN_ALL.size).align_up(GB);
         start = start.align_down(GB);
-        let size = end - start;
+        let size = end - start + 12 * GB;
 
         unsafe {
             handle_err!(table.map(

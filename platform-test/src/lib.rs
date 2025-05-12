@@ -1,9 +1,7 @@
 #![no_std]
 
-use core::hint::spin_loop;
-
 use log::{LevelFilter, info};
-use somehal::println;
+use somehal::{CpuIdx, mem::cpu_idx_to_id, println};
 
 extern crate somehal;
 
@@ -29,11 +27,11 @@ fn main(cpu_id: usize, cpu_idx: usize) -> ! {
             somehal::init();
         }
 
-        somehal::mp::cpu_on(1.into());
+        somehal::mp::cpu_on(cpu_idx_to_id(CpuIdx::new(1)));
 
         // info!("per id : {:?}", somehal::mem::cpu_id());
-
         somehal::power::idle();
+
     } else {
         println!("main cpu_id: {:?}", somehal::mem::cpu_main_id());
         println!("all test passed!");

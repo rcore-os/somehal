@@ -1,8 +1,7 @@
 use aarch64_cpu::{asm::barrier, registers::*};
 
 use crate::{
-    arch::paging::{flush_tlb, set_mair},
-    mp::CpuOnArg,
+    arch::paging::{flush_tlb, set_mair}, mem::page::{new_line_table, new_mapped_table}, mp::CpuOnArg
 };
 
 pub unsafe fn switch_to_elx() {
@@ -51,6 +50,8 @@ pub unsafe fn switch_to_elx() {
 }
 
 pub unsafe fn init_mmu(arg: &CpuOnArg) {
+    // let table = new_line_table(arg.cpu_idx);
+
     set_mair();
 
     // Enable TTBR0 and TTBR1 walks, page size = 4K, vaddr size = 48 bits, paddr size = 40 bits.
@@ -68,9 +69,11 @@ pub unsafe fn init_mmu(arg: &CpuOnArg) {
         + TCR_EL1::T1SZ.val(16);
     TCR_EL1.write(TCR_EL1::IPS::Bits_48 + tcr_flags0 + tcr_flags1);
     barrier::isb(barrier::SY);
+    let tb = arg.page_table_with_liner.raw() as _;
+    // let tb = table.raw() as _;
 
-    TTBR1_EL1.set_baddr(arg.page_table_with_liner.raw() as _);
-    TTBR0_EL1.set_baddr(arg.page_table_with_liner.raw() as _);
+    TTBR1_EL1.set_baddr(tb);
+    TTBR0_EL1.set_baddr(tb);
 
     // Flush the entire TLB
     flush_tlb(None);
@@ -78,4 +81,11 @@ pub unsafe fn init_mmu(arg: &CpuOnArg) {
     // Enable the MMU and turn on I-cache and D-cache
     SCTLR_EL1.modify(SCTLR_EL1::M::Enable + SCTLR_EL1::C::Cacheable + SCTLR_EL1::I::Cacheable);
     barrier::isb(barrier::SY);
+
+    // unsafe {
+    //     let base = 0xfe660000usize;
+    //     (base as *mut u8).write_volatile(b'A');
+    //     (base as *mut u8).write_volatile(b'\r');
+    //     (base as *mut u8).write_volatile(b'\n');
+    // }
 }
