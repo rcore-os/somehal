@@ -52,8 +52,10 @@ pub trait ArchIf {
         (nanos * Self::tick_hz() as u128 / NANO_PER_SEC) as _
     }
 
-    fn start_secondary_cpu(
-        cpu: CpuId,
-        stack: PhysAddr,
-    ) -> Result<(), alloc::boxed::Box<dyn Error>>;
+    fn start_secondary_cpu(cpu: CpuId, stack: PhysAddr)
+    -> Result<(), alloc::boxed::Box<dyn Error>>;
+
+    fn set_this_percpu_data_ptr(ptr: VirtAddr);
+
+    fn get_this_percpu_data_ptr() -> VirtAddr;
 }

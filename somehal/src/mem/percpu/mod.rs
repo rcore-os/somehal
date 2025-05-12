@@ -5,6 +5,8 @@ use core::{
 };
 
 use crate::{
+    ArchIf,
+    arch::Arch,
     handle_err,
     mem::{CPU_COUNT, page::page_size, percpu},
     mp::CpuOnArg,
@@ -12,6 +14,8 @@ use crate::{
     platform::{CpuId, CpuIdx},
     println,
 };
+
+mod define;
 
 pub(super) static PERCPU_0: OnceStatic<PhysMemory> = OnceStatic::new();
 // 除主CPU 外，其他CPU的独占Data
@@ -35,12 +39,15 @@ use kmem_region::{
         kcode_offset,
     },
 };
-use somehal_macros::percpu_data;
+use somehal_macros::def_percpu;
 
-#[percpu_data]
-pub static mut CPU_IDX: CpuIdx = CpuIdx::new(0);
-#[percpu_data]
-pub static mut CPU_ID: CpuId = CpuId::new(0);
+pub use define::*;
+
+#[def_percpu]
+pub static CPU_IDX: CpuIdx = CpuIdx::new(0);
+
+#[def_percpu]
+pub static CPU_ID: CpuId = CpuId::new(0);
 
 /// .
 ///
@@ -49,6 +56,16 @@ pub static mut CPU_ID: CpuId = CpuId::new(0);
 /// .
 pub unsafe fn percpu_data() -> NonNull<[u8]> {
     *PERCPU_DATA
+}
+
+pub fn percpu_data_base() -> usize {
+    unsafe { percpu_data().as_ref().as_ptr() as usize }
+}
+
+pub fn cpu_setup(cpu_idx: CpuIdx) {
+    let ptr = percpu_data_base() + cpu_idx.raw() * PERCPU_0.size;
+    println!("CPU {} percpu data base: {:x}", cpu_idx.raw(), ptr);
+    Arch::set_this_percpu_data_ptr(ptr.into());
 }
 
 struct CPUMap {
@@ -80,31 +97,6 @@ impl CPUMap {
     }
 }
 
-pub struct PerCpuData<T> {
-    data: UnsafeCell<T>,
-}
-
-impl<T> PerCpuData<T> {
-    pub const fn new(data: T) -> PerCpuData<T> {
-        PerCpuData {
-            data: UnsafeCell::new(data),
-        }
-    }
-
-    fn offset(&self) -> usize {
-        self.data.get() as usize - percpu().as_ptr() as usize
-    }
-
-    fn get_ptr(&self, cpu_idx: CpuIdx) -> *mut T {
-        unsafe {
-            let addr = percpu_data().as_mut().as_ptr() as usize
-                + cpu_idx.raw() * PERCPU_0.size
-                + self.offset();
-            addr as *mut T
-        }
-    }
-}
-
 pub fn cpu_list() -> impl Iterator<Item = (CpuIdx, CpuId)> {
     CPU_MAP
         .as_slice()
@@ -128,6 +120,9 @@ pub fn cpu_idx_to_id(cpu_idx: CpuIdx) -> CpuId {
 
 pub fn init_percpu_data() {
     let percpu_one_size = percpu().len().align_up(page_size());
+
+    println!("percpu_one_size: {}", percpu_one_size);
+
     let percpu_cpu0_start = percpu().as_ptr() as usize - kcode_offset();
 
     unsafe {
@@ -159,21 +154,7 @@ pub fn init_percpu_data() {
 
     unsafe { PERCPU_OTHER_ALL.init(percpu_all) };
 
-    clean();
-
     add_data_region();
-}
-
-fn clean() {
-    let size = PERCPU_0.size;
-    let ptr0 = PERCPU_0.addr;
-    let s = unsafe { core::slice::from_raw_parts_mut(ptr0.raw() as *mut u8, size) };
-    s.fill(0);
-
-    let ptr1 = PERCPU_OTHER_ALL.addr.raw();
-
-    let s = unsafe { core::slice::from_raw_parts_mut(ptr1 as *mut u8, PERCPU_OTHER_ALL.size) };
-    s.fill(0);
 }
 
 fn add_data_region() {
@@ -187,18 +168,6 @@ fn add_data_region() {
             size,
         ));
     };
-
-    mem_region_add(MemRegion {
-        virt_start: (percpu().as_ptr() as usize).into(),
-        size: PERCPU_0.size,
-        phys_start: PERCPU_0.addr,
-        name: ".percpul",
-        config: MemConfig {
-            access: AccessFlags::Read | AccessFlags::Execute,
-            cache: CacheConfig::Normal,
-        },
-        kind: MemRegionKind::PerCpu,
-    });
 
     mem_region_add(MemRegion {
         virt_start: start0.into(),
@@ -246,17 +215,10 @@ pub fn init(
         fn __start_percpu();
     }
 
-    let link_start = __start_percpu as usize;
-    let idx_offset = addr_of!(CPU_IDX) as usize - link_start;
-    let id_offset = addr_of!(CPU_ID) as usize - link_start;
     unsafe {
         let cpu0_start = percpu().as_ptr().sub(kcode_offset());
-        let idx_ptr = cpu0_start.add(idx_offset) as *mut CpuIdx;
-        let id_ptr = cpu0_start.add(id_offset) as *mut CpuId;
 
         let mut idx = 0;
-        idx_ptr.write(0.into());
-        id_ptr.write(cpu0_id);
 
         println!(
             "cpu {:>04} [0x{:>04x}] phys  : [{:p}, {:p})",
@@ -287,12 +249,6 @@ pub fn init(
 
                 core::slice::from_raw_parts_mut(phys_iter as *mut u8, len)
                     .copy_from_slice(core::slice::from_raw_parts(cpu0_start, len));
-
-                let idx_ptr = (phys_iter + idx_offset) as *mut CpuIdx;
-                let id_ptr = (phys_iter + id_offset) as *mut CpuId;
-
-                idx_ptr.write(idx.into());
-                id_ptr.write(id);
 
                 phys_iter += len;
                 idx += 1;

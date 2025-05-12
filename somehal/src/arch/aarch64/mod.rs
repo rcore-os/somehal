@@ -91,4 +91,19 @@ impl ArchIf for Arch {
         trace!("cpu_on: entry={:#x} stack_top={:?}", entry, stack_top);
         mp::cpu_on(cpu, entry, stack_top)
     }
+
+    fn set_this_percpu_data_ptr(ptr: VirtAddr) {
+        #[cfg(feature = "vm")]
+        TPIDR_EL2.set(ptr.raw() as _);
+        #[cfg(not(feature = "vm"))]
+        TPIDR_EL1.set(ptr.raw() as _);
+    }
+
+    fn get_this_percpu_data_ptr() -> VirtAddr {
+        #[cfg(feature = "vm")]
+        let ptr = TPIDR_EL2.get() as _;
+        #[cfg(not(feature = "vm"))]
+        let ptr = TPIDR_EL1.get() as _;
+        VirtAddr::new(ptr)
+    }
 }

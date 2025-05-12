@@ -15,7 +15,7 @@ use rdrive::register::{DriverRegister, DriverRegisterSlice};
 use somehal_macros::fn_link_section;
 
 use crate::{
-    ArchIf,
+    ArchIf, CpuOnArg,
     arch::Arch,
     once_static::OnceStatic,
     platform::{self, CpuId, CpuIdx},
@@ -45,11 +45,20 @@ static MEM_REGIONS: OnceStatic<Vec<MemRegion, 128>> = OnceStatic::new();
 static STACK_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
 
 pub fn cpu_idx() -> CpuIdx {
-    unsafe { percpu::CPU_IDX }
+    *percpu::CPU_IDX
 }
 
 pub fn cpu_id() -> CpuId {
-    unsafe { percpu::CPU_ID }
+    *percpu::CPU_ID.read_current()
+}
+
+pub fn cpu_main_id() -> CpuId {
+    *percpu::CPU_ID.remote_ref(0)
+}
+
+pub(crate) fn setup_arg(args: &CpuOnArg) {
+    percpu::CPU_IDX.write_current_raw(args.cpu_idx);
+    percpu::CPU_ID.write_current_raw(args.cpu_id);
 }
 
 pub(crate) fn stack_top_phys(cpu_idx: CpuIdx) -> PhysAddr {

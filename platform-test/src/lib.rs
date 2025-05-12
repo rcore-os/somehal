@@ -15,6 +15,8 @@ fn main(cpu_id: usize, cpu_idx: usize) -> ! {
     println!("cpu_id: {:?}", cpu_id);
     println!("cpu_idx: {:?}", cpu_idx);
 
+    println!("mem cpu_idx: {:?}", somehal::mem::cpu_id());
+
     if cpu_idx == 0 {
         lang_items::init_heap();
 

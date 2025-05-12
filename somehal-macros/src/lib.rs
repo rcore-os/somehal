@@ -166,14 +166,22 @@ pub fn fn_link_section(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
-pub fn percpu_data(_args: TokenStream, input: TokenStream) -> TokenStream {
-    let mut input = parse_macro_input!(input as ItemStatic);
-    let attr = syn::parse_quote! {
-        #[unsafe(link_section=".percpu")]
-    };
-    input.attrs.push(attr);
+pub fn def_percpu(_args: TokenStream, input: TokenStream) -> TokenStream {
+    let ItemStatic {
+        attrs,
+        vis,
+        static_token,
+        mutability,
+        ident,
+        ty,
+        expr,
+        ..
+    } = parse_macro_input!(input as ItemStatic);
+
     quote! {
-        #input
+        #[unsafe(link_section=".data.percpu")]
+        #(#attrs)*
+        #vis #static_token #mutability #ident : PerCpuData<#ty> = PerCpuData::new(#expr);
     }
     .into()
 }
