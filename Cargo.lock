@@ -313,6 +313,9 @@ dependencies = [
 [[package]]
 name = "kpercpu"
 version = "0.1.0"
+dependencies = [
+ "kpercpu-macros",
+]
 
 [[package]]
 name = "kpercpu-macros"
@@ -705,6 +708,7 @@ dependencies = [
  "fdt-parser",
  "heapless",
  "kmem-region",
+ "kpercpu",
  "linked_list_allocator",
  "log",
  "page-table-generic",

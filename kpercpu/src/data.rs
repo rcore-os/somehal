@@ -18,11 +18,11 @@ impl<T> PerCpuData<T> {
     }
 
     fn offset(&self) -> usize {
-        self.data.get() as usize - percpu_base()
+        self.data.get() as usize - percpu_link_start()
     }
 
     fn get_remote_ptr(&self, cpu_idx: usize) -> *mut T {
-        let addr = percpu_link_start() + cpu_idx * percpu_size() + self.offset();
+        let addr = percpu_base() + cpu_idx * percpu_size() + self.offset();
         addr as *mut T
     }
 

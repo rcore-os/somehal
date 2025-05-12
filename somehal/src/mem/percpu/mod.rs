@@ -11,8 +11,6 @@ use crate::{
     println,
 };
 
-mod define;
-
 pub(super) static PERCPU_0: OnceStatic<PhysMemory> = OnceStatic::new();
 // 除主CPU 外，其他CPU的独占Data
 pub(super) static PERCPU_OTHER_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
@@ -35,15 +33,34 @@ use kmem_region::{
         kcode_offset,
     },
 };
-use somehal_macros::def_percpu;
 
-pub use define::*;
+use kpercpu::def_percpu;
 
 #[def_percpu]
 pub static CPU_IDX: CpuIdx = CpuIdx::new(0);
 
 #[def_percpu]
 pub static CPU_ID: CpuId = CpuId::new(0);
+
+struct ThisImpl;
+
+impl kpercpu::Impl for ThisImpl {
+    fn percpu_base() -> NonNull<u8> {
+        unsafe { NonNull::new_unchecked(percpu_data_base() as _) }
+    }
+
+    #[inline]
+    fn set_cpu_local_ptr(ptr: *mut u8) {
+        Arch::set_this_percpu_data_ptr(ptr.into());
+    }
+
+    #[inline]
+    fn get_cpu_local_ptr() -> *mut u8 {
+        Arch::get_this_percpu_data_ptr().as_ptr()
+    }
+}
+
+kpercpu::impl_percpu!(ThisImpl);
 
 /// .
 ///
@@ -56,12 +73,6 @@ pub unsafe fn percpu_data() -> NonNull<[u8]> {
 
 pub fn percpu_data_base() -> usize {
     unsafe { percpu_data().as_ref().as_ptr() as usize }
-}
-
-pub fn cpu_setup(cpu_idx: CpuIdx) {
-    let ptr = percpu_data_base() + cpu_idx.raw() * PERCPU_0.size;
-    println!("CPU {} percpu data base: {:x}", cpu_idx.raw(), ptr);
-    Arch::set_this_percpu_data_ptr(ptr.into());
 }
 
 struct CPUMap {

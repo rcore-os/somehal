@@ -165,27 +165,6 @@ pub fn fn_link_section(input: TokenStream) -> TokenStream {
     .into()
 }
 
-#[proc_macro_attribute]
-pub fn def_percpu(_args: TokenStream, input: TokenStream) -> TokenStream {
-    let ItemStatic {
-        attrs,
-        vis,
-        static_token,
-        mutability,
-        ident,
-        ty,
-        expr,
-        ..
-    } = parse_macro_input!(input as ItemStatic);
-
-    quote! {
-        #[unsafe(link_section=".data.percpu")]
-        #(#attrs)*
-        #vis #static_token #mutability #ident : percpu::PerCpuData<#ty> = percpu::PerCpuData::new(#expr);
-    }
-    .into()
-}
-
 /// A speaking volume. Deriving `FromMeta` will cause this to be usable
 /// as a string value for a meta-item key.
 #[derive(Debug, Clone, Copy, FromMeta)]

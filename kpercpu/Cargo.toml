@@ -10,3 +10,4 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+kpercpu-macros = { path = "../kpercpu-macros" }
