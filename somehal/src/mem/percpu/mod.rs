@@ -1,9 +1,8 @@
-use core::{
-    alloc::Layout,
-    ptr::{NonNull, addr_of},
-};
+use core::{alloc::Layout, ptr::NonNull};
 
 use crate::{
+    ArchIf,
+    arch::Arch,
     handle_err,
     mem::{CPU_COUNT, page::page_size, percpu},
     mp::CpuOnArg,
@@ -12,22 +11,58 @@ use crate::{
     println,
 };
 
+mod define;
+
+pub(super) static PERCPU_0: OnceStatic<PhysMemory> = OnceStatic::new();
+// 除主CPU 外，其他CPU的独占Data
+pub(super) static PERCPU_OTHER_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
+
+static PERCPU_DATA: OnceStatic<NonNull<[u8]>> = OnceStatic::new();
+
+static CPU_MAP: OnceStatic<CPUMap> = OnceStatic::new();
+
 use super::{
-    PERCPU_OTHER_ALL, main_memory::RegionAllocator, page::is_relocated, percpu_data_phys,
-    stack_top_cpu,
+    PhysMemory,
+    main_memory::RegionAllocator,
+    mem_region_add,
+    page::{BOOT_TABLE1, BOOT_TABLE2, is_relocated},
+    stack_top_phys, stack_top_virt,
 };
 use kmem_region::{
     IntAlign, PhysAddr,
-    region::{STACK_SIZE, kcode_offset},
+    region::{
+        AccessFlags, CacheConfig, MemConfig, MemRegion, MemRegionKind, OFFSET_LINER, PERCPU_TOP,
+        kcode_offset,
+    },
 };
-use somehal_macros::percpu_data;
+use somehal_macros::def_percpu;
 
-#[percpu_data]
-pub static mut CPU_IDX: CpuIdx = CpuIdx::new(0);
-#[percpu_data]
-pub static mut CPU_ID: CpuId = CpuId::new(0);
+pub use define::*;
 
-static CPU_MAP: OnceStatic<CPUMap> = OnceStatic::new();
+#[def_percpu]
+pub static CPU_IDX: CpuIdx = CpuIdx::new(0);
+
+#[def_percpu]
+pub static CPU_ID: CpuId = CpuId::new(0);
+
+/// .
+///
+/// # Safety
+///
+/// .
+pub unsafe fn percpu_data() -> NonNull<[u8]> {
+    *PERCPU_DATA
+}
+
+pub fn percpu_data_base() -> usize {
+    unsafe { percpu_data().as_ref().as_ptr() as usize }
+}
+
+pub fn cpu_setup(cpu_idx: CpuIdx) {
+    let ptr = percpu_data_base() + cpu_idx.raw() * PERCPU_0.size;
+    println!("CPU {} percpu data base: {:x}", cpu_idx.raw(), ptr);
+    Arch::set_this_percpu_data_ptr(ptr.into());
+}
 
 struct CPUMap {
     ptr: PhysAddr,
@@ -50,13 +85,14 @@ impl CPUMap {
     }
 
     fn ptr(&self) -> *mut usize {
-        (self.ptr.raw() + if is_relocated() { kcode_offset() } else { 0 }) as *mut usize
+        (self.ptr.raw() + if is_relocated() { OFFSET_LINER } else { 0 }) as *mut usize
     }
 
     fn as_slice(&self) -> &[usize] {
         unsafe { core::slice::from_raw_parts(self.ptr(), self.len) }
     }
 }
+
 pub fn cpu_list() -> impl Iterator<Item = (CpuIdx, CpuId)> {
     CPU_MAP
         .as_slice()
@@ -78,16 +114,80 @@ pub fn cpu_idx_to_id(cpu_idx: CpuIdx) -> CpuId {
     (d[cpu_idx.raw()]).into()
 }
 
-pub fn clean() {
-    let size = percpu().len();
-    let ptr0 = percpu_data_phys(0.into());
-    let s = unsafe { core::slice::from_raw_parts_mut(ptr0.raw() as *mut u8, size) };
-    s.fill(0);
+pub fn init_percpu_data() {
+    let percpu_one_size = percpu().len().align_up(page_size());
 
-    let ptr1 = PERCPU_OTHER_ALL.addr.raw();
+    println!("percpu_one_size: {}", percpu_one_size);
 
-    let s = unsafe { core::slice::from_raw_parts_mut(ptr1 as *mut u8, PERCPU_OTHER_ALL.size) };
-    s.fill(0);
+    let percpu_cpu0_start = percpu().as_ptr() as usize - kcode_offset();
+
+    unsafe {
+        PERCPU_0.init(PhysMemory {
+            addr: percpu_cpu0_start.into(),
+            size: percpu_one_size,
+        })
+    };
+
+    let cpu_other_count = unsafe { CPU_COUNT - 1 };
+
+    let percpu_all = if cpu_other_count > 0 {
+        let percpu_other_all_size = percpu_one_size * cpu_other_count;
+
+        let percpu_start = super::main_memory::alloc(
+            Layout::from_size_align(percpu_other_all_size, page_size()).unwrap(),
+        );
+
+        PhysMemory {
+            addr: percpu_start,
+            size: percpu_other_all_size,
+        }
+    } else {
+        PhysMemory {
+            addr: 0usize.into(),
+            size: 0,
+        }
+    };
+
+    unsafe { PERCPU_OTHER_ALL.init(percpu_all) };
+
+    add_data_region();
+}
+
+fn add_data_region() {
+    let end = PERCPU_TOP;
+    let start1 = end - PERCPU_OTHER_ALL.size;
+    let start0 = start1 - PERCPU_0.size;
+    unsafe {
+        let size = end - start0;
+        PERCPU_DATA.init(NonNull::slice_from_raw_parts(
+            NonNull::new_unchecked(start0 as _),
+            size,
+        ));
+    };
+
+    mem_region_add(MemRegion {
+        virt_start: start0.into(),
+        size: PERCPU_0.size,
+        phys_start: PERCPU_0.addr,
+        name: ".percpu0",
+        config: MemConfig {
+            access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
+            cache: CacheConfig::Normal,
+        },
+        kind: MemRegionKind::PerCpu,
+    });
+
+    mem_region_add(MemRegion {
+        virt_start: start1.into(),
+        size: PERCPU_OTHER_ALL.size,
+        phys_start: PERCPU_OTHER_ALL.addr,
+        name: ".percpu1+",
+        config: MemConfig {
+            access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
+            cache: CacheConfig::Normal,
+        },
+        kind: MemRegionKind::PerCpu,
+    });
 }
 
 pub fn init(
@@ -111,17 +211,10 @@ pub fn init(
         fn __start_percpu();
     }
 
-    let link_start = __start_percpu as usize;
-    let idx_offset = addr_of!(CPU_IDX) as usize - link_start;
-    let id_offset = addr_of!(CPU_ID) as usize - link_start;
     unsafe {
         let cpu0_start = percpu().as_ptr().sub(kcode_offset());
-        let idx_ptr = cpu0_start.add(idx_offset) as *mut CpuIdx;
-        let id_ptr = cpu0_start.add(id_offset) as *mut CpuId;
 
         let mut idx = 0;
-        idx_ptr.write(0.into());
-        id_ptr.write(cpu0_id);
 
         println!(
             "cpu {:>04} [0x{:>04x}] phys  : [{:p}, {:p})",
@@ -153,12 +246,6 @@ pub fn init(
                 core::slice::from_raw_parts_mut(phys_iter as *mut u8, len)
                     .copy_from_slice(core::slice::from_raw_parts(cpu0_start, len));
 
-                let idx_ptr = (phys_iter + idx_offset) as *mut CpuIdx;
-                let id_ptr = (phys_iter + id_offset) as *mut CpuId;
-
-                idx_ptr.write(idx.into());
-                id_ptr.write(id);
-
                 phys_iter += len;
                 idx += 1;
             }
@@ -179,18 +266,14 @@ pub fn setup_stack_and_table() {
 }
 
 fn setup_stack_and_table_one(cpu_idx: CpuIdx, cpu_id: CpuId) {
-    let stack_top = stack_top_cpu(cpu_idx);
-
-    let stack_bottom = stack_top - STACK_SIZE;
-
-    let (table1, table2) =
-        super::page::new_mapped_secondary_table(stack_bottom.raw().into(), cpu_idx);
+    let stack_top = stack_top_phys(cpu_idx);
 
     let arg = CpuOnArg {
         cpu_id,
         cpu_idx,
-        page_table_with_liner: table1.raw().into(),
-        page_table: table2.raw().into(),
+        page_table_with_liner: BOOT_TABLE1.raw().into(),
+        page_table: BOOT_TABLE2.raw().into(),
+        stack_top_virt: stack_top_virt(cpu_idx),
     };
 
     let arg_addr = stack_top - size_of::<CpuOnArg>();

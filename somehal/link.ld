@@ -23,25 +23,30 @@ SECTIONS
     .data : ALIGN(__page_size) {
         __erodata = .;
         __srwdata = .;
-        *(.data*)
-
+        
         __sdriver_register = .;
         KEEP(*(.driver.register*))
         __edriver_register = .;
+
+
+        . = ALIGN(__page_size);
+        __start_percpu = .;
+        *(.data.percpu*)
+        . = ALIGN(__page_size);
+        __stop_percpu = .;
+
+        *(.data .data.*)
 
         . = ALIGN(__page_size);
         __global_pointer$ = . + 0x800;
         *(.sdata.*)
     } 
-    percpu : ALIGN(__page_size) {
+
+
+    bss (NOLOAD) : ALIGN(__page_size)  {
         __kernel_load_size = . - __kernel_load_vma;
         __erwdata = .;
 
-        *(.percpu*)
-        . = ALIGN(__page_size);
-    } 
-
-    bss (NOLOAD) : ALIGN(__page_size)  {
         *(.bss .bss.*)
         *(.sbss .sbss.*)
         *(COMMON)

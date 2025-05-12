@@ -2,7 +2,7 @@ use entry::primary_entry;
 use page_table_generic::TableGeneric;
 use riscv::{
     asm::{sfence_vma, sfence_vma_all},
-    register::satp,
+    register::{satp, time},
 };
 
 use crate::{
@@ -99,5 +99,20 @@ impl ArchIf for Arch {
 
     fn primary_entry(boot_info: pie_boot::BootInfo) {
         primary_entry(boot_info);
+    }
+    
+    fn current_ticks() -> u64 {
+        time::read() as u64
+    }
+    
+    fn tick_hz() -> u64 {
+        10_000_000
+    }
+    
+    fn start_secondary_cpu(
+        cpu: CpuId,
+        stack: kmem_region::PhysAddr,
+    ) -> Result<(), alloc::boxed::Box<dyn core::error::Error>> {
+        todo!()
     }
 }

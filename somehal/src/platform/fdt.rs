@@ -3,7 +3,7 @@ use core::ptr::NonNull;
 use fdt_parser::{Fdt, FdtError, Status};
 use kmem_region::{
     IntAlign,
-    region::{AccessFlags, CacheConfig, MemConfig, MemRegionKind, kcode_offset},
+    region::{AccessFlags, CacheConfig, MemConfig, MemRegionKind, OFFSET_LINER},
 };
 use pie_boot::BootInfo;
 
@@ -113,7 +113,7 @@ pub fn init_debugcon() -> Option<any_uart::Uart> {
 }
 
 fn fdt_ptr() -> *mut u8 {
-    (unsafe { FDT_ADDR + if is_relocated() { kcode_offset() } else { 0 } }) as _
+    (unsafe { FDT_ADDR + if is_relocated() { OFFSET_LINER } else { 0 } }) as _
 }
 
 pub fn get_fdt<'a>() -> Option<Fdt<'a>> {
@@ -134,8 +134,8 @@ pub(crate) fn memory_regions() -> vec::Vec<MemRegion> {
                     access: AccessFlags::Read,
                     cache: CacheConfig::Normal,
                 },
-                kind: MemRegionKind::Code,
-                virt_start: (start + kcode_offset()).into(),
+                kind: MemRegionKind::Reserved,
+                virt_start: (start + OFFSET_LINER).into(),
                 size: end - start,
                 phys_start: start.into(),
             });

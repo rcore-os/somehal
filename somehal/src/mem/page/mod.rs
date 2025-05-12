@@ -1,6 +1,3 @@
-use core::alloc::Layout;
-use core::panic;
-
 use kmem_region::IntAlign;
 use kmem_region::allocator::LineAllocator;
 use kmem_region::region::{AccessFlags, CacheConfig, MemConfig, OFFSET_LINER, STACK_SIZE};
@@ -8,11 +5,17 @@ use page_table_generic::*;
 
 use crate::arch::Arch;
 use crate::archif::ArchIf;
-use crate::mem::{MEM_REGIONS, percpu_data_phys, stack_top_cpu, stack_top_cpu0};
+use crate::mem::{MEM_REGIONS, stack_top_phys};
+use crate::once_static::OnceStatic;
 use crate::platform::CpuIdx;
 use crate::{handle_err, printkv, println};
 
 static mut IS_RELOCATED: bool = false;
+// 包含线性映射
+pub(crate) static BOOT_TABLE1: OnceStatic<PhysAddr> = OnceStatic::new();
+pub(crate) static BOOT_TABLE2: OnceStatic<PhysAddr> = OnceStatic::new();
+
+static mut TMP_STACK_ITER: usize = 0;
 
 pub type Table<'a> = PageTableRef<'a, <Arch as ArchIf>::PageTable>;
 
@@ -48,22 +51,12 @@ pub const fn page_valid_addr_mask() -> usize {
 }
 
 pub fn new_mapped_table(is_line_map_main: bool) -> kmem_region::PhysAddr {
-    let mut tmp_alloc = if is_line_map_main {
-        let tmp_size = 8 * MB;
+    let mut tmp_alloc = unsafe {
+        if TMP_STACK_ITER == 0 {
+            TMP_STACK_ITER = stack_top_phys(CpuIdx::primary()).raw() - STACK_SIZE;
+        }
 
-        let start = if let Some(h) =
-            unsafe { super::heap::alloc(Layout::from_size_align(tmp_size, page_size()).unwrap()) }
-        {
-            h
-        } else {
-            println!("Failed to allocate tmp page table");
-            panic!();
-        };
-
-        let start = start.as_ptr() as usize;
-        PageTableAccess(LineAllocator::new(start.into(), tmp_size))
-    } else {
-        let start = stack_top_cpu0() - STACK_SIZE;
+        let start = TMP_STACK_ITER.into();
         let tmp_size = STACK_SIZE;
         PageTableAccess(LineAllocator::new(start, tmp_size))
     };
@@ -117,92 +110,25 @@ pub fn new_mapped_table(is_line_map_main: bool) -> kmem_region::PhysAddr {
                 access,
             ));
         }
+
+        unsafe {
+            BOOT_TABLE1.init(table.paddr());
+            printkv!("BOOT_TABLE1", "{:?}", BOOT_TABLE1.as_ref());
+        }
+    } else {
+        unsafe {
+            BOOT_TABLE2.init(table.paddr());
+            printkv!("BOOT_TABLE2", "{:?}", BOOT_TABLE2.as_ref());
+        }
     }
 
     println!("Table size {:#x}", tmp_alloc.0.used());
 
-    table.paddr().raw().into()
-}
-
-fn new_boot_table_secondary(
-    cpu_idx: CpuIdx,
-    map_liner: bool,
-    access: &mut PageTableAccess,
-) -> PhysAddr {
-    let mut table = handle_err!(Table::create_empty(access));
-
-    for region in MEM_REGIONS.iter() {
-        unsafe {
-            let paddr = match region.kind {
-                kmem_region::region::MemRegionKind::Stack => stack_top_cpu(cpu_idx) - STACK_SIZE,
-                kmem_region::region::MemRegionKind::PerCpu => percpu_data_phys(cpu_idx),
-                _ => region.phys_start,
-            }
-            .raw();
-
-            // println!(
-            //     "cpu{:?} `{}` {:?}->{:#x}",
-            //     cpu_idx, region.name, region.virt_start, paddr
-            // );
-
-            handle_err!(table.map(
-                MapConfig {
-                    vaddr: region.virt_start.raw().into(),
-                    paddr: paddr.into(),
-                    size: region.size,
-                    pte: Arch::new_pte_with_config(region.config),
-                    allow_huge: true,
-                    flush: false,
-                },
-                access,
-            ));
-        }
+    unsafe {
+        TMP_STACK_ITER += tmp_alloc.0.used().align_up(page_size());
     }
 
-    if map_liner {
-        let mut start = super::MEMORY_MAIN_ALL.addr.raw();
-        let end = (start + super::MEMORY_MAIN_ALL.size).align_up(GB);
-        start = start.align_down(GB);
-        let size = end - start;
-
-        unsafe {
-            handle_err!(table.map(
-                MapConfig {
-                    vaddr: start.into(),
-                    paddr: start.into(),
-                    size,
-                    pte: Arch::new_pte_with_config(MemConfig {
-                        access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
-                        cache: CacheConfig::Normal
-                    }),
-                    allow_huge: true,
-                    flush: false,
-                },
-                access,
-            ));
-        }
-    }
     table.paddr().raw().into()
-}
-
-pub fn new_mapped_secondary_table(stack_bottom: PhysAddr, cpu_idx: CpuIdx) -> (PhysAddr, PhysAddr) {
-    let start = stack_bottom.raw().into();
-    let tmp_size = STACK_SIZE;
-    let mut tmp_alloc = PageTableAccess(LineAllocator::new(start, tmp_size));
-
-    printkv!(
-        "Tmp page allocator",
-        "[{:?}, {:?})",
-        tmp_alloc.0.start,
-        tmp_alloc.0.end
-    );
-
-    let access = &mut tmp_alloc;
-
-    let table1 = new_boot_table_secondary(cpu_idx, true, access);
-    let table2 = new_boot_table_secondary(cpu_idx, false, access);
-
-    (table1, table2)
 }
 
 struct PageTableAccess(LineAllocator);

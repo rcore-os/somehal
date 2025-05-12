@@ -48,6 +48,10 @@ def_id!(CpuIdx, usize);
 def_id!(CpuId, usize);
 
 impl CpuIdx {
+    pub const fn primary() -> Self {
+        CpuIdx(0)
+    }
+
     pub fn is_primary(&self) -> bool {
         self.0 == 0
     }

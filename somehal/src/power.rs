@@ -17,3 +17,9 @@ pub fn terminate() -> ! {
         Arch::wait_for_event();
     }
 }
+
+pub fn idle() -> ! {
+    loop {
+        Arch::wait_for_event();
+    }
+}

@@ -49,6 +49,9 @@ pub(crate) fn to_main(arg: &CpuOnArg) -> ! {
     }
     unsafe {
         set_is_relocated();
+        mem::percpu::cpu_setup(arg.cpu_idx);
+        mem::setup_arg(arg);
+
         __somehal_main(arg.cpu_id, arg.cpu_idx);
     }
 }
