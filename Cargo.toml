@@ -1,6 +1,6 @@
 [workspace]
 members = [ 
-    "kmem-region", "num-align",
+    "kmem-region", "kpercpu", "kpercpu-macros", "num-align",
     "page-table-generic", "pie-boot",
     "platform-test",
     "somehal",

@@ -181,7 +181,7 @@ pub fn def_percpu(_args: TokenStream, input: TokenStream) -> TokenStream {
     quote! {
         #[unsafe(link_section=".data.percpu")]
         #(#attrs)*
-        #vis #static_token #mutability #ident : PerCpuData<#ty> = PerCpuData::new(#expr);
+        #vis #static_token #mutability #ident : percpu::PerCpuData<#ty> = percpu::PerCpuData::new(#expr);
     }
     .into()
 }

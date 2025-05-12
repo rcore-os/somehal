@@ -41,7 +41,7 @@ use mem::page::set_is_relocated;
 use mp::CpuOnArg;
 pub use platform::CpuIdx;
 pub use rdrive as driver;
-pub use somehal_macros::{entry, module_driver};
+pub use somehal_macros::{entry, module_driver, def_percpu};
 
 pub(crate) fn to_main(arg: &CpuOnArg) -> ! {
     unsafe extern "C" {

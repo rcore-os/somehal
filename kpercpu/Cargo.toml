@@ -1,0 +1,12 @@
+[package]
+name = "kpercpu"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+categories.workspace = true
+description.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
