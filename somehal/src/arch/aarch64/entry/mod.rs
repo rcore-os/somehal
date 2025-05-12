@@ -1,7 +1,6 @@
 use core::arch::{asm, naked_asm};
 
 use aarch64_cpu::{asm::barrier, registers::*};
-use kmem_region::region::STACK_TOP;
 use pie_boot::BootInfo;
 
 use super::debug;

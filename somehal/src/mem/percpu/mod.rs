@@ -1,8 +1,4 @@
-use core::{
-    alloc::Layout,
-    cell::UnsafeCell,
-    ptr::{NonNull, addr_of},
-};
+use core::{alloc::Layout, ptr::NonNull};
 
 use crate::{
     ArchIf,
