@@ -80,8 +80,7 @@ pub fn entry_virt_and_liner() {
     let arg = CpuOnArg {
         cpu_id: unsafe { BOOT_CPU },
         cpu_idx,
-        page_table: 0usize.into(),
-        page_table_with_liner: 0usize.into(),
+        boot_table: 0usize.into(),
         stack_top_virt: stack_top_virt(cpu_idx),
     };
     crate::to_main(&arg)

@@ -13,11 +13,17 @@ use crate::{handle_err, printkv, println};
 static mut IS_RELOCATED: bool = false;
 // 包含线性映射
 pub(crate) static BOOT_TABLE1: OnceStatic<PhysAddr> = OnceStatic::new();
-pub(crate) static BOOT_TABLE2: OnceStatic<PhysAddr> = OnceStatic::new();
+pub(crate) static KERNEL_TABLE: OnceStatic<PhysAddr> = OnceStatic::new();
 
 static mut TMP_STACK_ITER: usize = 0;
 
 pub type Table<'a> = PageTableRef<'a, <Arch as ArchIf>::PageTable>;
+
+pub fn set_kernel_table(table: PhysAddr) {
+    unsafe {
+        KERNEL_TABLE.set(table);
+    }
+}
 
 pub(crate) fn set_is_relocated() {
     unsafe {
@@ -107,11 +113,11 @@ pub fn new_mapped_table(is_map_liner: bool) -> kmem_region::PhysAddr {
     }
     unsafe {
         if is_map_liner {
-            BOOT_TABLE1.init(table.paddr());
+            BOOT_TABLE1.set(table.paddr());
             printkv!("BOOT_TABLE1", "{:?}", BOOT_TABLE1.as_ref());
         } else {
-            BOOT_TABLE2.init(table.paddr());
-            printkv!("BOOT_TABLE2", "{:?}", BOOT_TABLE2.as_ref());
+            KERNEL_TABLE.set(table.paddr());
+            printkv!("BOOT_TABLE2", "{:?}", KERNEL_TABLE.as_ref());
         }
     }
 

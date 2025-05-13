@@ -15,7 +15,7 @@ pub(crate) fn init() {
         cpu.setup();
         all.insert(chip.descriptor.device_id, cpu);
     }
-    unsafe { IRQ_CPU_MAP.init(all) };
+    unsafe { IRQ_CPU_MAP.set(all) };
 }
 
 pub(crate) fn init_secondary() {

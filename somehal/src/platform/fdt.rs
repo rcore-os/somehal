@@ -107,7 +107,7 @@ pub fn init_debugcon() -> Option<any_uart::Uart> {
         kind: MemRegionKind::Device,
     };
 
-    unsafe { MEM_REGION_DEBUG_CON.init(region) };
+    unsafe { MEM_REGION_DEBUG_CON.set(region) };
 
     Some(uart)
 }

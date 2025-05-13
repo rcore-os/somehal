@@ -13,8 +13,7 @@ pub(crate) struct CpuOnArg {
     pub cpu_id: CpuId,
     pub cpu_idx: CpuIdx,
     pub stack_top_virt: VirtAddr,
-    pub page_table_with_liner: PhysAddr,
-    pub page_table: PhysAddr,
+    pub boot_table: PhysAddr,
 }
 
 pub fn cpu_on(target: CpuId) {

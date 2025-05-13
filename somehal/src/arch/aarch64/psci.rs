@@ -76,7 +76,7 @@ fn probe(node: Node<'_>, _dev: &Descriptor) -> Result<HardwareKind, Box<dyn Erro
         .str();
     let method = Method::try_from(method)?;
     unsafe {
-        METHOD.init(method);
+        METHOD.set(method);
 
         super::mp::init(cpu_on);
     }

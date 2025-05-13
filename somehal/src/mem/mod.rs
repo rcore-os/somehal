@@ -111,7 +111,7 @@ pub(crate) fn setup_memory_main(
                 size,
             };
             main_memory = Some(phys.clone());
-            unsafe { MEMORY_MAIN_ALL.init(phys) };
+            unsafe { MEMORY_MAIN_ALL.set(phys) };
         } else {
             let kind = if phys_start.raw() + size < text().as_ptr() as usize {
                 MemRegionKind::Reserved
@@ -155,7 +155,7 @@ pub(crate) fn setup_memory_main(
         };
 
         unsafe {
-            STACK_ALL.init(stack_all);
+            STACK_ALL.set(stack_all);
 
             main_memory::init(main.addr, main_end);
 

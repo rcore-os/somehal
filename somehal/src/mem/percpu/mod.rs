@@ -23,7 +23,7 @@ use super::{
     PhysMemory,
     main_memory::RegionAllocator,
     mem_region_add,
-    page::{BOOT_TABLE1, BOOT_TABLE2, is_relocated},
+    page::{BOOT_TABLE1, is_relocated},
     stack_top_phys, stack_top_virt,
 };
 use ::percpu::def_percpu;
@@ -132,7 +132,7 @@ pub fn init_percpu_data() {
     let percpu_cpu0_start = percpu().as_ptr() as usize - kcode_offset();
 
     unsafe {
-        PERCPU_0.init(PhysMemory {
+        PERCPU_0.set(PhysMemory {
             addr: percpu_cpu0_start.into(),
             size: percpu_one_size,
         })
@@ -158,7 +158,7 @@ pub fn init_percpu_data() {
         }
     };
 
-    unsafe { PERCPU_OTHER_ALL.init(percpu_all) };
+    unsafe { PERCPU_OTHER_ALL.set(percpu_all) };
 
     add_data_region();
 }
@@ -169,7 +169,7 @@ fn add_data_region() {
     let start0 = start1 - PERCPU_0.size;
     unsafe {
         let size = end - start0;
-        PERCPU_DATA.init(NonNull::slice_from_raw_parts(
+        PERCPU_DATA.set(NonNull::slice_from_raw_parts(
             NonNull::new_unchecked(start0 as _),
             size,
         ));
@@ -262,7 +262,7 @@ pub fn init(
         }
     }
 
-    unsafe { CPU_MAP.init(cpu_map) };
+    unsafe { CPU_MAP.set(cpu_map) };
     println!("alloc percpu space ok");
 }
 
@@ -281,8 +281,7 @@ fn setup_stack_and_table_one(cpu_idx: CpuIdx, cpu_id: CpuId) {
     let arg = CpuOnArg {
         cpu_id,
         cpu_idx,
-        page_table_with_liner: BOOT_TABLE1.raw().into(),
-        page_table: BOOT_TABLE2.raw().into(),
+        boot_table: BOOT_TABLE1.raw().into(),
         stack_top_virt: stack_top_virt(cpu_idx),
     };
 
@@ -295,8 +294,7 @@ fn setup_stack_and_table_one(cpu_idx: CpuIdx, cpu_id: CpuId) {
         println!("  cpu id    {:?}", arg.cpu_id);
         println!("  stack top @{:?}", arg.stack_top_virt);
 
-        println!("  tb1       @{:?}", arg.page_table_with_liner);
-        println!("  tb2       @{:?}", arg.page_table);
+        println!("  tb1       @{:?}", arg.boot_table);
 
         arg_ptr.write(arg);
     }
