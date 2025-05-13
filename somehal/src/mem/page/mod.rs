@@ -95,7 +95,7 @@ pub fn new_line_table(cpu: CpuIdx) -> kmem_region::PhysAddr {
     table.paddr().raw().into()
 }
 
-pub fn new_mapped_table(is_line_map_main: bool) -> kmem_region::PhysAddr {
+pub fn new_mapped_table(is_map_liner: bool) -> kmem_region::PhysAddr {
     let mut tmp_alloc = unsafe {
         if TMP_STACK_ITER == 0 {
             TMP_STACK_ITER = stack_top_phys(CpuIdx::primary()).raw() - STACK_SIZE;
@@ -118,54 +118,81 @@ pub fn new_mapped_table(is_line_map_main: bool) -> kmem_region::PhysAddr {
     let mut table = handle_err!(Table::create_empty(access));
 
     for region in MEM_REGIONS.iter() {
+        let pte = Arch::new_pte_with_config(region.config);
         unsafe {
             handle_err!(table.map(
                 MapConfig {
                     vaddr: region.virt_start.raw().into(),
                     paddr: region.phys_start.raw().into(),
                     size: region.size,
-                    pte: Arch::new_pte_with_config(region.config),
+                    pte,
                     allow_huge: true,
                     flush: false,
                 },
                 access,
             ));
+
+            if is_map_liner {
+                handle_err!(table.map(
+                    MapConfig {
+                        vaddr: region.phys_start.raw().into(),
+                        paddr: region.phys_start.raw().into(),
+                        size: region.size,
+                        pte: Arch::new_pte_with_config(MemConfig {
+                            access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
+                            cache: CacheConfig::Device
+                        }),
+                        allow_huge: true,
+                        flush: false,
+                    },
+                    access,
+                ));
+            }
         }
     }
-
-    if is_line_map_main {
-        let mut start = super::MEMORY_MAIN_ALL.addr.raw();
-        let end = (start + super::MEMORY_MAIN_ALL.size).align_up(GB);
-        start = start.align_down(GB);
-        let size = end - start + 12 * GB;
-
-        unsafe {
-            handle_err!(table.map(
-                MapConfig {
-                    vaddr: start.into(),
-                    paddr: start.into(),
-                    size,
-                    pte: Arch::new_pte_with_config(MemConfig {
-                        access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
-                        cache: CacheConfig::Normal
-                    }),
-                    allow_huge: true,
-                    flush: false,
-                },
-                access,
-            ));
-        }
-
-        unsafe {
+    unsafe {
+        if is_map_liner {
             BOOT_TABLE1.init(table.paddr());
             printkv!("BOOT_TABLE1", "{:?}", BOOT_TABLE1.as_ref());
-        }
-    } else {
-        unsafe {
+        } else {
             BOOT_TABLE2.init(table.paddr());
             printkv!("BOOT_TABLE2", "{:?}", BOOT_TABLE2.as_ref());
         }
     }
+    // if is_line_map_main {
+    //     let mut start = super::MEMORY_MAIN_ALL.addr.raw();
+    //     let end = (start + super::MEMORY_MAIN_ALL.size).align_up(GB);
+    //     start = start.align_down(GB);
+    //     start = 0;
+    //     let size = end - start + GB;
+
+    //     unsafe {
+    //         handle_err!(table.map(
+    //             MapConfig {
+    //                 vaddr: start.into(),
+    //                 paddr: start.into(),
+    //                 size,
+    //                 pte: Arch::new_pte_with_config(MemConfig {
+    //                     access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
+    //                     cache: CacheConfig::Device
+    //                 }),
+    //                 allow_huge: true,
+    //                 flush: false,
+    //             },
+    //             access,
+    //         ));
+    //     }
+    //     printkv!("map liner", "[{:#x}, {:#x})", start, start + size);
+    //     unsafe {
+    //         BOOT_TABLE1.init(table.paddr());
+    //         printkv!("BOOT_TABLE1", "{:?}", BOOT_TABLE1.as_ref());
+    //     }
+    // } else {
+    //     unsafe {
+    //         BOOT_TABLE2.init(table.paddr());
+    //         printkv!("BOOT_TABLE2", "{:?}", BOOT_TABLE2.as_ref());
+    //     }
+    // }
 
     println!("Table size {:#x}", tmp_alloc.0.used());
 
