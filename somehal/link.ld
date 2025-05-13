@@ -31,7 +31,7 @@ SECTIONS
 
         . = ALIGN(__page_size);
         _percpu_load_start = .;
-        *(.data.percpu*)
+        *(.percpu*)
         . = ALIGN(__page_size);
         _percpu_load_end = .;
 

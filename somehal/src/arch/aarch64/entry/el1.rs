@@ -1,7 +1,8 @@
 use aarch64_cpu::{asm::barrier, registers::*};
 
 use crate::{
-    arch::paging::{flush_tlb, set_mair}, mem::page::{new_line_table, new_mapped_table}, mp::CpuOnArg
+    arch::paging::{flush_tlb, set_mair},
+    mp::CpuOnArg,
 };
 
 pub unsafe fn switch_to_elx() {

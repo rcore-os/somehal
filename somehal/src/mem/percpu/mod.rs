@@ -26,6 +26,7 @@ use super::{
     page::{BOOT_TABLE1, BOOT_TABLE2, is_relocated},
     stack_top_phys, stack_top_virt,
 };
+use ::percpu::def_percpu;
 use kmem_region::{
     IntAlign, PhysAddr,
     region::{
@@ -33,8 +34,6 @@ use kmem_region::{
         kcode_offset,
     },
 };
-
-use kpercpu::def_percpu;
 
 #[def_percpu]
 pub static CPU_IDX: CpuIdx = CpuIdx::new(0);
@@ -44,7 +43,7 @@ pub static CPU_ID: CpuId = CpuId::new(0);
 
 struct ThisImpl;
 
-impl kpercpu::Impl for ThisImpl {
+impl ::percpu::Impl for ThisImpl {
     fn percpu_base() -> NonNull<u8> {
         unsafe { NonNull::new_unchecked(percpu_data_base() as _) }
     }
@@ -60,7 +59,7 @@ impl kpercpu::Impl for ThisImpl {
     }
 }
 
-kpercpu::impl_percpu!(ThisImpl);
+::percpu::impl_percpu!(ThisImpl);
 
 /// .
 ///

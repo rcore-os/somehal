@@ -16,8 +16,8 @@ static METHOD: OnceStatic<Method> = OnceStatic::new();
 
 rdrive_macros::module_driver!(
     name: "ARM PSCI",
-    level: ProbeLevel::PostKernel,
-    priority: ProbePriority::INTC,
+    level: ProbeLevel::PreKernel,
+    priority: ProbePriority::DEFAULT,
     probe_kinds: &[
         ProbeKind::Fdt {
             compatibles: &["arm,psci-1.0","arm,psci-0.2","arm,psci"],

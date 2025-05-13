@@ -4,11 +4,18 @@ use crate::ArchIf;
 use crate::arch::Arch;
 
 fn use_power<T, F: FnOnce(&mut Hardware) -> T>(f: F) -> T {
-    let mut g = rdrive::get_dev!(Power)
-        .expect("No power driver found")
-        .spin_try_borrow_by(0.into())
-        .unwrap();
-    (f)(&mut g)
+    let weak = match rdrive::get_dev!(Power) {
+        Some(v) => v,
+        None => {
+            crate::println!("No power driver found!");
+            loop {
+                Arch::wait_for_event();
+            }
+        }
+    };
+
+    let mut dev = weak.spin_try_borrow_by(0.into()).unwrap();
+    (f)(&mut dev)
 }
 
 pub fn terminate() -> ! {

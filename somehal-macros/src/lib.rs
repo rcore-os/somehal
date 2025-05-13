@@ -3,8 +3,7 @@ use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::{format_ident, quote};
 use syn::{
-    FnArg, ItemFn, ItemStatic, PathArguments, Type, Visibility, parse, parse_macro_input,
-    spanned::Spanned,
+    FnArg, ItemFn, PathArguments, Type, Visibility, parse, parse_macro_input, spanned::Spanned,
 };
 
 mod arch;

@@ -12,7 +12,7 @@ pub(crate) fn init() {
         let mut g = chip.spin_try_borrow_by(0.into()).unwrap();
         g.open().unwrap();
         let cpu = g.cpu_interface();
-
+        cpu.setup();
         all.insert(chip.descriptor.device_id, cpu);
     }
     unsafe { IRQ_CPU_MAP.init(all) };

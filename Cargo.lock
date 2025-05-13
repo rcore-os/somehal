@@ -311,24 +311,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kpercpu"
-version = "0.1.0"
-dependencies = [
- "kpercpu-macros",
-]
-
-[[package]]
-name = "kpercpu-macros"
-version = "0.1.0"
-dependencies = [
- "abi-singleton",
- "darling",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "linked_list_allocator"
 version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -407,6 +389,27 @@ name = "paste"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
+
+[[package]]
+name = "percpu"
+version = "0.2.0"
+source = "git+https://github.com/ZR233/percpu#f132efe1b5704c98fe7ce11f01a57bd58121828c"
+dependencies = [
+ "cfg-if",
+ "percpu_macros",
+ "spin",
+ "x86",
+]
+
+[[package]]
+name = "percpu_macros"
+version = "0.2.0"
+source = "git+https://github.com/ZR233/percpu#f132efe1b5704c98fe7ce11f01a57bd58121828c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "pie-boot"
@@ -540,9 +543,8 @@ dependencies = [
 
 [[package]]
 name = "rdrive"
-version = "0.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16f4a3fd519e91d89fd9b37c83bb905107f0276dbbbc6e55bee8c3888cd16fb5"
+version = "0.5.6"
+source = "git+https://github.com/drivercraft/rdrive#3ec9a0c8b6a0dec9d176d8e9e6aeeadc43999989"
 dependencies = [
  "fdt-parser",
  "log",
@@ -708,10 +710,10 @@ dependencies = [
  "fdt-parser",
  "heapless",
  "kmem-region",
- "kpercpu",
  "linked_list_allocator",
  "log",
  "page-table-generic",
+ "percpu",
  "pie-boot",
  "prettyplease",
  "quote",

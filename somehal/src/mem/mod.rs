@@ -53,7 +53,7 @@ pub fn cpu_idx() -> CpuIdx {
 }
 
 pub fn cpu_id() -> CpuId {
-    *percpu::CPU_ID.read_current()
+    percpu::CPU_ID.read()
 }
 
 pub fn cpu_main_id() -> CpuId {
@@ -61,7 +61,7 @@ pub fn cpu_main_id() -> CpuId {
 }
 
 pub(crate) fn setup_arg(args: &CpuOnArg) {
-    kpercpu::init(args.cpu_idx.raw());
+    ::percpu::init(args.cpu_idx.raw());
     percpu::CPU_IDX.write_current(args.cpu_idx);
     percpu::CPU_ID.write_current(args.cpu_id);
 }
