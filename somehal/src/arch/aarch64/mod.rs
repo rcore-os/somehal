@@ -110,6 +110,12 @@ impl ArchIf for Arch {
     }
 
     fn systick_set_enable(b: bool) {
-        CNTP_CTL_EL0.write(CNTP_CTL_EL0::ENABLE::SET);
+        let val = if b {
+            CNTP_CTL_EL0::ENABLE::SET
+        } else {
+            CNTP_CTL_EL0::ENABLE::CLEAR
+        };
+
+        CNTP_CTL_EL0.write(val);
     }
 }
