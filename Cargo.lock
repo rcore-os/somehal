@@ -543,9 +543,9 @@ dependencies = [
 
 [[package]]
 name = "rdrive"
-version = "0.5.9"
+version = "0.5.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2eb6fd24851a42aea9b954e74555158a57c76b59ad834e135e88c28ed81da40"
+checksum = "d02af217fcd156e90715e8c01f66f5415aca4746cb4cf9a0763580fcfff789da"
 dependencies = [
  "fdt-parser",
  "log",
