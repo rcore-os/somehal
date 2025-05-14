@@ -4,7 +4,7 @@ use rdrive::{DeviceId, intc};
 
 use crate::once_static::OnceStatic;
 
-static IRQ_CPU_MAP: OnceStatic<BTreeMap<DeviceId, intc::HardwareCPU>> = OnceStatic::new();
+static IRQ_CPU_MAP: OnceStatic<BTreeMap<DeviceId, intc::BoxCPU>> = OnceStatic::new();
 
 pub(crate) fn init() {
     let mut all = BTreeMap::new();
@@ -26,6 +26,6 @@ pub(crate) fn init_secondary() {
     }
 }
 
-pub fn interface(chip: DeviceId) -> Option<&'static intc::HardwareCPU> {
+pub fn interface(chip: DeviceId) -> Option<&'static intc::BoxCPU> {
     IRQ_CPU_MAP.as_ref().get(&chip)
 }

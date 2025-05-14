@@ -80,5 +80,5 @@ pub unsafe fn init() {
 
     systime::init();
 
-    // driver::probe().unwrap();
+    driver::probe().unwrap();
 }
