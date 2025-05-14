@@ -108,4 +108,8 @@ impl ArchIf for Arch {
         let ptr = TPIDR_EL1.get() as _;
         VirtAddr::new(ptr)
     }
+
+    fn systick_set_enable(b: bool) {
+        CNTP_CTL_EL0.write(CNTP_CTL_EL0::ENABLE::SET);
+    }
 }

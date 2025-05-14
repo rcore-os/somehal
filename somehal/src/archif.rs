@@ -47,6 +47,8 @@ pub trait ArchIf {
         ticks as u128 * NANO_PER_SEC / Self::tick_hz() as u128
     }
 
+    fn systick_set_enable(b: bool);
+
     /// Converts nanoseconds to hardware ticks.
     fn nanos_to_ticks(nanos: u128) -> u64 {
         (nanos * Self::tick_hz() as u128 / NANO_PER_SEC) as _

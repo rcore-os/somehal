@@ -31,3 +31,7 @@ pub fn init() -> Option<()> {
 
     Some(())
 }
+
+pub fn set_enable(b: bool) {
+    Arch::systick_set_enable(b);
+}

@@ -31,7 +31,7 @@ pub mod mp;
 pub(crate) mod once_static;
 pub(crate) mod platform;
 pub mod power;
-pub mod systime;
+pub mod systick;
 
 pub(crate) use archif::ArchIf;
 
@@ -78,7 +78,7 @@ pub unsafe fn init() {
 
     irq::init();
 
-    systime::init();
+    systick::init();
 
     driver::probe().unwrap();
 }
