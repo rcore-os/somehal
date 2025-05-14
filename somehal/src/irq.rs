@@ -4,6 +4,8 @@ use rdrive::{DeviceId, intc};
 
 use crate::once_static::OnceStatic;
 
+pub use rdrive::intc::{IrqConfig, IrqId};
+
 static IRQ_CPU_MAP: OnceStatic<BTreeMap<DeviceId, intc::BoxCPU>> = OnceStatic::new();
 
 pub(crate) fn init() {
