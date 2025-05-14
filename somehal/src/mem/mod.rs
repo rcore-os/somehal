@@ -49,7 +49,7 @@ pub fn cpu_count() -> usize {
 }
 
 pub fn cpu_idx() -> CpuIdx {
-    *percpu::CPU_IDX
+    percpu::CPU_IDX.read()
 }
 
 pub fn cpu_id() -> CpuId {
@@ -57,7 +57,7 @@ pub fn cpu_id() -> CpuId {
 }
 
 pub fn cpu_main_id() -> CpuId {
-    *percpu::CPU_ID.remote_ref(0)
+    percpu::CPU_ID.read_remote(0)
 }
 
 pub(crate) fn setup_arg(args: &CpuOnArg) {
