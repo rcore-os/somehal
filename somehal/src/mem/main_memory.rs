@@ -18,7 +18,7 @@ pub unsafe fn init(start: PhysAddr, end: PhysAddr) {
         return;
     }
     unsafe {
-        MEMORY_MAIN.init(PhysMemory {
+        MEMORY_MAIN.set(PhysMemory {
             addr: start,
             size: end - start,
         })

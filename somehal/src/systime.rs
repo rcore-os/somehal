@@ -27,7 +27,7 @@ pub fn init() -> Option<()> {
 
     let cpu = g.get_current_cpu();
 
-    unsafe { TIMER.init(cpu) };
+    unsafe { TIMER.set(cpu) };
 
     Some(())
 }

@@ -117,26 +117,45 @@ pub struct MemRegion {
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum MemRegionKind {
+    Memory,
+    Reserved,
     Code,
     Stack,
     PerCpu,
-    Memory,
     Device,
-    Reserved,
+}
+
+struct VirtFound {
+    ptr: VirtAddr,
+    kind: MemRegionKind,
 }
 
 pub fn region_phys_to_virt<D: Deref<Target = MemRegion>, I: Iterator<Item = D>>(
     regions: I,
     p: PhysAddr,
 ) -> VirtAddr {
+    let mut found: Option<VirtFound> = None;
     for region in regions {
         if p >= region.phys_start && p < region.phys_start + region.size {
-            return region.virt_start + (p - region.phys_start);
+            let ptr = region.virt_start + (p - region.phys_start);
+            if let Some(f) = &found {
+                if region.kind < f.kind {
+                    continue;
+                }
+            }
+            found = Some(VirtFound {
+                ptr,
+                kind: region.kind,
+            });
         }
     }
-    (p.raw() + OFFSET_LINER).into()
+    if let Some(found) = found {
+        found.ptr
+    } else {
+        (p.raw() + OFFSET_LINER).into()
+    }
 }
 
 pub fn region_virt_to_phys<D: Deref<Target = MemRegion>, I: Iterator<Item = D>>(

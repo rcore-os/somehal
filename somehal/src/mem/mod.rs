@@ -28,7 +28,7 @@ pub mod page;
 pub(crate) mod percpu;
 
 use page::page_size;
-pub use percpu::{PerCpuData, cpu_id_to_idx, cpu_idx_to_id};
+pub use percpu::{cpu_id_to_idx, cpu_idx_to_id};
 
 #[derive(Debug, Clone)]
 pub struct PhysMemory {
@@ -44,12 +44,16 @@ static mut CPU_COUNT: usize = 1;
 static MEM_REGIONS: OnceStatic<Vec<MemRegion, 128>> = OnceStatic::new();
 static STACK_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
 
+pub fn cpu_count() -> usize {
+    unsafe { CPU_COUNT }
+}
+
 pub fn cpu_idx() -> CpuIdx {
     *percpu::CPU_IDX
 }
 
 pub fn cpu_id() -> CpuId {
-    *percpu::CPU_ID.read_current()
+    percpu::CPU_ID.read()
 }
 
 pub fn cpu_main_id() -> CpuId {
@@ -57,8 +61,9 @@ pub fn cpu_main_id() -> CpuId {
 }
 
 pub(crate) fn setup_arg(args: &CpuOnArg) {
-    percpu::CPU_IDX.write_current_raw(args.cpu_idx);
-    percpu::CPU_ID.write_current_raw(args.cpu_id);
+    ::percpu::init(args.cpu_idx.raw());
+    percpu::CPU_IDX.write_current(args.cpu_idx);
+    percpu::CPU_ID.write_current(args.cpu_id);
 }
 
 pub(crate) fn stack_top_phys(cpu_idx: CpuIdx) -> PhysAddr {
@@ -106,7 +111,7 @@ pub(crate) fn setup_memory_main(
                 size,
             };
             main_memory = Some(phys.clone());
-            unsafe { MEMORY_MAIN_ALL.init(phys) };
+            unsafe { MEMORY_MAIN_ALL.set(phys) };
         } else {
             let kind = if phys_start.raw() + size < text().as_ptr() as usize {
                 MemRegionKind::Reserved
@@ -150,7 +155,7 @@ pub(crate) fn setup_memory_main(
         };
 
         unsafe {
-            STACK_ALL.init(stack_all);
+            STACK_ALL.set(stack_all);
 
             main_memory::init(main.addr, main_end);
 
@@ -336,7 +341,21 @@ pub(crate) fn clean_bss() {
 
 fn_link_section!(text);
 fn_link_section!(bss);
-fn_link_section!(percpu);
+
+#[inline(always)]
+fn percpu() -> &'static [u8] {
+    unsafe extern "C" {
+        fn _percpu_load_start();
+
+        fn _percpu_load_end();
+
+    }
+    unsafe {
+        let start = _percpu_load_start as usize;
+        let stop = _percpu_load_end as usize;
+        core::slice::from_raw_parts(start as *const u8, stop - start)
+    }
+}
 
 fn rwdata() -> &'static [u8] {
     unsafe extern "C" {

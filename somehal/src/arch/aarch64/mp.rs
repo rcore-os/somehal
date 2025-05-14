@@ -10,7 +10,7 @@ pub type CpuOnFn =
 static CPU_ON_FN: OnceStatic<CpuOnFn> = OnceStatic::new();
 
 pub fn init(f: CpuOnFn) {
-    unsafe { CPU_ON_FN.init(f) };
+    unsafe { CPU_ON_FN.set(f) };
 }
 
 pub fn cpu_on(

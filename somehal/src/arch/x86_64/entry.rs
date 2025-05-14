@@ -7,7 +7,10 @@ use crate::{
     ArchIf,
     arch::{Arch, idt::init_idt},
     entry,
-    mem::{page::new_mapped_table, setup_memory_regions, stack_top_cpu0},
+    mem::{
+        page::{BOOT_TABLE1, new_mapped_table},
+        setup_memory_regions, stack_top_cpu0,
+    },
     platform::cpu_list,
     printkv, println,
 };
@@ -15,7 +18,7 @@ use crate::{
 pub fn primary_entry(boot_info: BootInfo) -> ! {
     unsafe {
         println!();
-       
+
         entry::setup(boot_info);
 
         let sp = stack_top_cpu0();
@@ -39,6 +42,7 @@ fn phys_sp_entry() -> ! {
     printkv!("Stack top", "{:#x}", sp);
 
     let table = new_mapped_table(true);
+
     Arch::set_kernel_table(table);
 
     unsafe {

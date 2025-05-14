@@ -13,11 +13,17 @@ use crate::{handle_err, printkv, println};
 static mut IS_RELOCATED: bool = false;
 // 包含线性映射
 pub(crate) static BOOT_TABLE1: OnceStatic<PhysAddr> = OnceStatic::new();
-pub(crate) static BOOT_TABLE2: OnceStatic<PhysAddr> = OnceStatic::new();
+pub(crate) static KERNEL_TABLE: OnceStatic<PhysAddr> = OnceStatic::new();
 
 static mut TMP_STACK_ITER: usize = 0;
 
 pub type Table<'a> = PageTableRef<'a, <Arch as ArchIf>::PageTable>;
+
+pub fn set_kernel_table(table: PhysAddr) {
+    unsafe {
+        KERNEL_TABLE.set(table);
+    }
+}
 
 pub(crate) fn set_is_relocated() {
     unsafe {
@@ -50,7 +56,7 @@ pub const fn page_valid_addr_mask() -> usize {
     (1 << page_valid_bits()) - 1
 }
 
-pub fn new_mapped_table(is_line_map_main: bool) -> kmem_region::PhysAddr {
+pub fn new_mapped_table(is_map_liner: bool) -> kmem_region::PhysAddr {
     let mut tmp_alloc = unsafe {
         if TMP_STACK_ITER == 0 {
             TMP_STACK_ITER = stack_top_phys(CpuIdx::primary()).raw() - STACK_SIZE;
@@ -73,52 +79,45 @@ pub fn new_mapped_table(is_line_map_main: bool) -> kmem_region::PhysAddr {
     let mut table = handle_err!(Table::create_empty(access));
 
     for region in MEM_REGIONS.iter() {
+        let pte = Arch::new_pte_with_config(region.config);
         unsafe {
             handle_err!(table.map(
                 MapConfig {
                     vaddr: region.virt_start.raw().into(),
                     paddr: region.phys_start.raw().into(),
                     size: region.size,
-                    pte: Arch::new_pte_with_config(region.config),
+                    pte,
                     allow_huge: true,
                     flush: false,
                 },
                 access,
             ));
+
+            if is_map_liner {
+                handle_err!(table.map(
+                    MapConfig {
+                        vaddr: region.phys_start.raw().into(),
+                        paddr: region.phys_start.raw().into(),
+                        size: region.size,
+                        pte: Arch::new_pte_with_config(MemConfig {
+                            access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
+                            cache: CacheConfig::Device
+                        }),
+                        allow_huge: true,
+                        flush: false,
+                    },
+                    access,
+                ));
+            }
         }
     }
-
-    if is_line_map_main {
-        let mut start = super::MEMORY_MAIN_ALL.addr.raw();
-        let end = (start + super::MEMORY_MAIN_ALL.size).align_up(GB);
-        start = start.align_down(GB);
-        let size = end - start;
-
-        unsafe {
-            handle_err!(table.map(
-                MapConfig {
-                    vaddr: start.into(),
-                    paddr: start.into(),
-                    size,
-                    pte: Arch::new_pte_with_config(MemConfig {
-                        access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
-                        cache: CacheConfig::Normal
-                    }),
-                    allow_huge: true,
-                    flush: false,
-                },
-                access,
-            ));
-        }
-
-        unsafe {
-            BOOT_TABLE1.init(table.paddr());
+    unsafe {
+        if is_map_liner {
+            BOOT_TABLE1.set(table.paddr());
             printkv!("BOOT_TABLE1", "{:?}", BOOT_TABLE1.as_ref());
-        }
-    } else {
-        unsafe {
-            BOOT_TABLE2.init(table.paddr());
-            printkv!("BOOT_TABLE2", "{:?}", BOOT_TABLE2.as_ref());
+        } else {
+            KERNEL_TABLE.set(table.paddr());
+            printkv!("BOOT_TABLE2", "{:?}", KERNEL_TABLE.as_ref());
         }
     }
 

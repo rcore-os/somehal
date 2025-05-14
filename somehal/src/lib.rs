@@ -39,6 +39,7 @@ pub use archif::CpuId;
 use log::trace;
 use mem::page::set_is_relocated;
 use mp::CpuOnArg;
+pub use percpu;
 pub use platform::CpuIdx;
 pub use rdrive as driver;
 pub use somehal_macros::{entry, module_driver};
@@ -49,9 +50,11 @@ pub(crate) fn to_main(arg: &CpuOnArg) -> ! {
     }
     unsafe {
         set_is_relocated();
-        mem::percpu::cpu_setup(arg.cpu_idx);
+        if arg.cpu_idx.is_primary() {
+            percpu::init_data(mem::cpu_count());
+        }
         mem::setup_arg(arg);
-
+        println!("[SomeHAL] cpu {:?} is ready!", arg.cpu_idx);
         __somehal_main(arg.cpu_id, arg.cpu_idx);
     }
 }

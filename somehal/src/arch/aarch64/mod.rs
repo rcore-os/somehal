@@ -92,6 +92,7 @@ impl ArchIf for Arch {
         mp::cpu_on(cpu, entry, stack_top)
     }
 
+    #[inline]
     fn set_this_percpu_data_ptr(ptr: VirtAddr) {
         #[cfg(feature = "vm")]
         TPIDR_EL2.set(ptr.raw() as _);
@@ -99,6 +100,7 @@ impl ArchIf for Arch {
         TPIDR_EL1.set(ptr.raw() as _);
     }
 
+    #[inline]
     fn get_this_percpu_data_ptr() -> VirtAddr {
         #[cfg(feature = "vm")]
         let ptr = TPIDR_EL2.get() as _;

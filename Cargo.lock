@@ -391,6 +391,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
+name = "percpu"
+version = "0.2.0"
+source = "git+https://github.com/ZR233/percpu#574c0860d7a4a1fecff091d7dee70af04be53efa"
+dependencies = [
+ "cfg-if",
+ "percpu_macros",
+ "spin",
+ "x86",
+]
+
+[[package]]
+name = "percpu_macros"
+version = "0.2.0"
+source = "git+https://github.com/ZR233/percpu#574c0860d7a4a1fecff091d7dee70af04be53efa"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "pie-boot"
 version = "0.1.0"
 dependencies = [
@@ -488,15 +509,15 @@ dependencies = [
 
 [[package]]
 name = "rdif-base"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88dfa4f4f43bb0a7d0464c4bcbbd7e8d2aa7c8db551f9fd18e609729e1e9b481"
+checksum = "646f76de5c5a02b0cf2677f99d5216b9fc301d47dbac8d056f7e74f8c0e89008"
 
 [[package]]
 name = "rdif-intc"
-version = "0.5.0"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d31c6f9b12d94d654d0b5746cba2ea958d103f3e61a4824b2156283450d62492"
+checksum = "a4dce859ee52f984c78d41f647eb3266e58824e385583ae64a5467597c84fd5a"
 dependencies = [
  "cfg-if",
  "rdif-base",
@@ -522,9 +543,9 @@ dependencies = [
 
 [[package]]
 name = "rdrive"
-version = "0.5.3"
+version = "0.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16f4a3fd519e91d89fd9b37c83bb905107f0276dbbbc6e55bee8c3888cd16fb5"
+checksum = "b2eb6fd24851a42aea9b954e74555158a57c76b59ad834e135e88c28ed81da40"
 dependencies = [
  "fdt-parser",
  "log",
@@ -693,6 +714,7 @@ dependencies = [
  "linked_list_allocator",
  "log",
  "page-table-generic",
+ "percpu",
  "pie-boot",
  "prettyplease",
  "quote",

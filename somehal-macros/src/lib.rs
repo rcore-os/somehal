@@ -3,8 +3,7 @@ use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::{format_ident, quote};
 use syn::{
-    FnArg, ItemFn, ItemStatic, PathArguments, Type, Visibility, parse, parse_macro_input,
-    spanned::Spanned,
+    FnArg, ItemFn, PathArguments, Type, Visibility, parse, parse_macro_input, spanned::Spanned,
 };
 
 mod arch;
@@ -161,27 +160,6 @@ pub fn fn_link_section(input: TokenStream) -> TokenStream {
                 core::slice::from_raw_parts(start as *const u8, stop - start)
             }
         }
-    }
-    .into()
-}
-
-#[proc_macro_attribute]
-pub fn def_percpu(_args: TokenStream, input: TokenStream) -> TokenStream {
-    let ItemStatic {
-        attrs,
-        vis,
-        static_token,
-        mutability,
-        ident,
-        ty,
-        expr,
-        ..
-    } = parse_macro_input!(input as ItemStatic);
-
-    quote! {
-        #[unsafe(link_section=".data.percpu")]
-        #(#attrs)*
-        #vis #static_token #mutability #ident : PerCpuData<#ty> = PerCpuData::new(#expr);
     }
     .into()
 }

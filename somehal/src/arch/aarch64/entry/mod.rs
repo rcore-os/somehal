@@ -11,7 +11,10 @@ use crate::{
         paging::{set_kernel_table, set_user_table},
     },
     entry,
-    mem::{page::new_mapped_table, setup_memory_regions, stack_top_phys, stack_top_virt},
+    mem::{
+        page::{KERNEL_TABLE, new_mapped_table},
+        setup_memory_regions, stack_top_phys, stack_top_virt,
+    },
     platform::*,
     printkv, println,
 };
@@ -136,7 +139,7 @@ fn relocate(arg: &CpuOnArg) {
     unsafe { asm!("msr daifset, #2") };
     CNTP_CTL_EL0.modify(CNTP_CTL_EL0::IMASK::SET);
 
-    set_kernel_table(arg.page_table.raw().into());
+    set_kernel_table(KERNEL_TABLE.raw().into());
     set_user_table(0usize.into());
 
     crate::init_secondary(arg)

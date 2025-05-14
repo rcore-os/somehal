@@ -16,7 +16,7 @@ impl<T> OnceStatic<T> {
         self.0.get()
     }
 
-    pub unsafe fn init(&self, val: T) {
+    pub unsafe fn set(&self, val: T) {
         unsafe {
             (*self.0.get()).replace(val);
         }
@@ -31,7 +31,14 @@ impl<T> Deref for OnceStatic<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { (*self.0.get()).as_ref().unwrap() }
+        unsafe {
+            match (*self.0.get()).as_ref() {
+                Some(v) => v,
+                None => {
+                    panic!("{} is not initialized", core::any::type_name::<T>());
+                }
+            }
+        }
     }
 }
 

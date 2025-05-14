@@ -11,8 +11,6 @@ use crate::{
     println,
 };
 
-mod define;
-
 pub(super) static PERCPU_0: OnceStatic<PhysMemory> = OnceStatic::new();
 // 除主CPU 外，其他CPU的独占Data
 pub(super) static PERCPU_OTHER_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
@@ -25,9 +23,10 @@ use super::{
     PhysMemory,
     main_memory::RegionAllocator,
     mem_region_add,
-    page::{BOOT_TABLE1, BOOT_TABLE2, is_relocated},
+    page::{BOOT_TABLE1, is_relocated},
     stack_top_phys, stack_top_virt,
 };
+use ::percpu::def_percpu;
 use kmem_region::{
     IntAlign, PhysAddr,
     region::{
@@ -35,15 +34,32 @@ use kmem_region::{
         kcode_offset,
     },
 };
-use somehal_macros::def_percpu;
-
-pub use define::*;
 
 #[def_percpu]
 pub static CPU_IDX: CpuIdx = CpuIdx::new(0);
 
 #[def_percpu]
 pub static CPU_ID: CpuId = CpuId::new(0);
+
+struct ThisImpl;
+
+impl ::percpu::Impl for ThisImpl {
+    fn percpu_base() -> NonNull<u8> {
+        unsafe { NonNull::new_unchecked(percpu_data_base() as _) }
+    }
+
+    #[inline]
+    fn set_cpu_local_ptr(ptr: *mut u8) {
+        Arch::set_this_percpu_data_ptr(ptr.into());
+    }
+
+    #[inline]
+    fn get_cpu_local_ptr() -> *mut u8 {
+        Arch::get_this_percpu_data_ptr().as_ptr()
+    }
+}
+
+::percpu::impl_percpu!(ThisImpl);
 
 /// .
 ///
@@ -56,12 +72,6 @@ pub unsafe fn percpu_data() -> NonNull<[u8]> {
 
 pub fn percpu_data_base() -> usize {
     unsafe { percpu_data().as_ref().as_ptr() as usize }
-}
-
-pub fn cpu_setup(cpu_idx: CpuIdx) {
-    let ptr = percpu_data_base() + cpu_idx.raw() * PERCPU_0.size;
-    println!("CPU {} percpu data base: {:x}", cpu_idx.raw(), ptr);
-    Arch::set_this_percpu_data_ptr(ptr.into());
 }
 
 struct CPUMap {
@@ -106,7 +116,7 @@ pub fn cpu_id_to_idx(cpu_id: CpuId) -> CpuIdx {
             return idx.into();
         }
     }
-    unreachable!()
+    panic!("cpu_id_to_idx: ID [{:?}] not found", cpu_id);
 }
 
 pub fn cpu_idx_to_id(cpu_idx: CpuIdx) -> CpuId {
@@ -122,7 +132,7 @@ pub fn init_percpu_data() {
     let percpu_cpu0_start = percpu().as_ptr() as usize - kcode_offset();
 
     unsafe {
-        PERCPU_0.init(PhysMemory {
+        PERCPU_0.set(PhysMemory {
             addr: percpu_cpu0_start.into(),
             size: percpu_one_size,
         })
@@ -148,7 +158,7 @@ pub fn init_percpu_data() {
         }
     };
 
-    unsafe { PERCPU_OTHER_ALL.init(percpu_all) };
+    unsafe { PERCPU_OTHER_ALL.set(percpu_all) };
 
     add_data_region();
 }
@@ -159,7 +169,7 @@ fn add_data_region() {
     let start0 = start1 - PERCPU_0.size;
     unsafe {
         let size = end - start0;
-        PERCPU_DATA.init(NonNull::slice_from_raw_parts(
+        PERCPU_DATA.set(NonNull::slice_from_raw_parts(
             NonNull::new_unchecked(start0 as _),
             size,
         ));
@@ -252,7 +262,7 @@ pub fn init(
         }
     }
 
-    unsafe { CPU_MAP.init(cpu_map) };
+    unsafe { CPU_MAP.set(cpu_map) };
     println!("alloc percpu space ok");
 }
 
@@ -271,8 +281,7 @@ fn setup_stack_and_table_one(cpu_idx: CpuIdx, cpu_id: CpuId) {
     let arg = CpuOnArg {
         cpu_id,
         cpu_idx,
-        page_table_with_liner: BOOT_TABLE1.raw().into(),
-        page_table: BOOT_TABLE2.raw().into(),
+        boot_table: BOOT_TABLE1.raw().into(),
         stack_top_virt: stack_top_virt(cpu_idx),
     };
 
@@ -280,6 +289,13 @@ fn setup_stack_and_table_one(cpu_idx: CpuIdx, cpu_id: CpuId) {
 
     unsafe {
         let arg_ptr = arg_addr.raw() as *mut CpuOnArg;
+        println!("stack setup @{:p}", arg_ptr);
+        println!("  cpu idx   {:?}", arg.cpu_idx);
+        println!("  cpu id    {:?}", arg.cpu_id);
+        println!("  stack top @{:?}", arg.stack_top_virt);
+
+        println!("  tb1       @{:?}", arg.boot_table);
+
         arg_ptr.write(arg);
     }
 }
