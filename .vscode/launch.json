@@ -25,6 +25,17 @@
         },
         {
             "type": "cppdbg",
+            "name": "Debug aarch64 vm test",
+            "request": "launch",
+            "miDebuggerServerAddress": "localhost:1234",
+            "program": "${workspaceFolder}/target/kernel.elf",
+            "miDebuggerPath": "gdb-multiarch",
+            "cwd": "${workspaceRoot}",
+            "preLaunchTask": "qemu debug aarch64 vm",
+            "stopAtConnect": true
+        },
+        {
+            "type": "cppdbg",
             "name": "Debug x86_64 test",
             "request": "launch",
             "miDebuggerServerAddress": "localhost:1234",

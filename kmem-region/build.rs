@@ -29,6 +29,8 @@ fn main() {
     if std::env::var("CARGO_FEATURE_SPACE_LO").is_ok() {
         addr_base = 0;
         kernel_load_vaddr = (1 << addr_bits) / 16 * 15 + 0x200000;
+
+        kernel_load_vaddr = 0x40200000;
     }
 
     let const_content = quote! {

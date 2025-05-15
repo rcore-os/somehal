@@ -23,20 +23,6 @@ pub fn switch_to_elx() {
         ELR_EL3.set(LR.get());
         aarch64_cpu::asm::eret();
     }
-
-    // Set EL1 to 64bit.
-    // Enable `IMO` and `FMO` to make sure that:
-    // * Physical IRQ interrupts are taken to EL2;
-    // * Virtual IRQ interrupts are enabled;
-    // * Physical FIQ interrupts are taken to EL2;
-    // * Virtual FIQ interrupts are enabled.
-    HCR_EL2.modify(
-        HCR_EL2::VM::Enable
-            + HCR_EL2::RW::EL1IsAarch64
-            + HCR_EL2::IMO::EnableVirtualIRQ // Physical IRQ Routing.
-            + HCR_EL2::FMO::EnableVirtualFIQ // Physical FIQ Routing.
-            + HCR_EL2::TSC::EnableTrapEl1SmcToEl2,
-    );
 }
 
 #[inline(always)]
@@ -50,6 +36,20 @@ pub fn flush_tlb(vaddr: Option<VirtAddr>) {
 }
 
 pub fn setup_table_regs() {
+    // Set EL1 to 64bit.
+    // Enable `IMO` and `FMO` to make sure that:
+    // * Physical IRQ interrupts are taken to EL2;
+    // * Virtual IRQ interrupts are enabled;
+    // * Physical FIQ interrupts are taken to EL2;
+    // * Virtual FIQ interrupts are enabled.
+    HCR_EL2.modify(
+        HCR_EL2::VM::Enable
+            + HCR_EL2::RW::EL1IsAarch64
+            + HCR_EL2::IMO::EnableVirtualIRQ // Physical IRQ Routing.
+            + HCR_EL2::FMO::EnableVirtualFIQ // Physical FIQ Routing.
+            + HCR_EL2::TSC::EnableTrapEl1SmcToEl2,
+    );
+
     // Device-nGnRnE
     let attr0 = MAIR_EL2::Attr0_Device::nonGathering_nonReordering_noEarlyWriteAck;
     // Normal

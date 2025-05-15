@@ -32,6 +32,42 @@
                 "kind": "test",
                 "isDefault": true
             },
+            "detail": "断点调试 test 测试用例", 
+            "isBackground": true,
+        },
+        {
+            "type": "shell",
+            "label": "qemu debug aarch64 vm",
+            "command": "cargo",
+            "args": [
+                "test",
+                "--target",
+                "aarch64-unknown-none",
+                "-p",
+                "platform-test",
+                "--features",
+                "somehal/early-debug,somehal/vm",
+                "--test",
+                "test",
+                "--",
+                "--no-run",
+                "--show-output",
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+            },
+            "problemMatcher": {
+                "base": "$rustc",
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^.*",
+                    "endsPattern": "^.*Running tests"
+                }
+            },
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
             "detail": "断点调试 test 测试用例",
             "isBackground": true,
         },
@@ -45,7 +81,7 @@
                 "x86_64-unknown-none",
                 "-p",
                 "platform-test",
-                "--test", 
+                "--test",
                 "test",
                 "--",
                 "--no-run",
