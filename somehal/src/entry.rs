@@ -6,7 +6,7 @@ use crate::{
     arch::Arch,
     handle_err,
     mem::{page::new_mapped_table, *},
-    platform, printkv,
+    platform, printkv, println,
 };
 
 static mut BOOT_CPU: CpuId = CpuId::new(0);
@@ -68,6 +68,8 @@ pub fn setup(boot_info: BootInfo) {
 }
 
 pub fn entry_virt_and_liner() {
+    println!("SP moved");
+
     // 移除低地址空间线性映射
     let table = new_mapped_table(false);
 

@@ -221,15 +221,11 @@ pub fn new_pte_with_config(config: kmem_region::region::MemConfig) -> Pte {
     }
 
     if !config.access.contains(AccessFlags::Execute) {
-        flags |= PteFlags::PXN;
+        flags |= PteFlags::UXN;
     }
 
     if config.access.contains(AccessFlags::LowerRead) {
         flags |= PteFlags::AP_EL0;
-    }
-
-    if !config.access.contains(AccessFlags::LowerExecute) {
-        flags |= PteFlags::UXN;
     }
 
     let mut pte = Pte(flags.bits());

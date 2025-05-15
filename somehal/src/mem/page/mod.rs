@@ -80,11 +80,14 @@ pub fn new_mapped_table(is_map_liner: bool) -> kmem_region::PhysAddr {
 
     for region in MEM_REGIONS.iter() {
         let pte = Arch::new_pte_with_config(region.config);
+        let vaddr = region.virt_start.raw().into();
+        let paddr = region.phys_start.raw().into();
+
         unsafe {
             handle_err!(table.map(
                 MapConfig {
-                    vaddr: region.virt_start.raw().into(),
-                    paddr: region.phys_start.raw().into(),
+                    vaddr,
+                    paddr,
                     size: region.size,
                     pte,
                     allow_huge: true,
@@ -93,11 +96,11 @@ pub fn new_mapped_table(is_map_liner: bool) -> kmem_region::PhysAddr {
                 access,
             ));
 
-            if is_map_liner {
+            if is_map_liner && vaddr.raw() != paddr.raw() {
                 handle_err!(table.map(
                     MapConfig {
-                        vaddr: region.phys_start.raw().into(),
-                        paddr: region.phys_start.raw().into(),
+                        vaddr: vaddr.raw().into(),
+                        paddr,
                         size: region.size,
                         pte: Arch::new_pte_with_config(MemConfig {
                             access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
