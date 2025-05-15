@@ -6,12 +6,14 @@ use crate::{PhysAddr, VirtAddr};
 
 include!(concat!(env!("OUT_DIR"), "/constant.rs"));
 
-const ADDR_BASE: usize = !((1 << ADDR_BITS) - 1);
 const REGION_ONE: usize = (1 << ADDR_BITS) / 16;
 
+#[cfg(feature = "space-lo")]
+pub const OFFSET_LINER: usize = 0;
+#[cfg(not(feature = "space-lo"))]
 pub const OFFSET_LINER: usize = ADDR_BASE + REGION_ONE * 8;
-pub const STACK_TOP: usize = ADDR_BASE + REGION_ONE * 15;
-pub const PERCPU_TOP: usize = ADDR_BASE + REGION_ONE * 14;
+pub const STACK_TOP: usize = ADDR_BASE  + REGION_ONE * 15 + REGION_ONE / 16 * 10;
+pub const PERCPU_TOP: usize = ADDR_BASE + REGION_ONE * 15 + REGION_ONE / 16 * 11;
 
 static mut KCODE_VA_OFFSET: usize = 0;
 

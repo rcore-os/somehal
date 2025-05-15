@@ -47,10 +47,12 @@ impl ArchIf for Arch {
         paging::get_kernel_table()
     }
 
+    #[cfg(not(feature = "vm"))]
     fn set_user_table(addr: PhysAddr) {
         paging::set_user_table(addr);
     }
 
+    #[cfg(not(feature = "vm"))]
     fn get_user_table() -> PhysAddr {
         paging::get_user_table()
     }

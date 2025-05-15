@@ -11,6 +11,9 @@ repository.workspace = true
 
 [features]
 sv39 = []
+# no high space for paging
+space-lo = []
+page16k =[]
 
 [dependencies]
 bitflags = "2.9"

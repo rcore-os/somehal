@@ -10,7 +10,7 @@ license.workspace = true
 repository.workspace = true
 
 [features]
-vm = []
+vm = ["kmem-region/space-lo"]
 early-debug = ["any-uart"]
 
 [dependencies]

@@ -6,10 +6,7 @@ use pie_boot::BootInfo;
 use super::debug;
 use crate::{
     ArchIf, CpuOnArg,
-    arch::{
-        Arch, cache,
-        paging::{set_kernel_table, set_user_table},
-    },
+    arch::{Arch, cache, paging::*},
     entry,
     mem::{
         page::{KERNEL_TABLE, new_mapped_table},
@@ -68,6 +65,7 @@ fn phys_sp_entry() -> ! {
     debug::reloacte();
 
     set_kernel_table(table);
+    #[cfg(not(feature = "vm"))]
     set_user_table(table);
 
     unsafe {
@@ -140,6 +138,7 @@ fn relocate(arg: &CpuOnArg) {
     CNTP_CTL_EL0.modify(CNTP_CTL_EL0::IMASK::SET);
 
     set_kernel_table(KERNEL_TABLE.raw().into());
+    #[cfg(not(feature = "vm"))]
     set_user_table(0usize.into());
 
     crate::init_secondary(arg)

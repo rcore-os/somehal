@@ -74,6 +74,7 @@ pub fn entry_virt_and_liner() {
     crate::mem::percpu::setup_stack_and_table();
 
     Arch::set_kernel_table(table);
+    #[cfg(not(feature = "vm"))]
     Arch::set_user_table(0usize.into());
     let cpu_idx = CpuIdx::primary();
 

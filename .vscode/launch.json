@@ -5,6 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "lldb-dap",
+            "request": "attach",
+            "name": "lldb-dap aarch64",
+            "program": "${workspaceFolder}/target/kernel.elf",
+            "gdb-remote-port": 1234,
+            "preLaunchTask": "qemu debug aarch64",
+        },
+        {
             "type": "cppdbg",
             "name": "Debug aarch64 test",
             "request": "launch",
