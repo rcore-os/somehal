@@ -1,12 +1,11 @@
 use core::arch::asm;
 
-use kmem_region::region::STACK_TOP;
 use pie_boot::BootInfo;
 use riscv::register::satp;
 
 use crate::{
     entry,
-    mem::{page::new_mapped_table, setup_memory_regions, stack_top_cpu0},
+    mem::{page::new_mapped_table, setup_memory_regions, stack_top_phys, stack_top_virt},
     platform::*,
     printkv, println,
 };
@@ -25,7 +24,7 @@ pub fn primary_entry(boot_info: BootInfo) {
 
     entry::setup(boot_info);
 
-    let sp = stack_top_cpu0();
+    let sp = stack_top_phys(CpuIdx::primary());
 
     printkv!("Stack top", "{:?}", sp);
 
@@ -50,25 +49,27 @@ fn phys_sp_entry(hartid: usize) -> ! {
 
     println!("Memory regions setup done!");
 
-    let table = new_mapped_table(false);
+    let table = new_mapped_table(true);
+    let sp = stack_top_virt(CpuIdx::primary());
+    println!("Mov sp to {:?}", sp);
 
-    println!("Mov sp to {:#x}", STACK_TOP);
     let mut old = satp::read();
     old.set_ppn(table.raw() >> 12);
 
     unsafe {
         asm!("mv    t1,  {satp}",
              "la     t2, {entry}",
+             "mv    t3,  {sp}",
             satp = in(reg) old.bits(),
-            entry = sym crate::to_main
+            entry = sym crate::entry::entry_virt_and_liner,
+            sp = in(reg) sp.raw(),
         );
         asm!(
-            "li    sp, {sp}",
+            "mv    sp, t3",
             "sfence.vma",
             "csrw satp, t1",
             "jalr  t2",
             "j     .",
-            sp = const STACK_TOP,
             options(nostack, nomem, noreturn),
         )
     }

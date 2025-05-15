@@ -2,7 +2,10 @@ use entry::primary_entry;
 use page_table_generic::TableGeneric;
 use riscv::{
     asm::{sfence_vma, sfence_vma_all},
-    register::{satp, time},
+    register::{
+        satp::{self, Satp},
+        time,
+    },
 };
 
 use crate::{
@@ -57,20 +60,20 @@ impl ArchIf for Arch {
         paging::new_pte_with_config(config)
     }
 
-    fn set_kernel_table(_addr: kmem_region::PhysAddr) {
-        todo!()
+    fn set_kernel_table(addr: kmem_region::PhysAddr) {
+        let mut old = satp::read();
+        old.set_ppn(addr.raw() >> 12);
+        unsafe { satp::write(old) };
     }
 
     fn get_kernel_table() -> kmem_region::PhysAddr {
         (satp::read().ppn() << 12).into()
     }
 
-    fn set_user_table(_addr: kmem_region::PhysAddr) {
-        todo!()
-    }
+    fn set_user_table(_addr: kmem_region::PhysAddr) {}
 
     fn get_user_table() -> kmem_region::PhysAddr {
-        todo!()
+        0usize.into()
     }
 
     #[inline(always)]
@@ -100,19 +103,35 @@ impl ArchIf for Arch {
     fn primary_entry(boot_info: pie_boot::BootInfo) {
         primary_entry(boot_info);
     }
-    
+
     fn current_ticks() -> u64 {
         time::read() as u64
     }
-    
+
     fn tick_hz() -> u64 {
         10_000_000
     }
-    
+
     fn start_secondary_cpu(
         cpu: CpuId,
         stack: kmem_region::PhysAddr,
     ) -> Result<(), alloc::boxed::Box<dyn core::error::Error>> {
         todo!()
+    }
+
+    fn systick_set_enable(b: bool) {}
+
+    fn set_this_percpu_data_ptr(ptr: kmem_region::VirtAddr) {
+        unsafe {
+            core::arch::asm!("mv gp, {}", in(reg) ptr.raw());
+        }
+    }
+
+    fn get_this_percpu_data_ptr() -> kmem_region::VirtAddr {
+        let ptr: usize;
+        unsafe {
+            core::arch::asm!("mv {}, gp", out(reg) ptr);
+        }
+        ptr.into()
     }
 }

@@ -1,7 +1,5 @@
 use core::arch::naked_asm;
 
-use riscv::register::{mhartid, stvec::{self, Stvec}};
-
 use crate::{
     arch::debug_init,
     dbgln,
