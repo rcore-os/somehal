@@ -19,12 +19,12 @@ pub fn set_mair() {
 
 #[inline(always)]
 pub fn set_kernel_table(addr: crate::mem::PhysAddr) {
-    TTBR0_EL1.set_baddr(addr.raw() as _);
+    TTBR0_EL2.set_baddr(addr.raw() as _);
     flush_tlb(None);
 }
 
 pub fn get_kernel_table() -> crate::mem::PhysAddr {
-    (TTBR0_EL1.get_baddr() as usize).into()
+    (TTBR0_EL2.get_baddr() as usize).into()
 }
 
 #[inline(always)]

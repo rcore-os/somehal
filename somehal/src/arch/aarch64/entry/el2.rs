@@ -6,6 +6,7 @@ use crate::{
 };
 
 pub fn switch_to_elx() {
+          
     SPSel.write(SPSel::SP::ELx);
     let current_el = CurrentEL.read(CurrentEL::EL);
     if current_el == 3 {
@@ -39,6 +40,7 @@ pub fn switch_to_elx() {
 }
 
 pub unsafe fn init_mmu(arg: &CpuOnArg) {
+ 
     set_mair();
 
     // Enable TTBR0 and TTBR1 walks, page size = 4K, vaddr size = 48 bits, paddr size = 40 bits.
@@ -64,17 +66,6 @@ pub unsafe fn init_mmu(arg: &CpuOnArg) {
     // Enable the MMU and turn on I-cache and D-cache
     SCTLR_EL2.modify(SCTLR_EL2::M::Enable + SCTLR_EL2::C::Cacheable + SCTLR_EL2::I::Cacheable);
     barrier::isb(barrier::SY);
-    // unsafe {
-    //     let base = 0xfe660000usize;
-    //     let base = 0x9000000usize;
-    //     (base as *mut u8).write_volatile(b'A');
-    //     (base as *mut u8).write_volatile(b'\r');
-    //     (base as *mut u8).write_volatile(b'\n');
-    // }
-    // unsafe {
-    //     let base = 0xfe660000usize;
-    //     (base as *mut u8).write_volatile(b'A');
-    //     (base as *mut u8).write_volatile(b'\r');
-    //     (base as *mut u8).write_volatile(b'\n');
-    // }
+
+
 }

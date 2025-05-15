@@ -99,7 +99,7 @@ pub fn new_mapped_table(is_map_liner: bool) -> kmem_region::PhysAddr {
             if is_map_liner && vaddr.raw() != paddr.raw() {
                 handle_err!(table.map(
                     MapConfig {
-                        vaddr: vaddr.raw().into(),
+                        vaddr: paddr.raw().into(),
                         paddr,
                         size: region.size,
                         pte: Arch::new_pte_with_config(MemConfig {
