@@ -4,6 +4,8 @@ use kmem_region::PhysAddr;
 
 use crate::{archif::CpuId, once_static::OnceStatic};
 
+use super::cache;
+
 pub type CpuOnFn =
     fn(cpu: CpuId, entry: usize, stack_top: PhysAddr) -> Result<(), alloc::boxed::Box<dyn Error>>;
 
@@ -18,5 +20,6 @@ pub fn cpu_on(
     entry: usize,
     stack_top: PhysAddr,
 ) -> Result<(), alloc::boxed::Box<dyn Error>> {
+    unsafe { cache::dcache_all(cache::DcacheOp::CleanAndInvalidate) };
     (CPU_ON_FN)(cpu, entry, stack_top)
 }
