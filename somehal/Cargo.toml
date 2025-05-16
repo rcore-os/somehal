@@ -25,7 +25,7 @@ any-uart = "0.2"
 rdrive = { version = "0.5.10" }
 rdrive-macros = "0.3"
 
-percpu  = { git = "https://github.com/ZR233/percpu" }
+percpu = { git = "https://github.com/ZR233/percpu", features = ["custom-tp"] }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "10.0"

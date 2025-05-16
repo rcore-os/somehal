@@ -49,11 +49,11 @@ pub fn cpu_count() -> usize {
 }
 
 pub fn cpu_idx() -> CpuIdx {
-    percpu::CPU_IDX.read()
+    percpu::CPU_IDX.read_current()
 }
 
 pub fn cpu_id() -> CpuId {
-    percpu::CPU_ID.read()
+    percpu::CPU_ID.read_current()
 }
 
 pub fn cpu_main_id() -> CpuId {

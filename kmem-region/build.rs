@@ -10,7 +10,12 @@ fn main() {
 
     let mut addr_bits = 48usize;
     let mut page_levels = 4usize;
-    let page_size = 0x1000usize;
+    let mut page_size = 0x1000usize;
+
+    if std::env::var("CARGO_FEATURE_PAGE16K").is_ok() {
+        page_size = 0x4000;
+    }
+
     let stack_size = DEFAULT_KERNEL_STACK_SIZE;
 
     if std::env::var("CARGO_FEATURE_SV39").is_ok() {
@@ -18,10 +23,18 @@ fn main() {
         page_levels = 3;
     }
 
-    let addr_base: usize = !((1 << addr_bits) - 1);
-    let kernel_load_vaddr = addr_base + (1 << addr_bits) / 16 * 14 + 0x200000;
+    let mut addr_base: usize = !((1 << addr_bits) - 1);
+    let mut kernel_load_vaddr = addr_base + (1 << addr_bits) / 16 * 15 + 0x200000;
+
+    if std::env::var("CARGO_FEATURE_SPACE_LO").is_ok() {
+        addr_base = 0;
+        // kernel_load_vaddr = (1 << addr_bits) / 16 * 15 + 0x200000;
+
+        kernel_load_vaddr = 0x40200000;
+    }
 
     let const_content = quote! {
+        pub const ADDR_BASE: usize = #addr_base;
         pub const ADDR_BITS: usize = #addr_bits;
         pub const PAGE_LEVELS: usize = #page_levels;
         pub const KERNEL_LOAD_VADDR: usize = #kernel_load_vaddr;
@@ -44,8 +57,8 @@ fn main() {
     let content = content.replace("${KERNAL_LOAD_VMA}", &format!("{:#x}", kernel_load_vaddr));
     let content = content.replace("${PAGE_SIZE}", &format!("{:#x}", page_size));
 
-    let mut file =
-        std::fs::File::create(out_dir().join("kmem_region.x")).expect("kmem_region.x create failed");
+    let mut file = std::fs::File::create(out_dir().join("kmem_region.x"))
+        .expect("kmem_region.x create failed");
 
     file.write_all(content.as_bytes())
         .expect("kmem_region.x write failed");

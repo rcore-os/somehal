@@ -20,8 +20,10 @@ pub trait ArchIf {
 
     fn get_kernel_table() -> PhysAddr;
 
+    #[cfg(not(feature = "vm"))]
     fn set_user_table(addr: PhysAddr);
 
+    #[cfg(not(feature = "vm"))]
     fn get_user_table() -> PhysAddr;
 
     fn flush_tlb(vaddr: Option<VirtAddr>);
