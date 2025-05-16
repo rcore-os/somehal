@@ -23,7 +23,7 @@ pub fn write_bytes(s: &[u8]) {
     if let Some(&n) = s.last() {
         if let Some(&n1) = s.get(s.len() - 2) {
             if n == b'\n' && n1 != b'\r' {
-                Arch::early_debug_put(&s[..s.len() - 2]);
+                Arch::early_debug_put(&s[..s.len() - 1]);
                 Arch::early_debug_put(b"\r\n");
                 return;
             }
