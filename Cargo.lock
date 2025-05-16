@@ -393,19 +393,20 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 [[package]]
 name = "percpu"
 version = "0.2.0"
-source = "git+https://github.com/ZR233/percpu#7a57a0c8d023e73d9247aa4d65b27194c725fff6"
+source = "git+https://github.com/ZR233/percpu#4187d1b06f549f8b56b0f641bb06a9ef89c70d7c"
 dependencies = [
  "cfg-if",
  "percpu_macros",
- "spin",
+ "spin 0.9.8",
  "x86",
 ]
 
 [[package]]
 name = "percpu_macros"
 version = "0.2.0"
-source = "git+https://github.com/ZR233/percpu#7a57a0c8d023e73d9247aa4d65b27194c725fff6"
+source = "git+https://github.com/ZR233/percpu#4187d1b06f549f8b56b0f641bb06a9ef89c70d7c"
 dependencies = [
+ "cfg-if",
  "proc-macro2",
  "quote",
  "syn",
@@ -443,7 +444,7 @@ dependencies = [
  "linked_list_allocator",
  "log",
  "somehal",
- "spin",
+ "spin 0.10.0",
 ]
 
 [[package]]
@@ -553,7 +554,7 @@ dependencies = [
  "rdif-intc",
  "rdif-power",
  "rdif-timer",
- "spin",
+ "spin 0.10.0",
  "thiserror",
 ]
 
@@ -726,7 +727,7 @@ dependencies = [
  "sbi-rt",
  "smccc",
  "somehal-macros",
- "spin",
+ "spin 0.10.0",
  "syn",
  "tock-registers",
  "x86",
@@ -743,6 +744,15 @@ dependencies = [
  "quote",
  "rdrive-macro-utils",
  "syn",
+]
+
+[[package]]
+name = "spin"
+version = "0.9.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
+dependencies = [
+ "lock_api",
 ]
 
 [[package]]
