@@ -51,7 +51,7 @@ pub(crate) fn to_main(arg: &CpuOnArg) -> ! {
     unsafe {
         set_is_relocated();
         if arg.cpu_idx.is_primary() {
-            percpu::init_data(mem::cpu_count());
+            percpu::init(mem::cpu_count());
         }
         mem::setup_arg(arg);
         println!("[SomeHAL] cpu {:?} is ready!", arg.cpu_idx);

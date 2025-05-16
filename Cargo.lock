@@ -393,7 +393,6 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 [[package]]
 name = "percpu"
 version = "0.2.0"
-source = "git+https://github.com/ZR233/percpu#1887b1550b5ecc2188cba4bcc3bd513051a1b856"
 dependencies = [
  "cfg-if",
  "percpu_macros",
@@ -404,7 +403,6 @@ dependencies = [
 [[package]]
 name = "percpu_macros"
 version = "0.2.0"
-source = "git+https://github.com/ZR233/percpu#1887b1550b5ecc2188cba4bcc3bd513051a1b856"
 dependencies = [
  "cfg-if",
  "proc-macro2",
