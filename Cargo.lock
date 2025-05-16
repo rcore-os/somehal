@@ -29,7 +29,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94476c7ef97af4c4d998b3f422c1b01d5211aad57c80ed200baf148d1f1efab6"
 dependencies = [
  "bit_field",
- "bitflags 2.9.0",
+ "bitflags 2.9.1",
  "log",
 ]
 
@@ -98,7 +98,7 @@ version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3327d034f53f6af3f27083a0c324f422cbb3a75a588cde02b5e4a45c887208a"
 dependencies = [
- "bitflags 2.9.0",
+ "bitflags 2.9.1",
  "cfg-if",
  "embedded-hal-nb",
  "fdt-parser",
@@ -131,9 +131,9 @@ checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
 name = "bitflags"
-version = "2.9.0"
+version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c8214115b7bf84099f1309324e63141d4c5d7cc26862f97a0a857dbefe165bd"
+checksum = "1b8e56985ec62d17e9c1001dc89c88ecd7dc08e47eba5ec7c29c7b5eeecde967"
 
 [[package]]
 name = "byteorder"
@@ -304,7 +304,7 @@ dependencies = [
 name = "kmem-region"
 version = "0.1.0"
 dependencies = [
- "bitflags 2.9.0",
+ "bitflags 2.9.1",
  "prettyplease",
  "quote",
  "syn",
@@ -376,7 +376,7 @@ checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
 name = "page-table-generic"
 version = "0.6.0"
 dependencies = [
- "bitflags 2.9.0",
+ "bitflags 2.9.1",
  "env_logger",
  "log",
  "num-align 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -393,7 +393,7 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 [[package]]
 name = "percpu"
 version = "0.2.0"
-source = "git+https://github.com/ZR233/percpu#4187d1b06f549f8b56b0f641bb06a9ef89c70d7c"
+source = "git+https://github.com/ZR233/percpu#1887b1550b5ecc2188cba4bcc3bd513051a1b856"
 dependencies = [
  "cfg-if",
  "percpu_macros",
@@ -404,7 +404,7 @@ dependencies = [
 [[package]]
 name = "percpu_macros"
 version = "0.2.0"
-source = "git+https://github.com/ZR233/percpu#4187d1b06f549f8b56b0f641bb06a9ef89c70d7c"
+source = "git+https://github.com/ZR233/percpu#1887b1550b5ecc2188cba4bcc3bd513051a1b856"
 dependencies = [
  "cfg-if",
  "proc-macro2",
@@ -418,7 +418,7 @@ version = "0.1.0"
 dependencies = [
  "aarch64-cpu",
  "any-uart",
- "bitflags 2.9.0",
+ "bitflags 2.9.1",
  "cfg-if",
  "fdt-parser",
  "kmem-region",
@@ -505,7 +505,7 @@ version = "11.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c6df7ab838ed27997ba19a4664507e6f82b41fe6e20be42929332156e5e85146"
 dependencies = [
- "bitflags 2.9.0",
+ "bitflags 2.9.1",
 ]
 
 [[package]]
@@ -707,7 +707,7 @@ dependencies = [
  "acpi",
  "any-uart",
  "bit_field",
- "bitflags 2.9.0",
+ "bitflags 2.9.1",
  "cfg-if",
  "fdt-parser",
  "heapless",
@@ -944,7 +944,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0f042214de98141e9c8706e8192b73f56494087cc55ebec28ce10f26c5c364ae"
 dependencies = [
  "bit_field",
- "bitflags 2.9.0",
+ "bitflags 2.9.1",
  "rustversion",
  "volatile",
 ]

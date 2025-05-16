@@ -61,7 +61,7 @@ pub fn cpu_main_id() -> CpuId {
 }
 
 pub(crate) fn setup_arg(args: &CpuOnArg) {
-    ::percpu::init(args.cpu_idx.raw());
+    ::percpu::init_percpu_reg(args.cpu_idx.raw());
     percpu::CPU_IDX.write_current(args.cpu_idx);
     percpu::CPU_ID.write_current(args.cpu_id);
 }
