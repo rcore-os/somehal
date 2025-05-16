@@ -25,6 +25,7 @@ pub fn write_bytes(s: &[u8]) {
             if n == b'\n' && n1 != b'\r' {
                 Arch::early_debug_put(&s[..s.len() - 2]);
                 Arch::early_debug_put(b"\r\n");
+                return;
             }
         }
     }
