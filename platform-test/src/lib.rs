@@ -33,7 +33,6 @@ fn main(cpu_id: usize, cpu_idx: usize) -> ! {
         somehal::power::idle();
 
     } else {
-        println!("main cpu_id: {:?}", somehal::mem::cpu_main_id());
         println!("all test passed!");
         somehal::power::terminate();
         // info!("per id: {:?}", somehal::mem::cpu_id());

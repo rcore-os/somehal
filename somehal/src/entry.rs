@@ -73,7 +73,7 @@ pub fn entry_virt_and_liner() {
     // 移除低地址空间线性映射
     let table = new_mapped_table(false);
 
-    crate::mem::percpu::setup_stack_and_table();
+    crate::mem::kpercpu::setup_stack_and_table();
 
     Arch::set_kernel_table(table);
     #[cfg(not(feature = "vm"))]

@@ -23,12 +23,12 @@ use crate::{
 };
 
 pub(crate) mod heap;
+pub(crate) mod kpercpu;
 pub(crate) mod main_memory;
 pub mod page;
-pub(crate) mod percpu;
 
+pub use kpercpu::{cpu_id_to_idx, cpu_idx_to_id};
 use page::page_size;
-pub use percpu::{cpu_id_to_idx, cpu_idx_to_id};
 
 #[derive(Debug, Clone)]
 pub struct PhysMemory {
@@ -49,21 +49,19 @@ pub fn cpu_count() -> usize {
 }
 
 pub fn cpu_idx() -> CpuIdx {
-    percpu::CPU_IDX.read_current()
+    unsafe { *kpercpu::CPU_IDX.current_ref_raw() }
 }
 
 pub fn cpu_id() -> CpuId {
-    percpu::CPU_ID.read_current()
-}
-
-pub fn cpu_main_id() -> CpuId {
-    percpu::CPU_ID.read_remote(0)
+    unsafe { *kpercpu::CPU_ID.current_ref_raw() }
 }
 
 pub(crate) fn setup_arg(args: &CpuOnArg) {
-    ::percpu::init_percpu_reg(args.cpu_idx.raw());
-    percpu::CPU_IDX.write_current(args.cpu_idx);
-    percpu::CPU_ID.write_current(args.cpu_id);
+    percpu::init_percpu_reg(args.cpu_idx.raw());
+    unsafe {
+        *kpercpu::CPU_IDX.current_ref_mut_raw() = args.cpu_idx;
+        *kpercpu::CPU_ID.current_ref_mut_raw() = args.cpu_id;
+    }
 }
 
 pub(crate) fn stack_top_phys(cpu_idx: CpuIdx) -> PhysAddr {
@@ -187,7 +185,7 @@ pub(crate) fn setup_memory_main(
 }
 
 pub(crate) fn setup_memory_regions(cpu0_id: CpuId, cpu_list: impl Iterator<Item = CpuId>) {
-    percpu::init_percpu_data();
+    kpercpu::init_percpu_data();
 
     let mut dyn_rodata_region = RegionAllocator::new(
         "dyn ro",
@@ -199,7 +197,7 @@ pub(crate) fn setup_memory_regions(cpu0_id: CpuId, cpu_list: impl Iterator<Item 
         OFFSET_LINER,
     );
 
-    percpu::init(cpu0_id, cpu_list, &mut dyn_rodata_region);
+    kpercpu::init(cpu0_id, cpu_list, &mut dyn_rodata_region);
 
     mem_region_add(dyn_rodata_region.into());
 
@@ -343,7 +341,7 @@ fn_link_section!(text);
 fn_link_section!(bss);
 
 #[inline(always)]
-fn percpu() -> &'static [u8] {
+fn section_percpu() -> &'static [u8] {
     unsafe extern "C" {
         fn _percpu_load_start();
 

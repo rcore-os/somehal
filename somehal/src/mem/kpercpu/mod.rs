@@ -1,14 +1,13 @@
 use core::{alloc::Layout, ptr::NonNull};
 
 use crate::{
-    ArchIf,
     arch::Arch,
     handle_err,
-    mem::{CPU_COUNT, page::page_size, percpu},
+    mem::{page::page_size, section_percpu, CPU_COUNT},
     mp::CpuOnArg,
     once_static::OnceStatic,
     platform::{CpuId, CpuIdx},
-    println,
+    println, ArchIf,
 };
 
 pub(super) static PERCPU_0: OnceStatic<PhysMemory> = OnceStatic::new();
@@ -20,20 +19,19 @@ static PERCPU_DATA: OnceStatic<NonNull<[u8]>> = OnceStatic::new();
 static CPU_MAP: OnceStatic<CPUMap> = OnceStatic::new();
 
 use super::{
-    PhysMemory,
     main_memory::RegionAllocator,
     mem_region_add,
-    page::{BOOT_TABLE1, is_relocated},
-    stack_top_phys, stack_top_virt,
+    page::{is_relocated, BOOT_TABLE1},
+    stack_top_phys, stack_top_virt, PhysMemory,
 };
-use ::percpu::def_percpu;
 use kmem_region::{
-    IntAlign, PhysAddr,
     region::{
-        AccessFlags, CacheConfig, MemConfig, MemRegion, MemRegionKind, OFFSET_LINER, PERCPU_TOP,
-        kcode_offset,
+        kcode_offset, AccessFlags, CacheConfig, MemConfig, MemRegion, MemRegionKind, OFFSET_LINER,
+        PERCPU_TOP,
     },
+    IntAlign, PhysAddr,
 };
+use percpu::def_percpu;
 
 #[def_percpu]
 pub static CPU_IDX: CpuIdx = CpuIdx::new(0);
@@ -41,11 +39,15 @@ pub static CPU_IDX: CpuIdx = CpuIdx::new(0);
 #[def_percpu]
 pub static CPU_ID: CpuId = CpuId::new(0);
 
+#[allow(unused)]
 struct ThisImpl;
 
-impl ::percpu::Impl for ThisImpl {
+impl percpu::Impl for ThisImpl {
     fn percpu_base() -> NonNull<u8> {
-        unsafe { NonNull::new_unchecked(percpu_data_base() as _) }
+        unsafe {
+            let base = percpu_data().as_ref().as_ptr() as usize;
+            NonNull::new_unchecked(base as _)
+        }
     }
 
     #[inline]
@@ -59,7 +61,7 @@ impl ::percpu::Impl for ThisImpl {
     }
 }
 
-::percpu::impl_percpu!(ThisImpl);
+percpu::impl_percpu!(ThisImpl);
 
 /// .
 ///
@@ -68,10 +70,6 @@ impl ::percpu::Impl for ThisImpl {
 /// .
 pub unsafe fn percpu_data() -> NonNull<[u8]> {
     *PERCPU_DATA
-}
-
-pub fn percpu_data_base() -> usize {
-    unsafe { percpu_data().as_ref().as_ptr() as usize }
 }
 
 struct CPUMap {
@@ -125,11 +123,11 @@ pub fn cpu_idx_to_id(cpu_idx: CpuIdx) -> CpuId {
 }
 
 pub fn init_percpu_data() {
-    let percpu_one_size = percpu().len().align_up(page_size());
+    let percpu_one_size = section_percpu().len().align_up(page_size());
 
     println!("percpu_one_size: {}", percpu_one_size);
 
-    let percpu_cpu0_start = percpu().as_ptr() as usize - kcode_offset();
+    let percpu_cpu0_start = section_percpu().as_ptr() as usize - kcode_offset();
 
     unsafe {
         PERCPU_0.set(PhysMemory {
@@ -215,14 +213,14 @@ pub fn init(
 
     let mut cpu_map = CPUMap::new(cpu_map_ptr);
 
-    let len = percpu().len().align_up(page_size());
+    let len = section_percpu().len().align_up(page_size());
 
     unsafe extern "C" {
         fn __start_percpu();
     }
 
     unsafe {
-        let cpu0_start = percpu().as_ptr().sub(kcode_offset());
+        let cpu0_start = section_percpu().as_ptr().sub(kcode_offset());
 
         let mut idx = 0;
 

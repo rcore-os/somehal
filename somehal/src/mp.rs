@@ -1,4 +1,4 @@
-pub use crate::mem::percpu::cpu_list;
+pub use crate::mem::kpercpu::cpu_list;
 use kmem_region::{PhysAddr, VirtAddr};
 
 use crate::{
