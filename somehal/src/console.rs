@@ -21,13 +21,6 @@ impl core::fmt::Write for DebugTx {
 pub fn write_bytes(s: &[u8]) {
     let g = TX.lock();
 
-    if let Some(&n) = s.last() {
-        if n == b'\n' {
-            Arch::early_debug_put(s.trim_ascii_end());
-            Arch::early_debug_put(b"\r\n");
-            return;
-        }
-    }
     Arch::early_debug_put(s);
     drop(g);
 }
