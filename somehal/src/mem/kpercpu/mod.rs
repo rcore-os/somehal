@@ -1,13 +1,12 @@
 use core::{alloc::Layout, ptr::NonNull};
 
 use crate::{
-    arch::Arch,
     handle_err,
-    mem::{page::page_size, section_percpu, CPU_COUNT},
+    mem::{CPU_COUNT, page::page_size, section_percpu},
     mp::CpuOnArg,
     once_static::OnceStatic,
     platform::{CpuId, CpuIdx},
-    println, ArchIf,
+    println,
 };
 
 pub(super) static PERCPU_0: OnceStatic<PhysMemory> = OnceStatic::new();
@@ -19,49 +18,43 @@ static PERCPU_DATA: OnceStatic<NonNull<[u8]>> = OnceStatic::new();
 static CPU_MAP: OnceStatic<CPUMap> = OnceStatic::new();
 
 use super::{
+    PhysMemory,
     main_memory::RegionAllocator,
     mem_region_add,
-    page::{is_relocated, BOOT_TABLE1},
-    stack_top_phys, stack_top_virt, PhysMemory,
+    page::{BOOT_TABLE1, is_relocated},
+    stack_top_phys, stack_top_virt,
 };
 use kmem_region::{
-    region::{
-        kcode_offset, AccessFlags, CacheConfig, MemConfig, MemRegion, MemRegionKind, OFFSET_LINER,
-        PERCPU_TOP,
-    },
     IntAlign, PhysAddr,
+    region::{
+        AccessFlags, CacheConfig, MemConfig, MemRegion, MemRegionKind, OFFSET_LINER, PERCPU_TOP,
+        kcode_offset,
+    },
 };
-use percpu::def_percpu;
 
-#[def_percpu]
-pub static CPU_IDX: CpuIdx = CpuIdx::new(0);
+// #[allow(unused)]
+// struct ThisImpl;
 
-#[def_percpu]
-pub static CPU_ID: CpuId = CpuId::new(0);
+// impl percpu::Impl for ThisImpl {
+//     fn percpu_base() -> NonNull<u8> {
+//         unsafe {
+//             let base = percpu_data().as_ref().as_ptr() as usize;
+//             NonNull::new_unchecked(base as _)
+//         }
+//     }
 
-#[allow(unused)]
-struct ThisImpl;
+//     #[inline]
+//     fn set_cpu_local_ptr(ptr: *mut u8) {
+//         Arch::set_this_percpu_data_ptr(ptr.into());
+//     }
 
-impl percpu::Impl for ThisImpl {
-    fn percpu_base() -> NonNull<u8> {
-        unsafe {
-            let base = percpu_data().as_ref().as_ptr() as usize;
-            NonNull::new_unchecked(base as _)
-        }
-    }
+//     #[inline]
+//     fn get_cpu_local_ptr() -> *mut u8 {
+//         Arch::get_this_percpu_data_ptr().as_ptr()
+//     }
+// }
 
-    #[inline]
-    fn set_cpu_local_ptr(ptr: *mut u8) {
-        Arch::set_this_percpu_data_ptr(ptr.into());
-    }
-
-    #[inline]
-    fn get_cpu_local_ptr() -> *mut u8 {
-        Arch::get_this_percpu_data_ptr().as_ptr()
-    }
-}
-
-percpu::impl_percpu!(ThisImpl);
+// percpu::impl_percpu!(ThisImpl);
 
 /// .
 ///
