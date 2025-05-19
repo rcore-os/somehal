@@ -15,7 +15,7 @@ use rdrive::register::{DriverRegister, DriverRegisterSlice};
 use somehal_macros::fn_link_section;
 
 use crate::{
-    ArchIf, CpuOnArg,
+    ArchIf,
     arch::Arch,
     once_static::OnceStatic,
     platform::{self, CpuId, CpuIdx},
@@ -27,7 +27,7 @@ pub(crate) mod kpercpu;
 pub(crate) mod main_memory;
 pub mod page;
 
-pub use kpercpu::{cpu_id_to_idx, cpu_idx_to_id};
+pub use kpercpu::{cpu_id_to_idx, cpu_idx_to_id, percpu_data};
 use page::page_size;
 
 #[derive(Debug, Clone)]
@@ -46,22 +46,6 @@ static STACK_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
 
 pub fn cpu_count() -> usize {
     unsafe { CPU_COUNT }
-}
-
-pub fn cpu_idx() -> CpuIdx {
-    unsafe { *kpercpu::CPU_IDX.current_ref_raw() }
-}
-
-pub fn cpu_id() -> CpuId {
-    unsafe { *kpercpu::CPU_ID.current_ref_raw() }
-}
-
-pub(crate) fn setup_arg(args: &CpuOnArg) {
-    percpu::init_percpu_reg(args.cpu_idx.raw());
-    unsafe {
-        *kpercpu::CPU_IDX.current_ref_mut_raw() = args.cpu_idx;
-        *kpercpu::CPU_ID.current_ref_mut_raw() = args.cpu_id;
-    }
 }
 
 pub(crate) fn stack_top_phys(cpu_idx: CpuIdx) -> PhysAddr {
