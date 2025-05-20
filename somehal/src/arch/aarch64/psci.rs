@@ -2,7 +2,7 @@ use core::error::Error;
 
 use crate::{
     archif::CpuId,
-    driver::{DriverGeneric, DriverResult, power::*, register::*},
+    driver::{DriverGeneric, power::*, register::*},
     once_static::OnceStatic,
 };
 
@@ -49,11 +49,11 @@ struct Psci {
 }
 
 impl DriverGeneric for Psci {
-    fn open(&mut self) -> DriverResult {
+    fn open(&mut self) -> Result<(), ErrorBase> {
         Ok(())
     }
 
-    fn close(&mut self) -> DriverResult {
+    fn close(&mut self) -> Result<(), ErrorBase> {
         Ok(())
     }
 }
