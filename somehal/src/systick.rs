@@ -1,4 +1,4 @@
-use rdrive::timer::HardwareCPU;
+use rdrive::systick::HardwareCPU;
 
 use crate::{ArchIf, arch::Arch, once_static::OnceStatic};
 
@@ -21,7 +21,7 @@ pub fn get() -> &'static HardwareCPU {
 }
 
 pub fn init() -> Option<()> {
-    let timer = rdrive::get_dev!(Timer)?;
+    let timer = rdrive::get_dev!(Systick)?;
 
     let mut g = timer.spin_try_borrow_by(0.into()).ok()?;
 

@@ -488,9 +488,9 @@ dependencies = [
 
 [[package]]
 name = "rdif-base"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "646f76de5c5a02b0cf2677f99d5216b9fc301d47dbac8d056f7e74f8c0e89008"
+checksum = "023bd968dcec1d1d01092fdf0e6473cd4fee4b3a4140e524d5952cf332882a36"
 
 [[package]]
 name = "rdif-intc"
@@ -512,6 +512,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rdif-systick"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ca1bbe797e0fa2d18980278ef58546b1b37e1caea7b67ed160e6a622bbb34fde"
+dependencies = [
+ "rdif-base",
+]
+
+[[package]]
 name = "rdif-timer"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -522,15 +531,16 @@ dependencies = [
 
 [[package]]
 name = "rdrive"
-version = "0.5.10"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d02af217fcd156e90715e8c01f66f5415aca4746cb4cf9a0763580fcfff789da"
+checksum = "d0cd839f8b7ea35b14e8e90af89df711b8a750def471795fcb5ca77d281a317f"
 dependencies = [
  "fdt-parser",
  "log",
  "rdif-base",
  "rdif-intc",
  "rdif-power",
+ "rdif-systick",
  "rdif-timer",
  "spin",
  "thiserror",

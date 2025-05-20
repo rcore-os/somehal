@@ -75,6 +75,4 @@ pub unsafe fn init() {
     irq::init();
 
     systick::init();
-
-    driver::probe().unwrap();
 }

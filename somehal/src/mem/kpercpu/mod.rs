@@ -9,9 +9,7 @@ use crate::{
     println,
 };
 
-pub(super) static PERCPU_0: OnceStatic<PhysMemory> = OnceStatic::new();
-// 除主CPU 外，其他CPU的独占Data
-pub(super) static PERCPU_OTHER_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
+pub(super) static PERCPU_ALL: OnceStatic<PhysMemory> = OnceStatic::new();
 
 static PERCPU_DATA: OnceStatic<NonNull<[u8]>> = OnceStatic::new();
 
@@ -31,30 +29,6 @@ use kmem_region::{
         kcode_offset,
     },
 };
-
-// #[allow(unused)]
-// struct ThisImpl;
-
-// impl percpu::Impl for ThisImpl {
-//     fn percpu_base() -> NonNull<u8> {
-//         unsafe {
-//             let base = percpu_data().as_ref().as_ptr() as usize;
-//             NonNull::new_unchecked(base as _)
-//         }
-//     }
-
-//     #[inline]
-//     fn set_cpu_local_ptr(ptr: *mut u8) {
-//         Arch::set_this_percpu_data_ptr(ptr.into());
-//     }
-
-//     #[inline]
-//     fn get_cpu_local_ptr() -> *mut u8 {
-//         Arch::get_this_percpu_data_ptr().as_ptr()
-//     }
-// }
-
-// percpu::impl_percpu!(ThisImpl);
 
 /// .
 ///
@@ -120,69 +94,36 @@ pub fn init_percpu_data() {
 
     println!("percpu_one_size: {}", percpu_one_size);
 
-    let percpu_cpu0_start = section_percpu().as_ptr() as usize - kcode_offset();
+    let percpu_all_size = percpu_one_size * unsafe { CPU_COUNT };
 
-    unsafe {
-        PERCPU_0.set(PhysMemory {
-            addr: percpu_cpu0_start.into(),
-            size: percpu_one_size,
-        })
+    let percpu_start =
+        super::main_memory::alloc(Layout::from_size_align(percpu_all_size, page_size()).unwrap());
+
+    let percpu_all = PhysMemory {
+        addr: percpu_start,
+        size: percpu_all_size,
     };
 
-    let cpu_other_count = unsafe { CPU_COUNT - 1 };
-
-    let percpu_all = if cpu_other_count > 0 {
-        let percpu_other_all_size = percpu_one_size * cpu_other_count;
-
-        let percpu_start = super::main_memory::alloc(
-            Layout::from_size_align(percpu_other_all_size, page_size()).unwrap(),
-        );
-
-        PhysMemory {
-            addr: percpu_start,
-            size: percpu_other_all_size,
-        }
-    } else {
-        PhysMemory {
-            addr: 0usize.into(),
-            size: 0,
-        }
-    };
-
-    unsafe { PERCPU_OTHER_ALL.set(percpu_all) };
+    unsafe { PERCPU_ALL.set(percpu_all) };
 
     add_data_region();
 }
 
 fn add_data_region() {
     let end = PERCPU_TOP;
-    let start1 = end - PERCPU_OTHER_ALL.size;
-    let start0 = start1 - PERCPU_0.size;
+    let start = end - PERCPU_ALL.size;
     unsafe {
-        let size = end - start0;
         PERCPU_DATA.set(NonNull::slice_from_raw_parts(
-            NonNull::new_unchecked(start0 as _),
-            size,
+            NonNull::new_unchecked(start as _),
+            PERCPU_ALL.size,
         ));
     };
 
     mem_region_add(MemRegion {
-        virt_start: start0.into(),
-        size: PERCPU_0.size,
-        phys_start: PERCPU_0.addr,
-        name: ".percpu0",
-        config: MemConfig {
-            access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
-            cache: CacheConfig::Normal,
-        },
-        kind: MemRegionKind::PerCpu,
-    });
-
-    mem_region_add(MemRegion {
-        virt_start: start1.into(),
-        size: PERCPU_OTHER_ALL.size,
-        phys_start: PERCPU_OTHER_ALL.addr,
-        name: ".percpu1+",
+        virt_start: start.into(),
+        size: PERCPU_ALL.size,
+        phys_start: PERCPU_ALL.addr,
+        name: ".percpu",
         config: MemConfig {
             access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
             cache: CacheConfig::Normal,
@@ -213,43 +154,45 @@ pub fn init(
     }
 
     unsafe {
-        let cpu0_start = section_percpu().as_ptr().sub(kcode_offset());
+        let link_start = section_percpu().as_ptr().sub(kcode_offset());
 
         let mut idx = 0;
+
+        let start = PERCPU_ALL.addr.raw();
+        let mut phys_iter = start;
 
         println!(
             "cpu {:>04} [0x{:>04x}] phys  : [{:p}, {:p})",
             idx,
             cpu0_id.raw(),
-            cpu0_start,
-            cpu0_start.add(len)
+            link_start,
+            link_start.add(len)
         );
         cpu_map.set(cpu0_id, idx);
+        core::slice::from_raw_parts_mut(phys_iter as *mut u8, len)
+            .copy_from_slice(core::slice::from_raw_parts(link_start, len));
 
-        if PERCPU_OTHER_ALL.size > 0 {
-            let start = PERCPU_OTHER_ALL.addr.raw();
-            let mut phys_iter = start;
-            idx += 1;
+        phys_iter += len;
+        idx += 1;
 
-            for id in cpu_list {
-                if id == cpu0_id {
-                    continue;
-                }
-                println!(
-                    "cpu {:>04} [0x{:>04x}] phys  : [{:#x}, {:#x})",
-                    idx,
-                    id.raw(),
-                    phys_iter,
-                    phys_iter + len
-                );
-                cpu_map.set(id, idx);
-
-                core::slice::from_raw_parts_mut(phys_iter as *mut u8, len)
-                    .copy_from_slice(core::slice::from_raw_parts(cpu0_start, len));
-
-                phys_iter += len;
-                idx += 1;
+        for id in cpu_list {
+            if id == cpu0_id {
+                continue;
             }
+            println!(
+                "cpu {:>04} [0x{:>04x}] phys  : [{:#x}, {:#x})",
+                idx,
+                id.raw(),
+                phys_iter,
+                phys_iter + len
+            );
+            cpu_map.set(id, idx);
+
+            core::slice::from_raw_parts_mut(phys_iter as *mut u8, len)
+                .copy_from_slice(core::slice::from_raw_parts(link_start, len));
+
+            phys_iter += len;
+            idx += 1;
         }
     }
 

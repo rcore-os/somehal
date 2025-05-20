@@ -90,7 +90,10 @@ impl ArchIf for Arch {
         stack_top: PhysAddr,
     ) -> Result<(), alloc::boxed::Box<dyn core::error::Error>> {
         let entry = (entry::secondary_entry as usize) - kcode_offset();
-        trace!("cpu_on: entry={:#x} stack_top={:?}", entry, stack_top);
+        trace!(
+            "cpu_on: cpu_id={:?} entry={:#x} stack_top={:?}",
+            cpu, entry, stack_top
+        );
         mp::cpu_on(cpu, entry, stack_top)
     }
 
