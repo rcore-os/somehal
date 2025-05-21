@@ -114,6 +114,7 @@ impl ArchIf for Arch {
         VirtAddr::new(ptr)
     }
 
+    #[cfg(not(feature = "vm"))]
     fn systick_set_enable(b: bool) {
         let val = if b {
             CNTP_CTL_EL0::ENABLE::SET
@@ -122,5 +123,16 @@ impl ArchIf for Arch {
         };
 
         CNTP_CTL_EL0.write(val);
+    }
+
+    #[cfg(feature = "vm")]
+    fn systick_set_enable(b: bool) {
+        let val = if b {
+            CNTHP_CTL_EL2::ENABLE::SET
+        } else {
+            CNTHP_CTL_EL2::ENABLE::CLEAR
+        };
+
+        CNTHP_CTL_EL2.write(val);
     }
 }
