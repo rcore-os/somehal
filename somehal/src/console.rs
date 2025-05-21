@@ -29,7 +29,7 @@ pub fn write_bytes(s: &[u8]) {
             let (mut l, r) = left.split_at(n);
             if !l.is_empty() {
                 l = &l[..l.len() - 1];
-                Arch::early_debug_put(l.trim_ascii());
+                Arch::early_debug_put(l);
             }
             Arch::early_debug_put(b"\r\n");
             if r.is_empty() {
