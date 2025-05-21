@@ -26,9 +26,9 @@ pub fn write_bytes(s: &[u8]) {
     while !left.is_empty() {
         let n = left.iter().position(|&e| e == b'\n');
         if let Some(n) = n {
-            let (l, r) = left.split_at(n);
-            let d = l.trim_ascii();
-            if !d.is_empty() {
+            let (mut l, r) = left.split_at(n);
+            if !l.is_empty() {
+                l = &l[..l.len() - 1];
                 Arch::early_debug_put(l.trim_ascii());
             }
             Arch::early_debug_put(b"\r\n");
