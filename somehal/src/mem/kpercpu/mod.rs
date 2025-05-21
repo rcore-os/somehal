@@ -162,11 +162,11 @@ pub fn init(
         let mut phys_iter = start;
 
         println!(
-            "cpu {:>04} [0x{:>04x}] phys  : [{:p}, {:p})",
+            "cpu {:>04} [0x{:>04x}] phys  : [{:#x}, {:#x})",
             idx,
             cpu0_id.raw(),
-            link_start,
-            link_start.add(len)
+            phys_iter,
+            phys_iter + len
         );
         cpu_map.set(cpu0_id, idx);
         core::slice::from_raw_parts_mut(phys_iter as *mut u8, len)
