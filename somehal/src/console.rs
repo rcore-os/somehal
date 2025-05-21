@@ -27,12 +27,15 @@ pub fn write_bytes(s: &[u8]) {
         let n = left.iter().position(|&e| e == b'\n');
         if let Some(n) = n {
             let (l, r) = left.split_at(n);
-            left = r;
             let d = l.trim_ascii();
             if !d.is_empty() {
                 Arch::early_debug_put(l.trim_ascii());
             }
             Arch::early_debug_put(b"\r\n");
+            if r.is_empty() {
+                break;
+            }
+            left = &r[1..];
         } else {
             Arch::early_debug_put(left);
             break;
