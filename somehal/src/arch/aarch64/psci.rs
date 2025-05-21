@@ -69,8 +69,9 @@ impl Interface for Psci {
     }
 }
 
-fn probe(node: Node<'_>, _dev: &Descriptor) -> Result<HardwareKind, Box<dyn Error>> {
-    let method = node
+fn probe(fdt: FdtInfo<'_>, _dev: &Descriptor) -> Result<HardwareKind, Box<dyn Error>> {
+    let method = fdt
+        .node
         .find_property("method")
         .ok_or("fdt no method property")?
         .str();
