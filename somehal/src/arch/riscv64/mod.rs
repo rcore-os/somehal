@@ -97,7 +97,7 @@ impl ArchIf for Arch {
     }
 
     fn cpu_id() -> CpuId {
-        mem::cpu_id()
+        todo!()
     }
 
     fn primary_entry(boot_info: pie_boot::BootInfo) {

@@ -11,6 +11,9 @@ const NANO_PER_SEC: u128 = 1_000_000_000;
 
 pub trait ArchIf {
     fn early_debug_put(byte: &[u8]);
+    fn early_debug_get(_byte: &mut [u8]) -> usize {
+        unimplemented!()
+    }
 
     type PageTable: TableGeneric;
 

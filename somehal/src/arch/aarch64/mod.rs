@@ -30,6 +30,18 @@ impl ArchIf for Arch {
             debug::write_byte(b);
         }
     }
+    fn early_debug_get(bytes: &mut [u8]) -> usize {
+        let mut read_len = 0;
+        while read_len < bytes.len() {
+            if let Some(c) = debug::get_byte() {
+                bytes[read_len] = c;
+            } else {
+                break;
+            }
+            read_len += 1;
+        }
+        read_len
+    }
 
     type PageTable = paging::Table;
 

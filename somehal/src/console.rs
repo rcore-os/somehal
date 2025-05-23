@@ -9,6 +9,7 @@ pub fn __print_str(s: &str) {
 }
 
 static TX: Mutex<u32> = Mutex::new(0);
+static RX: Mutex<u32> = Mutex::new(0);
 
 struct DebugTx;
 impl core::fmt::Write for DebugTx {
@@ -43,6 +44,13 @@ pub fn write_bytes(s: &[u8]) {
     }
 
     drop(g);
+}
+
+pub fn read_bytes(bytes: &mut [u8]) -> usize {
+    let g = RX.lock();
+    let read_len = Arch::early_debug_get(bytes);
+    drop(g);
+    read_len
 }
 
 pub fn _print(args: core::fmt::Arguments) {

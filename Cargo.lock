@@ -94,9 +94,9 @@ dependencies = [
 
 [[package]]
 name = "any-uart"
-version = "0.2.10"
+version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3327d034f53f6af3f27083a0c324f422cbb3a75a588cde02b5e4a45c887208a"
+checksum = "d946430e1de45608625428bac646b79e02fb83e1d2e46eec27afa2556f038e65"
 dependencies = [
  "bitflags 2.9.1",
  "cfg-if",

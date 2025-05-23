@@ -2,25 +2,26 @@ use core::cell::UnsafeCell;
 
 use crate::platform;
 
-use any_uart::Sender;
+use any_uart::{Receiver, Sender};
 use kmem_region::region::OFFSET_LINER;
 
-static UART: UartWapper = UartWapper(UnsafeCell::new(None));
+static TX: UartWapper<Sender> = UartWapper(UnsafeCell::new(None));
+static RX: UartWapper<Receiver> = UartWapper(UnsafeCell::new(None));
 
-struct UartWapper(UnsafeCell<Option<Sender>>);
+struct UartWapper<T>(UnsafeCell<Option<T>>);
 
-unsafe impl Send for UartWapper {}
-unsafe impl Sync for UartWapper {}
+unsafe impl<T> Send for UartWapper<T> {}
+unsafe impl<T> Sync for UartWapper<T> {}
 
-impl UartWapper {
-    fn set(&self, uart: Sender) {
+impl<T> UartWapper<T> {
+    fn set(&self, uart: T) {
         unsafe {
             *self.0.get() = Some(uart);
         }
     }
 
     #[allow(clippy::mut_from_ref)]
-    fn get(&self) -> &mut Sender {
+    fn get(&self) -> &mut T {
         unsafe { &mut *self.0.get().as_mut().unwrap().as_mut().unwrap() }
     }
 }
@@ -32,15 +33,23 @@ pub(crate) fn init() {
 
 fn set_uart(uart: any_uart::Uart) -> Option<()> {
     let tx = uart.tx?;
-    UART.set(tx);
+    let rx = uart.rx?;
+    TX.set(tx);
+    RX.set(rx);
     Some(())
 }
 
 pub(crate) fn reloacte() {
-    UART.get().mmio_base_add(OFFSET_LINER);
+    TX.get().mmio_base_add(OFFSET_LINER);
+    RX.get().mmio_base_add(OFFSET_LINER);
 }
 
 pub fn write_byte(b: u8) {
-    let tx = UART.get();
+    let tx = TX.get();
     let _ = any_uart::block!(tx.write(b));
+}
+
+pub fn get_byte() -> Option<u8> {
+    let rx = RX.get();
+    any_uart::block!(rx.read()).ok()
 }
