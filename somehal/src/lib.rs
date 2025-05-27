@@ -6,6 +6,8 @@
 #![feature(allocator_api)]
 
 extern crate alloc;
+#[macro_use]
+pub extern crate rdrive;
 
 #[macro_use]
 pub(crate) mod _alloc;
@@ -40,8 +42,11 @@ use log::trace;
 use mem::page::set_is_relocated;
 use mp::CpuOnArg;
 pub use platform::CpuIdx;
+
 pub use rdrive as driver;
-pub use somehal_macros::{entry, module_driver};
+pub use rdrive::module_driver;
+pub use rdrive::register;
+pub use somehal_macros::entry;
 
 pub(crate) fn to_main(arg: &CpuOnArg) -> ! {
     unsafe extern "C" {
