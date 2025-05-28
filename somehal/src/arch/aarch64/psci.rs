@@ -15,7 +15,7 @@ use smccc::{Hvc, Smc, psci};
 static METHOD: OnceStatic<Method> = OnceStatic::new();
 
 module_driver!(
-    name: "ARM_PSCI",
+    name: "ARM PSCI",
     level: ProbeLevel::PreKernel,
     priority: ProbePriority::DEFAULT,
     probe_kinds: &[
