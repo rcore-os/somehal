@@ -657,17 +657,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rdrive-macro-utils"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68aa4694ee73b03d06548a5b7e93c8017e1d9adfd5cb363027241cc808ad4ddd"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "rdrive-macros"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -840,7 +829,6 @@ dependencies = [
  "darling",
  "proc-macro2",
  "quote",
- "rdrive-macro-utils",
  "syn",
 ]
 
