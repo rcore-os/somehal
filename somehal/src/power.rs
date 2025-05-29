@@ -3,7 +3,7 @@ use rdrive::power::*;
 use crate::ArchIf;
 use crate::arch::Arch;
 
-fn use_power<T, F: FnOnce(&mut Hardware) -> T>(f: F) -> T {
+fn use_power<T, F: FnOnce(&mut Boxed) -> T>(f: F) -> T {
     let weak = match rdrive::get_dev!(Power) {
         Some(v) => v,
         None => {

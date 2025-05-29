@@ -49,11 +49,11 @@ struct Psci {
 }
 
 impl DriverGeneric for Psci {
-    fn open(&mut self) -> Result<(), ErrorBase> {
+    fn open(&mut self) -> Result<(), KError> {
         Ok(())
     }
 
-    fn close(&mut self) -> Result<(), ErrorBase> {
+    fn close(&mut self) -> Result<(), KError> {
         Ok(())
     }
 }
