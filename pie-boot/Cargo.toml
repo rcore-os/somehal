@@ -14,9 +14,9 @@ vm = ["kmem-region/space-lo"]
 early-debug = ["any-uart"]
 
 [dependencies]
-somehal-macros = { version = "0.1", path = "../somehal-macros" }
+somehal-macros = { path = "../somehal-macros" }
 bitflags = "2.9"
-kmem-region = { version = "0.1", path = "../kmem-region" }
+kmem-region = { path = "../kmem-region" }
 thiserror = { version = "2", default-features = false }
 num-align = "0.1"
 cfg-if = "1.0.0"
