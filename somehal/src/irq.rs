@@ -23,7 +23,7 @@ pub(crate) fn init() {
 pub(crate) fn init_secondary() {
     for chip in rdrive::dev_list!(Intc) {
         unsafe {
-            if let Some(i) = (&mut *IRQ_CPU_MAP.get())
+            if let Some(i) = (*IRQ_CPU_MAP.get())
                 .as_mut()
                 .unwrap()
                 .get_mut(&chip.descriptor.device_id)
