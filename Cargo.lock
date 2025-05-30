@@ -572,9 +572,9 @@ dependencies = [
 
 [[package]]
 name = "rdif-base"
-version = "0.4.5"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8bc3fb0b02a6ed7f1c4f8e1dda33f2ff6fe6c20d2ce5e6c274206ef885d7c7a5"
+checksum = "1eebdadebd31279dc6e240fef7bb0341ef09de1be05463553a11f1cfe1e9279a"
 dependencies = [
  "async-trait",
  "rdif-def",
@@ -583,9 +583,9 @@ dependencies = [
 
 [[package]]
 name = "rdif-block"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c9c8e46689a0b05b2956ba2efefd3742422f0289fdb7cb453458ccb63b77b84d"
+checksum = "64356f70a70a70a9c361da15e1009056964960dd71f04a6a82939f949d8293cb"
 dependencies = [
  "cfg-if",
  "rdif-base",
@@ -593,27 +593,27 @@ dependencies = [
 
 [[package]]
 name = "rdif-clk"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01e9c10414a74366ba2aae969a2897e16f37a04e5c3f1bb48b113d76cad3440b"
+checksum = "47cb808121537a6cfb55df232efdaf18e173fa9805e3285cfe21b8837a0d541b"
 dependencies = [
  "rdif-base",
 ]
 
 [[package]]
 name = "rdif-def"
-version = "0.1.2"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14e6c038a4f95480ca704cd742eeece96393e62990cfc531e985df6f6eb49b83"
+checksum = "c238eb44d86fabc99028adc973f896ce2202aeb6184cc8b89863f2d157d7ca06"
 dependencies = [
  "thiserror",
 ]
 
 [[package]]
 name = "rdif-intc"
-version = "0.8.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "056a26584c00ebd21e9112fe14c962580a207b2ea0165cb2f20701589b3f121e"
+checksum = "c38f384a6e9001670f74ccf5c69ad2becfe29ae72a4469d6250041b280a4822d"
 dependencies = [
  "cfg-if",
  "rdif-base",
@@ -622,18 +622,18 @@ dependencies = [
 
 [[package]]
 name = "rdif-power"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "621bbc534a761023ca02ea068a5f12a6265d4ef3464458cc8ab16617747188fe"
+checksum = "ae3b558cfcd7b9bd2515fe8ffa4c235c2627f969a0466391ef8b6726a82e4f5b"
 dependencies = [
  "rdif-base",
 ]
 
 [[package]]
 name = "rdif-serial"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de86ddf8957001e93fe56a74ec8232f9ec489bf3e9b81b026db176248ad6c68f"
+checksum = "65e0dcf317551e78e506170b03292b5b986ecc7a2c8e7e4578c6b79c8c3be2ba"
 dependencies = [
  "futures",
  "rdif-base",
@@ -643,18 +643,18 @@ dependencies = [
 
 [[package]]
 name = "rdif-systick"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27d49b7f4684ae55cebd764ed582206c4bd56c27623faa6a80b0845fc4caf795"
+checksum = "c01ea42012cc743e5ac4b9660056e4f6aa8873d49c7a28e1886c1929bba81e95"
 dependencies = [
  "rdif-base",
 ]
 
 [[package]]
 name = "rdrive"
-version = "0.11.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f933ba31e3673b500255c633a0a537104ca0d8f9bdd0b399bc8c80797f0bdc3"
+checksum = "45635f196415cc8f05d4f37e4328bd8751b964420c15399344d6bf880540b31b"
 dependencies = [
  "fdt-parser",
  "log",
