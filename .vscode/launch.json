@@ -21,7 +21,12 @@
             "miDebuggerPath": "gdb-multiarch",
             "cwd": "${workspaceRoot}",
             "preLaunchTask": "qemu debug aarch64",
-            "stopAtConnect": true
+            "stopAtConnect": true,
+            // "setupCommands": [
+            //     {
+            //         "text": "add-symbol-file ${workspaceFolder}/target/kernel.elf 0x40200000",
+            //     },
+            // ]
         },
         {
             "type": "cppdbg",

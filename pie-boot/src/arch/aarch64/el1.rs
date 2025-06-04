@@ -209,10 +209,11 @@ impl PTEGeneric for Pte {
 
     #[inline(always)]
     fn set_valid(&mut self, valid: bool) {
+        let bits = (PteFlags::empty() | PteFlags::VALID).bits();
         if valid {
-            self.0 |= PteFlags::VALID.bits();
+            self.0 |= bits;
         } else {
-            self.0 &= !PteFlags::VALID.bits();
+            self.0 &= !bits;
         }
     }
 
@@ -223,10 +224,11 @@ impl PTEGeneric for Pte {
 
     #[inline(always)]
     fn set_is_huge(&mut self, is_block: bool) {
+        let bits = (PteFlags::empty() | PteFlags::NON_BLOCK).bits();
         if is_block {
-            self.0 &= !PteFlags::NON_BLOCK.bits();
+            self.0 &= !bits;
         } else {
-            self.0 |= PteFlags::NON_BLOCK.bits();
+            self.0 |= bits;
         }
     }
 }
@@ -249,7 +251,7 @@ impl TableGeneric for Table {
 }
 
 pub fn new_pte_with_config(config: kmem_region::region::MemConfig) -> Pte {
-    let mut flags = PteFlags::AF | PteFlags::VALID | PteFlags::NON_BLOCK;
+    let mut flags = PteFlags::empty() | PteFlags::AF | PteFlags::VALID | PteFlags::NON_BLOCK;
 
     if !config.access.contains(AccessFlags::Write) {
         flags |= PteFlags::AP_RO;
