@@ -28,59 +28,55 @@ const FLAG_LE: usize = 0b0;
 const FLAG_PAGE_SIZE_4K: usize = 0b10;
 const FLAG_ANY_MEM: usize = 0b1000;
 
-#[naked]
+#[unsafe(naked)]
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.boot.header")]
 /// The header of the kernel.
 ///
 /// # Safety
 pub unsafe extern "C" fn _start() -> ! {
-    unsafe {
-        naked_asm!(
-            // code0/code1
-            "nop",
-            "bl {entry}",
-            // text_offset
-            ".quad 0",
-            // image_size
-            ".quad __kernel_load_size",
-            // flags
-            ".quad {flags}",
-            // Reserved fields
-            ".quad 0",
-            ".quad 0",
-            ".quad 0",
-            // magic - yes 0x644d5241 is the same as ASCII string "ARM\x64"
-            ".ascii \"ARM\\x64\"",
-            // Another reserved field at the end of the header
-            ".byte 0, 0, 0, 0",
-            flags = const FLAG_LE | FLAG_PAGE_SIZE_4K | FLAG_ANY_MEM,
-            entry = sym primary_entry,
-        )
-    }
+    naked_asm!(
+        // code0/code1
+        "nop",
+        "bl {entry}",
+        // text_offset
+        ".quad 0",
+        // image_size
+        ".quad __kernel_load_size",
+        // flags
+        ".quad {flags}",
+        // Reserved fields
+        ".quad 0",
+        ".quad 0",
+        ".quad 0",
+        // magic - yes 0x644d5241 is the same as ASCII string "ARM\x64"
+        ".ascii \"ARM\\x64\"",
+        // Another reserved field at the end of the header
+        ".byte 0, 0, 0, 0",
+        flags = const FLAG_LE | FLAG_PAGE_SIZE_4K | FLAG_ANY_MEM,
+        entry = sym primary_entry,
+    )
 }
 
-#[naked]
+#[unsafe(naked)]
 unsafe extern "C" fn primary_entry(_fdt_addr: *mut u8) -> ! {
-    unsafe {
-        naked_asm!(
-            // Save dtb address.
-            "MOV      x19, x0",
-            // Set the stack pointer.
-            "ADRP     x1,  __kernel_code_end",
-            "ADD      x1, x1, :lo12:__kernel_code_end",
-            "ADD      x1, x1, {stack_size}",
-            "MOV      sp, x1",
+    naked_asm!(
+        // Save dtb address.
+        "MOV      x19, x0",
+        // Set the stack pointer.
+        "ADRP     x1,  __kernel_code_end",
+        "ADD      x1, x1, :lo12:__kernel_code_end",
+        "ADD      x1, x1, {stack_size}",
+        "MOV      sp, x1",
 
-            "BL       {switch_to_elx}",
-            "MOV      x0,  x19",
-            "BL       {entry}",
-            "B        .",
-            stack_size = const crate::config::BOOT_STACK_SIZE,
-            switch_to_elx = sym switch_to_elx,
-            entry = sym rust_boot,
-        )
-    }
+        "BL       {switch_to_elx}",
+        "MOV      x0,  x19",
+        "BL       {entry}",
+        "B        .",
+        stack_size = const crate::config::BOOT_STACK_SIZE,
+        switch_to_elx = sym switch_to_elx,
+        entry = sym rust_boot,
+    )
 }
 
 fn rust_boot(fdt_addr: *mut u8) -> ! {
@@ -143,20 +139,18 @@ fn enable_mmu(va: usize) -> ! {
     }
 }
 
-#[naked]
+#[unsafe(naked)]
 unsafe extern "C" fn entry_lma() -> usize {
-    unsafe {
-        naked_asm!(
-            "ADRP     x0,  __vma_relocate_entry",
-            "ADD      x0, x0, :lo12:__vma_relocate_entry",
-            "ret"
-        )
-    }
+    naked_asm!(
+        "ADRP     x0,  __vma_relocate_entry",
+        "ADD      x0, x0, :lo12:__vma_relocate_entry",
+        "ret"
+    )
 }
 
-#[naked]
+#[unsafe(naked)]
 unsafe extern "C" fn entry_vma() -> usize {
-    unsafe { naked_asm!("LDR      x0,  =__vma_relocate_entry", "ret") }
+    naked_asm!("LDR      x0,  =__vma_relocate_entry", "ret")
 }
 
 fn enable_fp() {

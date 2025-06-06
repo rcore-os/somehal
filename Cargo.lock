@@ -374,7 +374,7 @@ dependencies = [
 
 [[package]]
 name = "kmem-region"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "bitflags 2.9.1",
  "prettyplease",
@@ -464,7 +464,7 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "pie-boot"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "aarch64-cpu",
  "any-uart",
@@ -501,7 +501,7 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
 name = "platform-test"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "linked_list_allocator",
  "log",
@@ -805,7 +805,7 @@ dependencies = [
 
 [[package]]
 name = "somehal"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "aarch64-cpu",
  "acpi",
@@ -838,7 +838,7 @@ dependencies = [
 
 [[package]]
 name = "somehal-macros"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "abi-singleton",
  "darling",

@@ -96,11 +96,10 @@ fn setup_timer() {
         }
     }
 }
-#[naked]
+#[unsafe(naked)]
 pub(crate) unsafe extern "C" fn secondary_entry() {
-    unsafe {
-        naked_asm!(
-            "
+    naked_asm!(
+        "
         mov  sp, x0
         bl  {switch_el}
         mov  x0, sp
@@ -114,14 +113,13 @@ pub(crate) unsafe extern "C" fn secondary_entry() {
         BLR  x9
         B    .
     ",
-        switch_el = sym switch_to_elx,
-        init_mmu = sym init_mmu,
-        enable_fp = sym enable_fp,
-        sp_top = sym get_sp_top,
-        arg_size = const size_of::<CpuOnArg>(),
-        reloc = sym relocate,
-        )
-    }
+    switch_el = sym switch_to_elx,
+    init_mmu = sym init_mmu,
+    enable_fp = sym enable_fp,
+    sp_top = sym get_sp_top,
+    arg_size = const size_of::<CpuOnArg>(),
+    reloc = sym relocate,
+    )
 }
 
 fn get_sp_top(arg: &CpuOnArg) -> usize {
