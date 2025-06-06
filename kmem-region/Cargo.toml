@@ -1,6 +1,6 @@
 [package]
 name = "kmem-region"
-version.workspace = true
+version = "0.1.0"
 edition.workspace = true
 authors.workspace = true
 categories.workspace = true
@@ -13,7 +13,7 @@ repository.workspace = true
 sv39 = []
 # no high space for paging
 space-lo = []
-page16k =[]
+page16k = []
 
 [dependencies]
 bitflags = "2.9"

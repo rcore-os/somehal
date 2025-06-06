@@ -4,9 +4,11 @@ members = [
     "num-align",
     "page-table-generic",
     "pie-boot",
-    "platform-test", "some-rt",
+    "platform-test",
+    "some-rt",
     "somehal",
-    "somehal-macros", "tests/test-some-rt",
+    "somehal-macros",
+    "tests/test-some-rt",
 ]
 resolver = "3"
 
@@ -22,3 +24,4 @@ repository = "https://github.com/rcore-os/somehal"
 
 
 [workspace.dependencies]
+kmem-region = { path = "kmem-region", version = "0.1" }
