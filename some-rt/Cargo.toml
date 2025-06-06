@@ -12,7 +12,9 @@ repository.workspace = true
 [features]
 kernel-addr = ["dep:kmem-region"]
 early-debug = ["pie-boot/early-debug"]
+vm = ["kmem-region?/space-lo"]
 
 [dependencies]
 pie-boot = { path = "../pie-boot" }
+somehal-macros = { path = "../somehal-macros" }
 kmem-region = { path = "../kmem-region", optional = true }

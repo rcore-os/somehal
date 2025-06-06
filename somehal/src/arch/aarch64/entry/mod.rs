@@ -1,7 +1,7 @@
 use core::arch::{asm, naked_asm};
 
 use aarch64_cpu::{asm::barrier, registers::*};
-use pie_boot::BootInfo;
+use some_rt::BootInfo;
 
 use super::debug;
 use crate::{

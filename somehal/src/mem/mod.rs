@@ -258,7 +258,7 @@ fn detect_link_space() {
 
     mem_region_add(link_section_to_kspace(
         ".text.boot",
-        pie_boot::boot_text(),
+        some_rt::boot_text(),
         MemConfig {
             access: AccessFlags::Read | AccessFlags::Execute,
             cache: CacheConfig::Normal,
@@ -267,29 +267,45 @@ fn detect_link_space() {
 
     mem_region_add(link_section_to_kspace(
         ".data.boot",
-        pie_boot::boot_data(),
+        some_rt::boot_data(),
         MemConfig {
             access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
             cache: CacheConfig::Normal,
         },
     ));
 
-    mem_region_add(link_section_to_kspace(".text", text(), MemConfig {
-        access: AccessFlags::Read | AccessFlags::Execute,
-        cache: CacheConfig::Normal,
-    }));
-    mem_region_add(link_section_to_kspace(".rodata", rodata(), MemConfig {
-        access: AccessFlags::Read | AccessFlags::Execute,
-        cache: CacheConfig::Normal,
-    }));
-    mem_region_add(link_section_to_kspace(".rwdata", rwdata(), MemConfig {
-        access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
-        cache: CacheConfig::Normal,
-    }));
-    mem_region_add(link_section_to_kspace(".bss", bss(), MemConfig {
-        access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
-        cache: CacheConfig::Normal,
-    }));
+    mem_region_add(link_section_to_kspace(
+        ".text",
+        text(),
+        MemConfig {
+            access: AccessFlags::Read | AccessFlags::Execute,
+            cache: CacheConfig::Normal,
+        },
+    ));
+    mem_region_add(link_section_to_kspace(
+        ".rodata",
+        rodata(),
+        MemConfig {
+            access: AccessFlags::Read | AccessFlags::Execute,
+            cache: CacheConfig::Normal,
+        },
+    ));
+    mem_region_add(link_section_to_kspace(
+        ".rwdata",
+        rwdata(),
+        MemConfig {
+            access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
+            cache: CacheConfig::Normal,
+        },
+    ));
+    mem_region_add(link_section_to_kspace(
+        ".bss",
+        bss(),
+        MemConfig {
+            access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
+            cache: CacheConfig::Normal,
+        },
+    ));
 }
 
 /// `section`在mmu开启前是物理地址

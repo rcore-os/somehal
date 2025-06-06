@@ -1,5 +1,5 @@
 use kmem_region::region::*;
-use pie_boot::{BootInfo, MemoryKind};
+use some_rt::{BootInfo, MemoryKind};
 
 use crate::{
     ArchIf, CpuId, CpuIdx, CpuOnArg,
@@ -11,8 +11,8 @@ use crate::{
 
 static mut BOOT_CPU: CpuId = CpuId::new(0);
 
-#[unsafe(no_mangle)]
-pub unsafe extern "Rust" fn __vma_relocate_entry(boot_info: BootInfo) {
+#[some_rt::entry]
+fn main(boot_info: BootInfo) -> ! {
     unsafe {
         clean_bss();
         set_kcode_va_offset(boot_info.kcode_offset);

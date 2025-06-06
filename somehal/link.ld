@@ -3,7 +3,7 @@ OUTPUT_ARCH(%ARCH%)
 ENTRY(_start)
 
 
-INCLUDE pie_boot.x
+INCLUDE somert.x
 
 SECTIONS
 {
@@ -44,6 +44,7 @@ SECTIONS
 
 
     bss (NOLOAD) : ALIGN(__page_size)  {
+        __kernel_load_end = .;
         __kernel_load_size = . - __kernel_load_vma;
         __erwdata = .;
 

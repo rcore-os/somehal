@@ -93,6 +93,8 @@ fn rust_boot(fdt_addr: *mut u8) -> ! {
         let lma = entry_lma();
         let vma = entry_vma();
         let kcode_offset = vma - lma;
+        let sp: usize;
+        asm!("mov {}, sp", out(reg) sp);
 
         dbgln!("Booting up");
         dbgln!("Entry  LMA     : {}", lma);
@@ -100,6 +102,7 @@ fn rust_boot(fdt_addr: *mut u8) -> ! {
         dbgln!("Code offset    : {}", kcode_offset);
         dbgln!("Current EL     : {}", CurrentEL.read(CurrentEL::EL));
         dbgln!("Fdt            : {}", fdt_addr);
+        dbgln!("SP             : {}", sp);
 
         init_phys_allocator(0);
 

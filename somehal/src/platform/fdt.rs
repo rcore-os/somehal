@@ -5,7 +5,7 @@ use kmem_region::{
     IntAlign,
     region::{AccessFlags, CacheConfig, MemConfig, MemRegionKind, OFFSET_LINER},
 };
-use pie_boot::BootInfo;
+use some_rt::BootInfo;
 
 use crate::{
     _alloc::*,

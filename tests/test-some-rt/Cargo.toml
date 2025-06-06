@@ -11,6 +11,8 @@ repository.workspace = true
 
 [dependencies]
 some-rt = { path = "../../some-rt", features = ["early-debug"] }
+log = "0.4"
+any-uart = { version = "0.2" }
 
 [[test]]
 name = "test"

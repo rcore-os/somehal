@@ -9,9 +9,9 @@ fn main() {
 
     let mut include_str = String::new();
 
-    if std::env::var("CARGO_FEATURES_KERNEL_ADDR").is_ok() {
+    if std::env::var("CARGO_FEATURE_KERNEL_ADDR").is_ok() {
         include_str += "
-        INCLUDE memory.x
+        INCLUDE kmem_region.x
         ";
     }
 

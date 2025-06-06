@@ -809,6 +809,7 @@ version = "0.3.0"
 dependencies = [
  "kmem-region",
  "pie-boot",
+ "somehal-macros",
 ]
 
 [[package]]
@@ -827,7 +828,6 @@ dependencies = [
  "linked_list_allocator",
  "log",
  "page-table-generic",
- "pie-boot",
  "prettyplease",
  "quote",
  "raw-cpuid 11.5.0",
@@ -836,6 +836,7 @@ dependencies = [
  "riscv_goldfish",
  "sbi-rt",
  "smccc",
+ "some-rt",
  "somehal-macros",
  "spin",
  "syn",
@@ -909,6 +910,8 @@ dependencies = [
 name = "test-some-rt"
 version = "0.3.0"
 dependencies = [
+ "any-uart",
+ "log",
  "some-rt",
 ]
 

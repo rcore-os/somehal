@@ -5,7 +5,7 @@ pub use crate::mem::{PhysAddr, VirtAddr};
 pub use crate::platform::CpuId;
 pub use kmem_region::region::{MemConfig, MemRegion};
 pub use page_table_generic::*;
-pub use pie_boot::BootInfo;
+pub use some_rt::BootInfo;
 
 const NANO_PER_SEC: u128 = 1_000_000_000;
 

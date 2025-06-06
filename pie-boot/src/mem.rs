@@ -242,7 +242,14 @@ pub(crate) unsafe fn save_fdt() -> Option<()> {
 
         set_fdt_ptr(dst.as_mut_ptr());
         FDT_SIZE = len;
+
+        dbgln!(
+            "FDT save to    : [{}, {})",
+            dst.as_mut_ptr(),
+            dst.as_mut_ptr() as usize + FDT_SIZE
+        );
     }
+
     Some(())
 }
 

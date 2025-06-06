@@ -14,6 +14,7 @@
             "cwd": "${workspaceRoot}",
             "preLaunchTask": "qemu debug aarch64 rt",
             "stopAtConnect": true,
+            "showDisplayString": true,
             // "setupCommands": [
             //     {
             //         "text": "add-symbol-file ${workspaceFolder}/target/kernel.elf -s .boot.text 0x40200000",

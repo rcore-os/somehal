@@ -2,7 +2,7 @@ use aarch64_cpu::asm::wfe;
 use entry::primary_entry;
 use kmem_region::region::kcode_offset;
 use page_table_generic::TableGeneric;
-use pie_boot::BootInfo;
+use some_rt::BootInfo;
 
 use crate::{
     ArchIf,

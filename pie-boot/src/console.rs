@@ -1,4 +1,4 @@
-use crate::paging::PagingError;
+use crate::paging::{PagingError, PhysAddr, VirtAddr};
 
 use crate::{Arch, archif::ArchIf};
 
@@ -27,6 +27,18 @@ impl<T> Print for *mut T {
 impl Print for &str {
     fn _print(self) {
         __print_str(self);
+    }
+}
+
+impl Print for PhysAddr {
+    fn _print(self) {
+        __print_hex(self.raw());
+    }
+}
+
+impl Print for VirtAddr {
+    fn _print(self) {
+        __print_hex(self.raw());
     }
 }
 

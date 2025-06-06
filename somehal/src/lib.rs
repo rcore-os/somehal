@@ -45,7 +45,7 @@ pub use platform::CpuIdx;
 pub use rdrive as driver;
 pub use rdrive::module_driver;
 pub use rdrive::register;
-pub use somehal_macros::entry;
+pub use somehal_macros::entry_hal as entry;
 
 pub(crate) fn to_main(arg: &CpuOnArg) -> ! {
     unsafe extern "C" {
