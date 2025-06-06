@@ -53,9 +53,9 @@ fn main() {
 
     let content = include_str!("memory.ld");
 
-    let content = content.replace("${VCODE}", &format!("{:#x}", kernel_load_vaddr));
-    let content = content.replace("${KERNAL_LOAD_VMA}", &format!("{:#x}", kernel_load_vaddr));
-    let content = content.replace("${PAGE_SIZE}", &format!("{:#x}", page_size));
+    let content = content.replace("${VCODE}", &format!("{kernel_load_vaddr:#x}"));
+    let content = content.replace("${KERNAL_LOAD_VMA}", &format!("{kernel_load_vaddr:#x}"));
+    let content = content.replace("${PAGE_SIZE}", &format!("{page_size:#x}"));
 
     let mut file = std::fs::File::create(out_dir().join("kmem_region.x"))
         .expect("kmem_region.x create failed");

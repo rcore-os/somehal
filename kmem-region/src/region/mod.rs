@@ -12,7 +12,7 @@ const REGION_ONE: usize = (1 << ADDR_BITS) / 16;
 pub const OFFSET_LINER: usize = 0;
 #[cfg(not(feature = "space-lo"))]
 pub const OFFSET_LINER: usize = ADDR_BASE + REGION_ONE * 8;
-pub const STACK_TOP: usize = ADDR_BASE  + REGION_ONE * 15 + REGION_ONE / 16 * 10;
+pub const STACK_TOP: usize = ADDR_BASE + REGION_ONE * 15 + REGION_ONE / 16 * 10;
 pub const PERCPU_TOP: usize = ADDR_BASE + REGION_ONE * 15 + REGION_ONE / 16 * 11;
 
 static mut KCODE_VA_OFFSET: usize = 0;
@@ -142,10 +142,10 @@ pub fn region_phys_to_virt<D: Deref<Target = MemRegion>, I: Iterator<Item = D>>(
     for region in regions {
         if p >= region.phys_start && p < region.phys_start + region.size {
             let ptr = region.virt_start + (p - region.phys_start);
-            if let Some(f) = &found {
-                if region.kind < f.kind {
-                    continue;
-                }
+            if let Some(f) = &found
+                && region.kind < f.kind
+            {
+                continue;
             }
             found = Some(VirtFound {
                 ptr,
