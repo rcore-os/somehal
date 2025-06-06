@@ -92,10 +92,10 @@ fn find_patterns(format_str: &str) -> Option<Pattern> {
 
     for pat in patterns {
         if let Some(n) = format_str.find(pat) {
-            if let Some(l) = i {
-                if n > l {
-                    continue;
-                }
+            if let Some(l) = i
+                && n > l
+            {
+                continue;
             }
             i = Some(n);
             let left = format_str[..n].to_string();

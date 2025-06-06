@@ -2,11 +2,11 @@
 
 use core::{alloc::Layout, cell::UnsafeCell, mem::MaybeUninit, ops::Deref, ptr::NonNull};
 
-use crate::{config::BOOT_STACK_SIZE, paging::*};
+use crate::{archif::CacheConfig, config::BOOT_STACK_SIZE, paging::*};
 use kmem_region::{
     IntAlign,
     allocator::LineAllocator,
-    region::{AccessFlags, CacheConfig, MemConfig, PAGE_SIZE},
+    region::{AccessFlags, MemConfig, PAGE_SIZE},
 };
 use num_align::NumAssertAlign;
 
@@ -85,9 +85,9 @@ pub(crate) fn boot_info() -> BootInfo {
 }
 
 /// 初始化物理内存管理器
-/// 
+///
 /// # Safety
-/// 
+///
 /// 若此时mmu未开启，则`va_offset`设为`0`，若开启了mmu，则`va_offset`设为`code`偏移量
 pub(crate) unsafe fn init_phys_allocator(va_offset: usize) {
     unsafe {
@@ -167,10 +167,7 @@ pub fn new_boot_table(kcode_offset: usize) -> PhysAddr {
                 vaddr: code_start.into(),
                 paddr: code_start_phys.into(),
                 size,
-                pte: Arch::new_pte_with_config(MemConfig {
-                    access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
-                    cache: CacheConfig::Normal
-                }),
+                pte: Arch::new_pte_with_config(CacheConfig::Normal),
                 allow_huge: true,
                 flush: false,
             },
@@ -189,10 +186,7 @@ pub fn new_boot_table(kcode_offset: usize) -> PhysAddr {
                 vaddr: 0.into(),
                 paddr: 0usize.into(),
                 size,
-                pte: Arch::new_pte_with_config(MemConfig {
-                    access: AccessFlags::Read | AccessFlags::Write | AccessFlags::Execute,
-                    cache: CacheConfig::Device
-                }),
+                pte: Arch::new_pte_with_config(CacheConfig::NoCache),
                 allow_huge: true,
                 flush: false,
             },

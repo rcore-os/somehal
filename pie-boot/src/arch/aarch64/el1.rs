@@ -1,8 +1,10 @@
 use core::{arch::asm, fmt::Debug};
 
-use crate::paging::{PTEGeneric, PhysAddr, TableGeneric, VirtAddr};
+use crate::{
+    archif::CacheConfig,
+    paging::{PTEGeneric, PhysAddr, TableGeneric, VirtAddr},
+};
 use aarch64_cpu::registers::*;
-use kmem_region::region::AccessFlags;
 
 use super::primary_entry;
 
@@ -247,31 +249,15 @@ impl TableGeneric for Table {
     }
 }
 
-pub fn new_pte_with_config(config: kmem_region::region::MemConfig) -> Pte {
-    let mut flags = PteFlags::empty() | PteFlags::AF | PteFlags::VALID | PteFlags::NON_BLOCK;
-
-    if !config.access.contains(AccessFlags::Write) {
-        flags |= PteFlags::AP_RO;
-    }
-
-    if !config.access.contains(AccessFlags::Execute) {
-        flags |= PteFlags::PXN;
-    }
-
-    if config.access.contains(AccessFlags::LowerRead) {
-        flags |= PteFlags::AP_EL0;
-    }
-
-    if !config.access.contains(AccessFlags::LowerExecute) {
-        flags |= PteFlags::UXN;
-    }
+pub fn new_pte_with_config(config: CacheConfig) -> Pte {
+    let flags =
+        PteFlags::empty() | PteFlags::AF | PteFlags::VALID | PteFlags::NON_BLOCK | PteFlags::UXN;
 
     let mut pte = Pte(flags.bits());
 
-    pte.set_mair_idx(match config.cache {
-        kmem_region::region::CacheConfig::Device => 0,
-        kmem_region::region::CacheConfig::Normal => 1,
-        kmem_region::region::CacheConfig::WriteThrough => 2,
+    pte.set_mair_idx(match config {
+        CacheConfig::NoCache => 0,
+        CacheConfig::Normal => 1,
     });
 
     pte

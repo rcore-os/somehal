@@ -1,11 +1,11 @@
-INCLUDE kmem_region.x
-
 SECTIONS{
     . = __kernel_load_vma;
     .boot.text : {
         __start_boot_text = .;
         KEEP(*(.text.boot.header))
         KEEP(*pie_boot-*.o*(.text*))
+        *any_uart-*.o*(.text*)
+        *fdt_parser-*.o*(.text*)
         __stop_boot_text = .;
     } 
     .boot.data : ALIGN(__page_size) {

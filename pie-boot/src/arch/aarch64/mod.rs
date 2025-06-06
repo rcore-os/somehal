@@ -1,5 +1,6 @@
 use core::arch::{asm, naked_asm};
 
+use crate::archif::CacheConfig;
 use crate::{archif::ArchIf, mem::clean_bss};
 use crate::{
     dbgln,
@@ -175,7 +176,7 @@ impl ArchIf for Arch {
     type PageTable = Table;
 
     fn new_pte_with_config(
-        config: kmem_region::region::MemConfig,
+        config: CacheConfig,
     ) -> <Self::PageTable as TableGeneric>::PTE {
         new_pte_with_config(config)
     }

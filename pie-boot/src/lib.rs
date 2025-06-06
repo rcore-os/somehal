@@ -35,7 +35,9 @@ pub(crate) use somehal_macros::dbgln;
 #[cfg(not(early_debug))]
 #[macro_export]
 macro_rules! dbgln {
-    ($($arg:tt)*) => {};
+    ($($arg:tt)*) => {
+        let _ = ($($arg)*, );
+    };
 }
 
 pub use api::*;

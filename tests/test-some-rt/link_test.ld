@@ -3,6 +3,7 @@ OUTPUT_ARCH(aarch64)
 __SMP = 4;
 BASE_ADDRESS = 0xf00000200000;
 __kernel_load_vma = BASE_ADDRESS;
+__page_size = 0x1000;
 
 INCLUDE "somert.x"
 
