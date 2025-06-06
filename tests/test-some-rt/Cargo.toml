@@ -1,0 +1,17 @@
+[package]
+name = "test-some-rt"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+categories.workspace = true
+description.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+some-rt ={ path ="../../some-rt"}
+
+[[test]]
+name = "test"
+harness = false

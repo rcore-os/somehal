@@ -804,6 +804,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "some-rt"
+version = "0.3.0"
+
+[[package]]
 name = "somehal"
 version = "0.3.0"
 dependencies = [
@@ -895,6 +899,13 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "test-some-rt"
+version = "0.3.0"
+dependencies = [
+ "some-rt",
 ]
 
 [[package]]

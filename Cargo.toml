@@ -4,9 +4,9 @@ members = [
     "num-align",
     "page-table-generic",
     "pie-boot",
-    "platform-test",
+    "platform-test", "some-rt",
     "somehal",
-    "somehal-macros",
+    "somehal-macros", "tests/test-some-rt",
 ]
 resolver = "3"
 
