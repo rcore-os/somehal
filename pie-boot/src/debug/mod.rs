@@ -20,8 +20,8 @@ impl UartWapper {
     }
 
     #[allow(clippy::mut_from_ref)]
-    fn get(&self) -> &mut Sender {
-        unsafe { &mut *self.0.get().as_mut().unwrap().as_mut().unwrap() }
+    fn get(&self) -> Option<&mut Sender> {
+        unsafe { &mut *self.0.get() }.as_mut()
     }
 }
 
@@ -32,6 +32,7 @@ fn set_uart(uart: any_uart::Uart) -> Option<()> {
 }
 
 pub fn write_byte(b: u8) {
-    let tx = UART.get();
-    let _ = any_uart::block!(tx.write(b));
+    if let Some(tx) = UART.get() {
+        let _ = any_uart::block!(tx.write(b));
+    }
 }

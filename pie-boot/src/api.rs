@@ -2,16 +2,11 @@ use core::ptr::NonNull;
 
 pub use crate::vec::ArrayVec;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub enum MemoryKind {
     Reserved,
+    #[default]
     Avilable,
-}
-
-impl Default for MemoryKind {
-    fn default() -> Self {
-        Self::Avilable
-    }
 }
 
 #[derive(Default, Clone)]

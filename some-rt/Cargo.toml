@@ -11,6 +11,7 @@ repository.workspace = true
 
 [features]
 kernel-addr = ["dep:kmem-region"]
+early-debug = ["pie-boot/early-debug"]
 
 [dependencies]
 pie-boot = { path = "../pie-boot" }
