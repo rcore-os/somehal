@@ -27,6 +27,7 @@ pub fn switch_to_elx(dtb: *mut u8) {
                 "adr    x2, {}",
                 "mov    x0, {}",
                 "msr    elr_el3, x2",
+                "eret",
                  sym primary_entry,
                  in(reg) dtb,
                     );

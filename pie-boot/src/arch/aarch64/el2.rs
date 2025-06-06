@@ -9,8 +9,7 @@ use crate::paging::{PTEGeneric, PhysAddr, TableGeneric, VirtAddr};
 
 pub fn switch_to_elx(dtb: *mut u8) {
     SPSel.write(SPSel::SP::ELx);
-    let current_el = CurrentEL.read(CurrentEL::EL);
-    if current_el == 3 {
+    if CurrentEL.read(CurrentEL::EL) == 3 {
         SCR_EL3.write(
             SCR_EL3::NS::NonSecure + SCR_EL3::HCE::HvcEnabled + SCR_EL3::RW::NextELIsAarch64,
         );
@@ -26,6 +25,7 @@ pub fn switch_to_elx(dtb: *mut u8) {
             "adr    x2, {}",
             "mov    x0, {}",
             "msr    elr_el3, x2",
+            "eret",
              sym primary_entry,
              in(reg) dtb,
                 );
