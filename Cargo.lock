@@ -806,6 +806,10 @@ dependencies = [
 [[package]]
 name = "some-rt"
 version = "0.3.0"
+dependencies = [
+ "kmem-region",
+ "pie-boot",
+]
 
 [[package]]
 name = "somehal"

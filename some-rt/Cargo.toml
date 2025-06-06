@@ -9,4 +9,9 @@ keywords.workspace = true
 license.workspace = true
 repository.workspace = true
 
+[features]
+kernel-addr = ["dep:kmem-region"]
+
 [dependencies]
+pie-boot = { path = "../pie-boot" }
+kmem-region = { path = "../kmem-region", optional = true }

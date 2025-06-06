@@ -16,4 +16,6 @@ SECTIONS{
         *pie_boot-*.o*(.bss* .sbss* .tbss* COMMON)
         __stop_boot_bss = .;
     }
+
 }
+

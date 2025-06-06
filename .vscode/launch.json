@@ -6,6 +6,22 @@
     "configurations": [
         {
             "type": "cppdbg",
+            "name": "Debug aarch64 rt test",
+            "request": "launch",
+            "miDebuggerServerAddress": "localhost:1234",
+            "program": "${workspaceFolder}/target/kernel.elf",
+            "miDebuggerPath": "gdb-multiarch",
+            "cwd": "${workspaceRoot}",
+            "preLaunchTask": "qemu debug aarch64 rt",
+            "stopAtConnect": true,
+            // "setupCommands": [
+            //     {
+            //         "text": "add-symbol-file ${workspaceFolder}/target/kernel.elf -s .boot.text 0x40200000",
+            //     },
+            // ]
+        },
+        {
+            "type": "cppdbg",
             "name": "Debug aarch64 test",
             "request": "launch",
             "miDebuggerServerAddress": "localhost:1234",
