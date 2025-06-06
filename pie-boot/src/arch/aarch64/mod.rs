@@ -69,6 +69,7 @@ unsafe extern "C" fn primary_entry(_fdt_addr: *mut u8) -> ! {
         "ADD      x1, x1, {stack_size}",
         "MOV      sp, x1",
 
+        "MOV      x0,  x19",
         "BL       {switch_to_elx}",
         "MOV      x0,  x19",
         "BL       {entry}",

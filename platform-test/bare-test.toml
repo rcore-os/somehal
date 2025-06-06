@@ -2,5 +2,6 @@
 graphic = false
 # args = " -monitor telnet:127.0.0.1:4444,server,nowait"
 # args = ""
-# args = "-machine virtualization=on -smp 2 -d int -D ../target/qemu.log"
-args = " -smp 2 -d int -D ../target/qemu.log"
+args = "-machine virtualization=on -smp 2 -d int -D ../target/qemu.log"
+# args = "-machine secure=on -smp 2 -d int -D ../target/qemu.log"
+# args = " -smp 2 -d int -D ../target/qemu.log"

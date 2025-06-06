@@ -6,18 +6,14 @@ use kmem_region::region::AccessFlags;
 
 use super::primary_entry;
 
-pub fn switch_to_elx() {
-    use core::arch::asm;
-
+pub fn switch_to_elx(dtb: *mut u8) {
     SPSel.write(SPSel::SP::ELx);
     SP_EL0.set(0);
     let current_el = CurrentEL.read(CurrentEL::EL);
     if current_el >= 2 {
         if current_el == 3 {
             // Set EL2 to 64bit and enable the HVC instruction.
-            SCR_EL3.write(
-                SCR_EL3::NS::NonSecure + SCR_EL3::HCE::HvcEnabled + SCR_EL3::RW::NextELIsAarch64,
-            );
+            SCR_EL3.write(SCR_EL3::NS::NonSecure + SCR_EL3::RW::NextELIsAarch64);
             // Set the return address and exception level.
             SPSR_EL3.write(
                 SPSR_EL3::M::EL1h
@@ -29,9 +25,10 @@ pub fn switch_to_elx() {
             unsafe {
                 asm!(
                 "adr    x2, {}",
-                "mov    x0, x19",
+                "mov    x0, {}",
                 "msr    elr_el3, x2",
-                 sym primary_entry
+                 sym primary_entry,
+                 in(reg) dtb,
                     );
             }
         }
@@ -50,15 +47,14 @@ pub fn switch_to_elx() {
         );
         unsafe {
             asm!(
-                "
-            mov     x8, sp
-            msr     sp_el1, x8
-            MOV     x0, x19
+            "
             adr     x2, {}
+            MOV     x0, {}
             msr     elr_el2, x2
             eret
             " , 
-            sym primary_entry
+            sym primary_entry,
+            in(reg) dtb,
             )
         };
     }

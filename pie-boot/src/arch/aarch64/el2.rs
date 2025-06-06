@@ -4,9 +4,10 @@ use core::fmt::Debug;
 use aarch64_cpu::{asm::barrier, registers::*};
 use kmem_region::region::AccessFlags;
 
+use super::primary_entry;
 use crate::paging::{PTEGeneric, PhysAddr, TableGeneric, VirtAddr};
 
-pub fn switch_to_elx() {
+pub fn switch_to_elx(dtb: *mut u8) {
     SPSel.write(SPSel::SP::ELx);
     let current_el = CurrentEL.read(CurrentEL::EL);
     if current_el == 3 {
@@ -20,8 +21,15 @@ pub fn switch_to_elx() {
                 + SPSR_EL3::I::Masked
                 + SPSR_EL3::F::Masked,
         );
-        ELR_EL3.set(LR.get());
-        aarch64_cpu::asm::eret();
+        unsafe {
+            asm!(
+            "adr    x2, {}",
+            "mov    x0, {}",
+            "msr    elr_el3, x2",
+             sym primary_entry,
+             in(reg) dtb,
+                );
+        }
     }
 }
 
