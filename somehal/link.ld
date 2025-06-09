@@ -7,20 +7,20 @@ INCLUDE somert.x
 
 SECTIONS
 {
-    text : ALIGN(__page_size) {
+    text : ALIGN(PAGE_SIZE) {
         *any_uart-*.o*(.text*)
         *fdt-parser-*.o*(.text*)
         *(.text .text.*)
     } 
 
-    .rodata : ALIGN(__page_size) {
+    .rodata : ALIGN(PAGE_SIZE) {
         __srodata = .;
         *(.rodata .rodata.*)
         *(.srodata*)
         *(.got .got.*)
     } 
     
-    .data : ALIGN(__page_size) {
+    .data : ALIGN(PAGE_SIZE) {
         __erodata = .;
         __srwdata = .;
         
@@ -29,29 +29,29 @@ SECTIONS
         __edriver_register = .;
 
 
-        . = ALIGN(__page_size);
+        . = ALIGN(PAGE_SIZE);
         _percpu_load_start = .;
         *(.percpu*)
-        . = ALIGN(__page_size);
+        . = ALIGN(PAGE_SIZE);
         _percpu_load_end = .;
 
         *(.data .data.*)
 
-        . = ALIGN(__page_size);
+        . = ALIGN(PAGE_SIZE);
         __global_pointer$ = . + 0x800;
         *(.sdata.*)
     } 
 
 
-    bss (NOLOAD) : ALIGN(__page_size)  {
+    bss (NOLOAD) : ALIGN(PAGE_SIZE)  {
         __kernel_load_end = .;
-        __kernel_load_size = . - __kernel_load_vma;
+        __kernel_load_size = . - KIMAGE_VADDR;
         __erwdata = .;
 
         *(.bss .bss.*)
         *(.sbss .sbss.*)
         *(COMMON)
-        . = ALIGN(__page_size);
+        . = ALIGN(PAGE_SIZE);
 
         __kernel_code_end = .;
     } 

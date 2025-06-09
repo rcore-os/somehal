@@ -1,2 +1,2 @@
-__kernel_load_vma = ${KERNAL_LOAD_VMA};
-__page_size = ${PAGE_SIZE};
+KIMAGE_VADDR = ${KERNAL_LOAD_VMA};
+PAGE_SIZE = ${PAGE_SIZE};

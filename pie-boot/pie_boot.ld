@@ -1,5 +1,5 @@
 SECTIONS{
-    . = __kernel_load_vma;
+    . = KIMAGE_VADDR;
     .boot.text : {
         __start_boot_text = .;
         KEEP(*(.text.boot.header))
@@ -8,7 +8,7 @@ SECTIONS{
         *fdt_parser-*.o*(.text*)
         __stop_boot_text = .;
     } 
-    .boot.data : ALIGN(__page_size) {
+    .boot.data : ALIGN(PAGE_SIZE) {
         __start_boot_data = .;
         *pie_boot-*.o*(.rodata* .srodata*  .got* .data* .sdata* .tdata*)
         __stop_boot_data = .;

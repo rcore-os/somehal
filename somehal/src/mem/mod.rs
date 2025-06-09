@@ -210,10 +210,10 @@ pub(crate) fn setup_memory_regions(cpu0_id: CpuId, cpu_list: impl Iterator<Item 
 
 pub(crate) fn kernal_load_start_link_addr() -> usize {
     unsafe extern "C" {
-        fn __kernel_load_vma();
+        fn KIMAGE_VADDR();
     }
 
-    __kernel_load_vma as _
+    KIMAGE_VADDR as _
 }
 
 fn print_regions() {

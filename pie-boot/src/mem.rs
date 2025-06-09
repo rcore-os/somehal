@@ -122,9 +122,9 @@ fn kernel_code_end() -> *const u8 {
 
 fn kernal_kcode_start() -> usize {
     unsafe extern "C" {
-        fn __kernel_load_vma();
+        fn KIMAGE_VADDR();
     }
-    __kernel_load_vma as _
+    KIMAGE_VADDR as _
 }
 
 fn table_len() -> usize {
