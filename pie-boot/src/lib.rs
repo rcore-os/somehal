@@ -42,6 +42,10 @@ macro_rules! dbgln {
 
 pub use api::*;
 
+#[allow(unused)]
+#[cfg(target_arch = "aarch64")]
+use kasm_aarch64::*;
+
 pub(crate) fn relocate() {
     unsafe extern "Rust" {
         fn __vma_relocate_entry(boot_info: BootInfo);

@@ -29,6 +29,8 @@ const FLAG_LE: usize = 0b0;
 const FLAG_PAGE_SIZE_4K: usize = 0b10;
 const FLAG_ANY_MEM: usize = 0b1000;
 
+mod cache;
+
 #[unsafe(naked)]
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.boot.header")]
@@ -83,6 +85,7 @@ unsafe extern "C" fn primary_entry(_fdt_addr: *mut u8) -> ! {
 
 fn rust_boot(fdt_addr: *mut u8) -> ! {
     unsafe {
+        cache::__dcache_inval_poc(0, 64);
         clean_bss();
         enable_fp();
         set_fdt_ptr(fdt_addr);
@@ -178,9 +181,7 @@ impl ArchIf for Arch {
 
     type PageTable = Table;
 
-    fn new_pte_with_config(
-        config: CacheConfig,
-    ) -> <Self::PageTable as TableGeneric>::PTE {
+    fn new_pte_with_config(config: CacheConfig) -> <Self::PageTable as TableGeneric>::PTE {
         new_pte_with_config(config)
     }
 }

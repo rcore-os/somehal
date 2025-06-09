@@ -25,6 +25,7 @@ kmem-region = { workspace = true, version = "0.1" }
 aarch64-cpu = "10.0"
 any-uart = { version = "0.2", optional = true }
 fdt-parser = { version = "0.4" }
+kasm-aarch64 = { path = "macros/kasm-aarch64" }
 
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
 riscv = "0.13"
