@@ -14,8 +14,16 @@ SECTIONS{
         __stop_boot_data = .;
          __start_boot_bss = .;
         *pie_boot-*.o*(.bss* .sbss* .tbss* COMMON)
+        . = ALIGN(PAGE_SIZE);
         __stop_boot_bss = .;
     }
-
+    idmap_pg_dir = .;
+    . += PAGE_SIZE;
+    reserved_pg_dir = .;
+	. += PAGE_SIZE;
+    swapper_pg_dir = .;
+	. += PAGE_SIZE;
+    . += 0x1000;		/* stack for the early Rust runtime */
+	early_init_stack = .;
 }
 

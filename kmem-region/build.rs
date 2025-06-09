@@ -32,6 +32,7 @@ fn main() {
 
         // kernel_load_vaddr = 0x40200000;
     }
+    // kernel_load_vaddr = 0x40200000;
 
     let const_content = quote! {
         pub const ADDR_BASE: usize = #addr_base;

@@ -5,6 +5,25 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "KDebug lldb",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/kernel.elf",
+            "initCommands": [
+                "platform select remote-gdb-server"
+            ],
+            "targetCreateCommands": [
+                "target create ${workspaceFolder}/target/kernel.elf"
+            ],
+            "processCreateCommands": [
+                "gdb-remote localhost:1234" // Connect to the GDB Server
+            ],
+            "preLaunchTask": "qemu debug aarch64 rt",
+            "preRunCommands": [
+                "target modules load --file ${workspaceFolder}/target/kernel.elf .boot.text 0x40200000"
+            ]
+        },
+        {
             "type": "cppdbg",
             "name": "Debug aarch64 rt test",
             "request": "launch",
