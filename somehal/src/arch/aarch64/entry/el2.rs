@@ -6,7 +6,6 @@ use crate::{
 };
 
 pub fn switch_to_elx() {
-          
     SPSel.write(SPSel::SP::ELx);
     let current_el = CurrentEL.read(CurrentEL::EL);
     if current_el == 3 {
@@ -30,7 +29,7 @@ pub fn switch_to_elx() {
     // * Virtual IRQ interrupts are enabled;
     // * Physical FIQ interrupts are taken to EL2;
     // * Virtual FIQ interrupts are enabled.
-    HCR_EL2.modify(
+    HCR_EL2.write(
         HCR_EL2::VM::Enable
             + HCR_EL2::RW::EL1IsAarch64
             + HCR_EL2::IMO::EnableVirtualIRQ // Physical IRQ Routing.
@@ -40,7 +39,6 @@ pub fn switch_to_elx() {
 }
 
 pub unsafe fn init_mmu(arg: &CpuOnArg) {
- 
     set_mair();
 
     // Enable TTBR0 and TTBR1 walks, page size = 4K, vaddr size = 48 bits, paddr size = 40 bits.
@@ -66,6 +64,4 @@ pub unsafe fn init_mmu(arg: &CpuOnArg) {
     // Enable the MMU and turn on I-cache and D-cache
     SCTLR_EL2.modify(SCTLR_EL2::M::Enable + SCTLR_EL2::C::Cacheable + SCTLR_EL2::I::Cacheable);
     barrier::isb(barrier::SY);
-
-
 }

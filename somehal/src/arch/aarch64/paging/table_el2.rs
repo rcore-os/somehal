@@ -1,7 +1,10 @@
 use core::{arch::asm, fmt::Debug};
 
 use aarch64_cpu::registers::*;
-use kmem_region::{VirtAddr, region::AccessFlags};
+use kmem_region::{
+    VirtAddr,
+    region::{AccessFlags, CacheConfig},
+};
 use page_table_generic::{PTEGeneric, PhysAddr, TableGeneric};
 
 pub fn set_mair() {
@@ -159,7 +162,18 @@ impl TableGeneric for Table {
 }
 
 pub fn new_pte_with_config(config: kmem_region::region::MemConfig) -> Pte {
-    let mut flags = PteFlags::AF | PteFlags::VALID | PteFlags::NON_BLOCK;
+    let mut flags = PteFlags::empty()
+        | PteFlags::AF
+        | PteFlags::VALID
+        | PteFlags::NON_BLOCK
+        | PteFlags::SHAREABLE;
+
+    if matches!(
+        config.cache,
+        CacheConfig::Normal | CacheConfig::WriteThrough
+    ) {
+        flags |= PteFlags::INNER;
+    }
 
     if !config.access.contains(AccessFlags::Write) {
         flags |= PteFlags::AP_RO;

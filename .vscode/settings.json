@@ -4,7 +4,7 @@
     "rust-analyzer.cargo.features": [
         "early-debug", 
         // "sv39"
-        // "vm"
+        "vm"
     ],
     "rust-targets.targets": [
         "aarch64-unknown-none",
