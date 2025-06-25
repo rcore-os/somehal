@@ -112,7 +112,7 @@ pub fn init_debugcon() -> Option<any_uart::Uart> {
     Some(uart)
 }
 
-fn fdt_ptr() -> *mut u8 {
+pub fn fdt_ptr() -> *mut u8 {
     (unsafe { FDT_ADDR + if is_relocated() { OFFSET_LINER } else { 0 } }) as _
 }
 
