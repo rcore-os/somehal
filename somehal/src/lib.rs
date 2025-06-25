@@ -48,6 +48,9 @@ pub use rdrive::module_driver;
 pub use rdrive::register;
 pub use somehal_macros::entry;
 
+#[cfg(use_fdt)]
+pub use platform::fdt_ptr;
+
 pub(crate) fn to_main(arg: &CpuOnArg) -> ! {
     unsafe extern "C" {
         fn __somehal_main(cpu_id: CpuId, cpu_idx: CpuIdx) -> !;
