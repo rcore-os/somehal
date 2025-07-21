@@ -12,14 +12,12 @@ version.workspace = true
 
 [features]
 hv = ["somehal/hv"]
-qemu = ["qemu-exit"]
 
 [dependencies]
 any-uart = {version = "0.2"}
 log = "0.4"
 # pie-boot = {path = "../../pie-boot", version = "0.2"}
 somehal = {workspace = true}
-qemu-exit = {version = "3.0.2", optional = true}
 
 [[test]]
 harness = false

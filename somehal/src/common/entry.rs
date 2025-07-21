@@ -1,6 +1,6 @@
 use pie_boot_if::BootInfo;
 
-use crate::{common, lazy_static::LazyStatic, println};
+use crate::{common, lazy_static::LazyStatic, power, println};
 
 static BOOT_INFO: LazyStatic<BootInfo> = LazyStatic::new();
 
@@ -11,9 +11,10 @@ pub fn boot_info() -> &'static BootInfo {
 pub fn virt_entry(args: &BootInfo) {
     common::mem::clean_bss();
     BOOT_INFO.init(args.clone());
-    common::fdt::init_debugcon(args.fdt);
-    println!("SomeHAL booting with args: {:?}", args);
-    common::fdt::find_rams(args.fdt);
+    common::fdt::init_debugcon(boot_info().fdt);
+    println!("SomeHAL booting...");
+    power::init_by_fdt(boot_info().fdt);
+    common::fdt::find_rams(boot_info().fdt);
     common::mem::init_regions(&args.memory_regions);
 
     unsafe {
@@ -27,7 +28,9 @@ pub fn virt_entry(args: &BootInfo) {
         unsafe extern "Rust" {
             fn __pie_boot_main(args: &BootInfo);
         }
-        println!("Into main...");
+        println!("Goto main...");
         __pie_boot_main(&BOOT_INFO);
+
+        power::shutdown();
     }
 }

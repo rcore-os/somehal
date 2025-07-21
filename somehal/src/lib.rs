@@ -11,7 +11,6 @@ mod common;
 pub mod early_debug;
 mod lazy_static;
 mod loader;
-mod staticcell;
 
 pub use common::entry::boot_info;
 pub use kdef_pgtable::{KIMAGE_VADDR, KIMAGE_VSIZE, KLINER_OFFSET};
