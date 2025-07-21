@@ -10,8 +10,6 @@ type MemoryRegionVec = Vec<MemoryRegion, 128>;
 
 static MEMORY_REGIONS: Mutex<MemoryRegionVec> = Mutex::new(Vec::new());
 
-const STACK_SIZE: usize = 0x4_0000;
-
 pub fn with_regions<F, R>(f: F) -> R
 where
     F: FnOnce(&mut MemoryRegionVec) -> R,
@@ -43,26 +41,20 @@ pub fn init_regions(args_regions: &[MemoryRegion]) {
     mainmem_start_rsv(&mut regions);
 }
 
-fn find_main(regions: &MemoryRegionVec) -> MemoryRegion {
+fn find_main(regions: &MemoryRegionVec) -> Option<MemoryRegion> {
     let lma = boot_info().kimage_start_lma as usize;
-    *regions
+    regions
         .iter()
         .find(|r| {
             let is_ram = matches!(r.kind, MemoryRegionKind::Ram);
             let in_range = r.start <= lma && r.end > lma;
             is_ram && in_range
         })
-        .unwrap()
+        .copied()
 }
 
 fn mainmem_start_rsv(regions: &mut MemoryRegionVec) -> Option<()> {
-    let lma = boot_info().kimage_start_lma as usize;
-
-    let mainmem = regions.iter().find(|r| {
-        let is_ram = matches!(r.kind, MemoryRegionKind::Ram);
-        let in_range = r.start <= lma && r.end > lma;
-        is_ram && in_range
-    })?;
+    let mainmem = find_main(regions)?;
 
     let mut start = mainmem.start;
     unsafe extern "C" {
