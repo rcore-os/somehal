@@ -1458,6 +1458,8 @@ dependencies = [
  "heapless",
  "kasm-aarch64",
  "kdef-pgtable",
+ "num-align",
+ "page-table-generic",
  "pie-boot-if",
  "pie-boot-loader-aarch64",
  "pie-boot-macros",

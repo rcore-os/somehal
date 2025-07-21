@@ -110,7 +110,7 @@ fn preserve_boot_args() {
 	b	{dcache_inval_poc}		// tail call
         ",
     boot_args = sym crate::BOOT_ARGS,
-    virt_entry = sym crate::common::entry::virt_entry,
+    virt_entry = sym switch_sp,
     args_of_entry_vma = const  offset_of!(EarlyBootArgs, virt_entry),
     args_of_kimage_addr_lma = const  offset_of!(EarlyBootArgs, kimage_addr_lma),
     args_of_kimage_addr_vma = const  offset_of!(EarlyBootArgs, kimage_addr_vma),
@@ -158,4 +158,17 @@ fn init_mmu() -> usize {
     set_table(addr);
     setup_sctlr();
     boot_info().kcode_offset()
+}
+
+#[unsafe(naked)]
+unsafe extern "C" fn switch_sp(_args: usize) -> ! {
+    naked_asm!(
+        "
+        adrp x8, __cpu0_stack_top
+        add  x8, x8, :lo12:__cpu0_stack_top
+        mov  sp, x8
+        bl   {next}
+        ",
+        next =sym crate::common::entry::virt_entry,
+    )
 }

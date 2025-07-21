@@ -1,21 +1,6 @@
-. = {kimage_vaddr};
-PAGE_SIZE = {page_size};
-
-EXTERN(__pie_boot_default_secondary);
-
-PROVIDE(__pie_boot_secondary = __pie_boot_default_secondary);
+INCLUDE "pie_boot.x"
 
 SECTIONS{
-    .head.text : {
-        _text = .;
-        KEEP(*(.head.text))
-    }
-    .idmap.text : ALIGN(64){
-        _idmap_text = .;
-        KEEP(*(.idmap.text))
-        . = ALIGN(PAGE_SIZE);
-        _idmap_text_end = .;
-    }
     .text : ALIGN(4K) {
         _stext = .;
         *(.text.boot)
@@ -62,7 +47,11 @@ SECTIONS{
     . = ALIGN(4K);
     _edata = .;
 
-    .bss : AT(.) ALIGN(4K) {
+    .bss : ALIGN(4K) {
+        __cpu0_stack = .;
+        . += STACK_SIZE;
+        __cpu0_stack_top = .;
+
         __bss_start = .;
         *(.bss .bss.*)
         *(.sbss .sbss.*)
@@ -78,10 +67,4 @@ SECTIONS{
     }
 }
 
-SECTIONS{ 
-    .boot_loader  : {
-        KEEP(*(.boot_loader))
-    }
-} INSERT BEFORE .data
-
-ASSERT(PAGE_SIZE != 0x0, "PAGE_SIZE must be defined");
+ASSERT(STACK_SIZE != 0x0, "STACK_SIZE must be defined");

@@ -14,7 +14,7 @@ pub fn virt_entry(args: &BootInfo) {
     common::fdt::init_debugcon(boot_info().fdt);
     println!("SomeHAL booting...");
     power::init_by_fdt(boot_info().fdt);
-    common::fdt::find_rams(boot_info().fdt);
+    common::fdt::setup_plat_info();
     common::mem::init_regions(&args.memory_regions);
 
     unsafe {

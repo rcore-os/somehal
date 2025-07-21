@@ -1,9 +1,13 @@
 use core::ptr::NonNull;
 
-use fdt_parser::Fdt;
+use fdt_parser::{Fdt, Status};
 use pie_boot_if::{MemoryRegion, MemoryRegionKind};
 
-use crate::{common, lazy_static::LazyStatic};
+use crate::{
+    boot_info,
+    common::{self, cpu::CPU_NUM},
+    lazy_static::LazyStatic,
+};
 
 static UART: LazyStatic<any_uart::Sender> = LazyStatic::new();
 
@@ -31,8 +35,33 @@ fn write_byte(b: u8) -> Result<(), crate::early_debug::TError> {
     }
 }
 
-pub fn find_rams(fdt: Option<NonNull<u8>>) -> Option<()> {
-    let fdt = Fdt::from_ptr(fdt?).ok()?;
+pub fn setup_plat_info() -> Option<()> {
+    CPU_NUM.init(cpu_id_list().count());
+    find_rams()
+}
+
+fn fdt() -> Option<Fdt<'static>> {
+    boot_info().fdt.and_then(|fdt| Fdt::from_ptr(fdt).ok())
+}
+
+pub fn cpu_id_list() -> impl Iterator<Item = usize> {
+    let fdt = fdt().expect("FDT not found");
+    let nodes = fdt.find_nodes("/cpus/cpu");
+    nodes
+        .filter(|node| node.name().contains("cpu@"))
+        .filter(|node| !matches!(node.status(), Some(Status::Disabled)))
+        .map(|node| {
+            let reg = node
+                .reg()
+                .unwrap_or_else(|| panic!("cpu {} reg not found", node.name()))
+                .next()
+                .expect("cpu reg 0 not found");
+            reg.address as usize
+        })
+}
+
+pub fn find_rams() -> Option<()> {
+    let fdt = fdt()?;
     for memory in fdt.memory() {
         for region in memory.regions() {
             let start = region.address as _;

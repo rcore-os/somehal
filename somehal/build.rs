@@ -3,12 +3,13 @@ use std::{io::Write, path::PathBuf, process::Command};
 
 fn main() {
     println!("cargo:rerun-if-changed=link.ld");
+    println!("cargo:rerun-if-changed=link_base.ld");
     println!("cargo:rustc-link-search={}", out_dir().display());
 
     let kimage_vaddr = KIMAGE_VADDR;
     let page_size = PAGE_SIZE;
 
-    let mut ld = include_str!("link.ld").to_string();
+    let mut ld = include_str!("link_base.ld").to_string();
 
     macro_rules! set_var {
         ($v:ident) => {
@@ -19,8 +20,15 @@ fn main() {
     set_var!(kimage_vaddr);
     set_var!(page_size);
 
-    let ld_name_out = "somehal.x";
+    let ld_name_out = "pie_boot.x";
 
+    let mut file = std::fs::File::create(out_dir().join(ld_name_out))
+        .unwrap_or_else(|_| panic!("{ld_name_out} create failed"));
+    file.write_all(ld.as_bytes())
+        .unwrap_or_else(|_| panic!("{ld_name_out} write failed"));
+
+    let ld = include_str!("link.ld").to_string();
+    let ld_name_out = "somehal.x";
     let mut file = std::fs::File::create(out_dir().join(ld_name_out))
         .unwrap_or_else(|_| panic!("{ld_name_out} create failed"));
     file.write_all(ld.as_bytes())

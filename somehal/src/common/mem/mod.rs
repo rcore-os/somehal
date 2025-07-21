@@ -4,9 +4,13 @@ use spin::Mutex;
 
 use crate::boot_info;
 
+mod phy_alloc;
+
 type MemoryRegionVec = Vec<MemoryRegion, 128>;
 
 static MEMORY_REGIONS: Mutex<MemoryRegionVec> = Mutex::new(Vec::new());
+
+const STACK_SIZE: usize = 0x4_0000;
 
 pub fn with_regions<F, R>(f: F) -> R
 where
@@ -37,6 +41,18 @@ pub fn init_regions(args_regions: &[MemoryRegion]) {
         .expect("Memory regions overflow");
 
     mainmem_start_rsv(&mut regions);
+}
+
+fn find_main(regions: &MemoryRegionVec) -> MemoryRegion {
+    let lma = boot_info().kimage_start_lma as usize;
+    *regions
+        .iter()
+        .find(|r| {
+            let is_ram = matches!(r.kind, MemoryRegionKind::Ram);
+            let in_range = r.start <= lma && r.end > lma;
+            is_ram && in_range
+        })
+        .unwrap()
 }
 
 fn mainmem_start_rsv(regions: &mut MemoryRegionVec) -> Option<()> {
