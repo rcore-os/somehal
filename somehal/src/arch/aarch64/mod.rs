@@ -6,6 +6,7 @@ use pie_boot_loader_aarch64::{set_table, setup_sctlr, setup_table_regs};
 def_adr_l!();
 
 mod cache;
+pub mod mem;
 pub mod power;
 
 macro_rules! sym_lma {
