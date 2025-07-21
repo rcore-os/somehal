@@ -1,3 +1,2 @@
 /target
-.bare-test.toml*
-/.project.toml*
+*.bare-test.toml

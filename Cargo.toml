@@ -1,27 +1,28 @@
 [workspace]
 members = [
-    "kmem-region",
-    "num-align",
-    "page-table-generic",
-    "pie-boot",
-    "platform-test",
-    "some-rt",
-    "somehal",
-    "somehal-macros",
-    "tests/test-some-rt",
+  "kdef-pgtable",
+  "tests/test-some-rt",
+  "loader/*",
+  "pie-boot-if",
+  "macros/*",
+  "somehal",
 ]
 resolver = "3"
 
 [workspace.package]
-version = "0.3.0"
-edition = "2024"
 authors = ["周睿 <zrufo747@outlook.com>"]
 categories = ["embedded", "no-std"]
-description = "Some hal for os"
+description = "Boot kernel code with mmu."
+edition = "2024"
 keywords = ["os"]
 license = "MIT"
-repository = "https://github.com/rcore-os/somehal"
-
+repository = "https://github.com/rcore-os/pie-boot"
+version = "0.1.0"
 
 [workspace.dependencies]
-kmem-region = { path = "kmem-region", version = "0.1" }
+kasm-aarch64 = {path = "macros/kasm-aarch64", version = "0.1"}
+kdef-pgtable = {path = "kdef-pgtable", version = "0.1"}
+pie-boot-if = {path = "pie-boot-if", version = "0.6.0"}
+pie-boot-loader-macros = {path = "loader/pie-boot-loader-macros", version = "0.1"}
+pie-boot-macros = {path = "macros/pie-boot-macros", version = "0.1"}
+somehal = {path = "somehal", version = "0.3"}

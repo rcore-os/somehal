@@ -1,0 +1,11 @@
+[workspace]
+git_release_enable = false
+
+[[package]]
+name = "pie-boot"
+git_release_enable = true
+
+[[package]]
+name = "test-some-rt"
+release = false # don't process this package
+publish = false

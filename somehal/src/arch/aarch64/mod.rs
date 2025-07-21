@@ -1,151 +1,161 @@
-use aarch64_cpu::asm::wfe;
-use entry::primary_entry;
-use kmem_region::region::kcode_offset;
-use page_table_generic::TableGeneric;
-use some_rt::BootInfo;
+use core::{arch::naked_asm, mem::offset_of};
 
-use crate::{
-    ArchIf,
-    mem::{PhysAddr, VirtAddr},
-    platform::CpuId,
-};
+use aarch64_cpu_ext::cache::{CacheOp, dcache_all};
+use pie_boot_loader_aarch64::{set_table, setup_sctlr, setup_table_regs};
+
+def_adr_l!();
 
 mod cache;
-mod context;
-pub mod debug;
-mod entry;
-mod mp;
-mod paging;
-mod psci;
-mod trap;
+pub mod power;
 
-pub struct Arch;
-
-use aarch64_cpu::registers::*;
-
-impl ArchIf for Arch {
-    fn early_debug_put(b: &[u8]) {
-        for &b in b {
-            debug::write_byte(b);
+macro_rules! sym_lma {
+    ($sym:expr) => {{
+        #[allow(unused_unsafe)]
+        unsafe{
+            let out: usize;
+            core::arch::asm!(
+                "adrp {r}, {s}",
+                "add  {r}, {r}, :lo12:{s}",
+                r = out(reg) out,
+                s = sym $sym,
+            );
+            out
         }
-    }
-    fn early_debug_get(bytes: &mut [u8]) -> usize {
-        let mut read_len = 0;
-        while read_len < bytes.len() {
-            if let Some(c) = debug::get_byte() {
-                bytes[read_len] = c;
-            } else {
-                break;
-            }
-            read_len += 1;
-        }
-        read_len
-    }
+    }};
+}
 
-    type PageTable = paging::Table;
+#[cfg_attr(feature = "hv", path = "el2.rs")]
+#[cfg_attr(not(feature = "hv"), path = "el1.rs")]
+mod el;
 
-    fn new_pte_with_config(
-        config: kmem_region::region::MemConfig,
-    ) -> <Self::PageTable as TableGeneric>::PTE {
-        paging::new_pte_with_config(config)
-    }
+use crate::{BOOT_PT, boot_info, start_code};
+use aarch64_cpu::{asm::barrier, registers::*};
+use kasm_aarch64::{self as kasm, def_adr_l};
+use pie_boot_if::EarlyBootArgs;
 
-    fn set_kernel_table(addr: PhysAddr) {
-        paging::set_kernel_table(addr);
-    }
+const FLAG_LE: usize = 0b0;
+const FLAG_PAGE_SIZE_4K: usize = 0b10;
+const FLAG_ANY_MEM: usize = 0b1000;
 
-    fn get_kernel_table() -> PhysAddr {
-        paging::get_kernel_table()
-    }
+#[unsafe(naked)]
+#[unsafe(no_mangle)]
+#[unsafe(link_section = ".head.text")]
+/// The header of the kernel.
+///
+/// # Safety
+pub unsafe extern "C" fn _start() -> ! {
+    naked_asm!(
+        // code0/code1
+        "nop",
+        "bl {entry}",
+        // text_offset
+        ".quad 0",
+        // image_size
+        ".quad __kernel_load_end - _start",
+        // flags
+        ".quad {flags}",
+        // Reserved fields
+        ".quad 0",
+        ".quad 0",
+        ".quad 0",
+        // magic - yes 0x644d5241 is the same as ASCII string "ARM\x64"
+        ".ascii \"ARM\\x64\"",
+        // Another reserved field at the end of the header
+        ".byte 0, 0, 0, 0",
+        flags = const FLAG_LE | FLAG_PAGE_SIZE_4K | FLAG_ANY_MEM,
+        entry = sym primary_entry,
+    )
+}
 
-    #[cfg(not(feature = "vm"))]
-    fn set_user_table(addr: PhysAddr) {
-        paging::set_user_table(addr);
-    }
+#[start_code(naked)]
+fn primary_entry() -> ! {
+    naked_asm!(
+        "
+    bl  {preserve_boot_args}
 
-    #[cfg(not(feature = "vm"))]
-    fn get_user_table() -> PhysAddr {
-        paging::get_user_table()
-    }
+    adr_l	x0, {boot_args}
+    adr_l x8, {loader}
+    br    x8
+        ",
+        preserve_boot_args = sym preserve_boot_args,
+        boot_args = sym crate::BOOT_ARGS,
+        loader = sym crate::loader::LOADER_BIN,
+    )
+}
 
-    fn flush_tlb(vaddr: Option<VirtAddr>) {
-        paging::flush_tlb(vaddr);
-    }
+#[start_code(naked)]
+fn preserve_boot_args() {
+    naked_asm!(
+        "
+	adr_l	 x8, {boot_args}			// record the contents of
+	stp	x0,  x1, [x8]			// x0 .. x3 at kernel entry
+	stp	x2,  x3, [x8, #16]
 
-    fn wait_for_event() {
-        wfe();
-    }
+    LDR  x0,  ={virt_entry}
+    str  x0,  [x8, {args_of_entry_vma}]
+    
+    adr_l x0,  _start
+    str x0,  [x8, {args_of_kimage_addr_lma}]
 
-    fn init_debugcon() {
-        debug::init();
-    }
+    LDR  x0,  =_start
+    str x0,  [x8, {args_of_kimage_addr_vma}]
 
-    fn cpu_id() -> CpuId {
-        ((MPIDR_EL1.get() & 0xffffff) as usize).into()
-    }
+    adr_l    x0, __kernel_code_end
+    str x0,  [x8, {args_of_kcode_end}]
 
-    fn primary_entry(boot_info: BootInfo) {
-        primary_entry(boot_info);
-    }
+	dmb	sy				// needed before dc ivac with
+						// MMU off
+    mov x0, x8                    
+	add	x1, x0, {boot_arg_size}		
+	b	{dcache_inval_poc}		// tail call
+        ",
+    boot_args = sym crate::BOOT_ARGS,
+    virt_entry = sym crate::common::entry::virt_entry,
+    args_of_entry_vma = const  offset_of!(EarlyBootArgs, virt_entry),
+    args_of_kimage_addr_lma = const  offset_of!(EarlyBootArgs, kimage_addr_lma),
+    args_of_kimage_addr_vma = const  offset_of!(EarlyBootArgs, kimage_addr_vma),
+    args_of_kcode_end = const  offset_of!(EarlyBootArgs, kcode_end),
+    dcache_inval_poc = sym cache::__dcache_inval_poc,
+    boot_arg_size = const size_of::<EarlyBootArgs>()
+    )
+}
 
-    fn current_ticks() -> u64 {
-        CNTPCT_EL0.get()
-    }
+#[start_code(naked)]
+pub fn _start_secondary(_stack_top: usize) -> ! {
+    naked_asm!(
+        "
+        mrs     x19, mpidr_el1
+        and     x19, x19, #0xffffff     // get current CPU id
 
-    fn tick_hz() -> u64 {
-        CNTFRQ_EL0.get()
-    }
+        mov     sp, x0
+        bl      {switch_to_elx}
+        bl      {enable_fp}
+        bl      {init_mmu} // return va_offset x0
 
-    fn start_secondary_cpu(
-        cpu: CpuId,
-        stack_top: PhysAddr,
-    ) -> Result<(), alloc::boxed::Box<dyn core::error::Error>> {
-        let entry = (entry::secondary_entry as usize) - kcode_offset();
-        log::debug!(
-            "cpu_on: cpu_id={:?} entry={:#x} stack_top={:?}",
-            cpu,
-            entry,
-            stack_top
-        );
-        mp::cpu_on(cpu, entry, stack_top)
-    }
+        add     sp, sp, x0
 
-    #[inline]
-    fn set_this_percpu_data_ptr(ptr: VirtAddr) {
-        #[cfg(feature = "vm")]
-        TPIDR_EL2.set(ptr.raw() as _);
-        #[cfg(not(feature = "vm"))]
-        TPIDR_EL1.set(ptr.raw() as _);
-    }
+        mov     x0, x19                 // call_secondary_main(cpu_id)
+        ldr     x8, =__pie_boot_secondary
+        blr     x8
+        b      .",
+        switch_to_elx = sym el::switch_to_elx,
+        init_mmu = sym init_mmu,
+        enable_fp = sym enable_fp,
+    )
+}
 
-    #[inline]
-    fn get_this_percpu_data_ptr() -> VirtAddr {
-        #[cfg(feature = "vm")]
-        let ptr = TPIDR_EL2.get() as _;
-        #[cfg(not(feature = "vm"))]
-        let ptr = TPIDR_EL1.get() as _;
-        VirtAddr::new(ptr)
-    }
+#[start_code]
+fn enable_fp() {
+    CPACR_EL1.write(CPACR_EL1::FPEN::TrapNothing);
+    barrier::isb(barrier::SY);
+}
 
-    #[cfg(not(feature = "vm"))]
-    fn systick_set_enable(b: bool) {
-        let val = if b {
-            CNTP_CTL_EL0::ENABLE::SET
-        } else {
-            CNTP_CTL_EL0::ENABLE::CLEAR
-        };
-
-        CNTP_CTL_EL0.write(val);
-    }
-
-    #[cfg(feature = "vm")]
-    fn systick_set_enable(b: bool) {
-        let val = if b {
-            CNTHP_CTL_EL2::ENABLE::SET
-        } else {
-            CNTHP_CTL_EL2::ENABLE::CLEAR
-        };
-
-        CNTHP_CTL_EL2.write(val);
-    }
+#[start_code]
+fn init_mmu() -> usize {
+    dcache_all(CacheOp::CleanAndInvalidate);
+    setup_table_regs();
+    let addr = unsafe { BOOT_PT };
+    set_table(addr);
+    setup_sctlr();
+    boot_info().kcode_offset()
 }

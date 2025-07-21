@@ -1,19 +1,26 @@
 [package]
-name = "test-some-rt"
-version.workspace = true
-edition.workspace = true
 authors.workspace = true
 categories.workspace = true
 description.workspace = true
+edition.workspace = true
 keywords.workspace = true
 license.workspace = true
+name = "test-some-rt"
+publish = false
 repository.workspace = true
+version.workspace = true
+
+[features]
+hv = ["somehal/hv"]
+qemu = ["qemu-exit"]
 
 [dependencies]
-some-rt = { path = "../../some-rt", features = ["early-debug"] }
+any-uart = {version = "0.2"}
 log = "0.4"
-any-uart = { version = "0.2" }
+# pie-boot = {path = "../../pie-boot", version = "0.2"}
+somehal = {workspace = true}
+qemu-exit = {version = "3.0.2", optional = true}
 
 [[test]]
-name = "test"
 harness = false
+name = "test"

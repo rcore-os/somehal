@@ -6,6 +6,7 @@ fn main() {
     println!("cargo::rustc-link-arg=-Tlink_test.x");
     println!("cargo::rustc-link-arg-tests=-no-pie");
     println!("cargo::rustc-link-arg-tests=-znostart-stop-gc");
+    println!("cargo::rustc-link-arg-tests=-Map=target/kernel.map");
 
     let script = "link_test.ld";
 

@@ -20,7 +20,10 @@
             ],
             "preLaunchTask": "qemu debug aarch64 rt",
             "preRunCommands": [
-                "target modules load --file ${workspaceFolder}/target/kernel.elf .boot.text 0x40200000"
+                "target modules load --file ${workspaceFolder}/target/kernel.elf .head.text 0x40200000",
+                "image add ${workspaceFolder}/target/aarch64-unknown-none/debug/loader.elf",
+                "target modules load --file ${workspaceFolder}/target/aarch64-unknown-none/debug/loader.elf .text 0x40203000",
+                // "target modules load --file ${workspaceFolder}/target/aarch64-unknown-none/debug/loader.elf --slide 0xF00000000",
             ]
         },
         {

@@ -1,0 +1,77 @@
+name: Release-plz
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  qemu-version: 9.2.4
+
+jobs:
+  release-plz-release:
+    name: Release-plz release
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'rcore-os' }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PLZ_TOKEN }}
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: cargo-bin-cache
+          cache-targets: false
+        
+      - run: cargo install cargo-binutils
+      - uses: arceos-org/setup-qemu@v1
+        with:
+          version: ${{ env.qemu-version }}
+          arch_list: aarch64
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libudev-dev
+          version: 1.0
+      - run: cargo install ostool
+      - name: Build
+        run: cargo build -p pie-boot --target aarch64-unknown-none
+      - name: Run tests
+        run: cargo test --target aarch64-unknown-none-softfloat -p test-some-rt --test test --features qemu -- --show-output
+      - name: Run release-plz
+        uses: release-plz/action@v0.5
+        with:
+          command: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+  release-plz-pr:
+    name: Release-plz PR
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'rcore-os' }}
+    permissions:
+      pull-requests: write
+      contents: write
+    concurrency:
+      group: release-plz-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PLZ_TOKEN }}
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run release-plz
+        uses: release-plz/action@v0.5
+        with:
+          command: release-pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

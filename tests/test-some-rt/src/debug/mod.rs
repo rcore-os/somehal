@@ -49,18 +49,20 @@ impl Write for TX {
 struct Logger;
 
 impl Log for Logger {
-    fn enabled(&self, metadata: &log::Metadata) -> bool {
+    fn enabled(&self, _metadata: &log::Metadata) -> bool {
         true
     }
 
     fn log(&self, record: &log::Record) {
-        let _ = TX {}.write_fmt(format_args!("[{}] {}", record.level(), record.args()));
+        let _ = TX {}.write_fmt(format_args!("[{}] {}\r\n", record.level(), record.args()));
     }
 
     fn flush(&self) {}
 }
 
-pub fn init_log() {
+pub fn init_log(fdt: *mut u8) {
+    fdt::init_debugcon(fdt);
+
     log::set_logger(&Logger).unwrap();
     log::set_max_level(log::LevelFilter::Trace);
 }

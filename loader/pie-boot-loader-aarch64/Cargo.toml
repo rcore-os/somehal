@@ -1,0 +1,39 @@
+cargo-features = ["per-package-target"]
+
+[package]
+authors.workspace = true
+categories.workspace = true
+default-target = "aarch64-unknown-none-softfloat"
+description.workspace = true
+edition.workspace = true
+keywords.workspace = true
+license.workspace = true
+name = "pie-boot-loader-aarch64"
+repository.workspace = true
+version = "0.1.25"
+
+[features]
+console = ["dep:any-uart"]
+default = ["console"]
+el2 = ["kdef-pgtable/space-low"]
+
+[dependencies]
+aarch64-cpu = "10.0"
+aarch64-cpu-ext = "0.1"
+any-uart = {version = "0.2", optional = true}
+bitflags = "2.9"
+fdt-parser = {version = "0.4"}
+kasm-aarch64 = {workspace = true}
+kdef-pgtable = {workspace = true}
+log = "0.4"
+num-align = "0.1"
+page-table-generic = "0.6"
+pie-boot-if = {workspace = true}
+spin = "0.10"
+thiserror = {version = "2", default-features = false}
+
+[build-dependencies]
+kdef-pgtable = {workspace = true}
+prettyplease = "0.2"
+quote = "1.0"
+syn = "2.0"

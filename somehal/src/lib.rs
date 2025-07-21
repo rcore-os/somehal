@@ -1,82 +1,39 @@
-#![cfg_attr(not(test), no_std)]
-#![feature(concat_idents)]
-#![feature(used_with_arg)]
-#![feature(fn_align)]
-#![feature(allocator_api)]
-
-extern crate alloc;
-#[macro_use]
-pub extern crate rdrive;
-
-#[macro_use]
-pub(crate) mod _alloc;
+#![cfg_attr(target_os = "none", no_std)]
+#![cfg(target_os = "none")]
 
 #[cfg(target_arch = "aarch64")]
 #[path = "arch/aarch64/mod.rs"]
-pub mod arch;
+mod arch;
 
-#[cfg(target_arch = "x86_64")]
-#[path = "arch/x86_64/mod.rs"]
-pub mod arch;
+pub use arch::*;
 
-#[cfg(target_arch = "riscv64")]
-#[path = "arch/riscv64/mod.rs"]
-pub mod arch;
+mod common;
+pub mod early_debug;
+mod lazy_static;
+mod loader;
+mod staticcell;
 
-mod archif;
-pub mod console;
-mod entry;
-pub mod irq;
-pub mod mem;
-pub mod mp;
-pub(crate) mod once_static;
-pub(crate) mod platform;
-pub mod power;
-pub mod systick;
+pub use common::entry::boot_info;
+pub use kdef_pgtable::{KIMAGE_VADDR, KIMAGE_VSIZE, KLINER_OFFSET};
+use pie_boot_if::EarlyBootArgs;
+pub use pie_boot_if::{BootInfo, MemoryRegion, MemoryRegionKind, MemoryRegions};
+#[allow(unused)]
+use pie_boot_macros::start_code;
+pub use pie_boot_macros::{entry, secondary_entry};
 
-pub(crate) use archif::ArchIf;
+#[allow(unused)]
+#[unsafe(link_section = ".data")]
+static mut BOOT_ARGS: EarlyBootArgs = EarlyBootArgs::new();
 
-pub use archif::CpuId;
-use log::trace;
-use mem::page::set_is_relocated;
-use mp::CpuOnArg;
-pub use platform::CpuIdx;
+#[unsafe(link_section = ".data")]
+static mut BOOT_PT: usize = 0;
 
-pub use rdrive as driver;
-pub use rdrive::module_driver;
-pub use rdrive::register;
-pub use somehal_macros::entry_hal as entry;
-
-pub(crate) fn to_main(arg: &CpuOnArg) -> ! {
-    unsafe extern "C" {
-        fn __somehal_main(cpu_id: CpuId, cpu_idx: CpuIdx) -> !;
-    }
-    unsafe {
-        set_is_relocated();
-
-        println!("[SomeHAL] cpu {:?} is ready!", arg.cpu_idx);
-        __somehal_main(arg.cpu_id, arg.cpu_idx);
-    }
+/// secondary entry address
+/// arg0 is stack top
+pub fn secondary_entry_addr() -> usize {
+    let ptr = arch::_start_secondary as usize;
+    ptr - boot_info().kcode_offset()
 }
 
-pub(crate) fn init_secondary(arg: &CpuOnArg) {
-    irq::init_secondary();
-    to_main(arg)
-}
-
-/// Init hal
-/// # Safety
-/// This function must be called after the `#[global_allocater]` is initialized, and before device usages.
-pub unsafe fn init() {
-    platform::init_rdrive();
-
-    driver::register_append(&mem::driver_registers());
-
-    trace!("driver register append");
-
-    driver::probe_pre_kernel().unwrap();
-
-    irq::init();
-
-    systick::init();
-}
+#[unsafe(no_mangle)]
+unsafe extern "C" fn __pie_boot_default_secondary(_cpu_id: usize) {}
