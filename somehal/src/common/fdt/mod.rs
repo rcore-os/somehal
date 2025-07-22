@@ -7,15 +7,12 @@ use crate::{
     boot_info,
     common::{self, cpu::CPU_NUM},
     lazy_static::LazyStatic,
+    mem::phys_to_virt,
 };
 
 static UART: LazyStatic<any_uart::Sender> = LazyStatic::new();
 
 pub(crate) fn init_debugcon(fdt: Option<NonNull<u8>>) -> Option<()> {
-    fn phys_to_virt(p: usize) -> *mut u8 {
-        p as _
-    }
-
     let uart = any_uart::init(fdt?, phys_to_virt)?;
     UART.init(uart.tx?);
 
