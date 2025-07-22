@@ -2,7 +2,7 @@
 git_release_enable = false
 
 [[package]]
-name = "pie-boot"
+name = "somehal"
 git_release_enable = true
 
 [[package]]
