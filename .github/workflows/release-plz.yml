@@ -39,9 +39,11 @@ jobs:
           version: 1.0
       - run: cargo install ostool
       - name: Build
-        run: cargo build -p pie-boot --target aarch64-unknown-none
-      - name: Run tests
-        run: cargo test --target aarch64-unknown-none-softfloat -p test-some-rt --test test --features qemu -- --show-output
+        run: cargo build -p somehal --target aarch64-unknown-none-softfloat
+      - name: Test kernel
+        run: cargo test --target aarch64-unknown-none-softfloat -p test-some-rt --test test -- --show-output
+      - name: Test Hypervisor
+        run: cargo test --target aarch64-unknown-none-softfloat -p test-some-rt --test test --features hv -- --show-output
       - name: Run release-plz
         uses: release-plz/action@v0.5
         with:
