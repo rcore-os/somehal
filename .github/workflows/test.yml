@@ -1,0 +1,44 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  qemu-version: 9.2.4
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: cargo-bin-cache
+          cache-targets: false
+        
+      - run: cargo install cargo-binutils
+      - uses: arceos-org/setup-qemu@v1
+        with:
+          version: ${{ env.qemu-version }}
+          arch_list: aarch64
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libudev-dev
+          version: 1.0
+      - run: cargo install ostool
+      - name: Build
+        run: cargo build -p somehal --target aarch64-unknown-none-softfloat
+      - name: Test kernel
+        run: cargo test --target aarch64-unknown-none-softfloat -p test-some-rt --test test -- --show-output
+      - name: Test Hypervisor
+        run: cargo test --target aarch64-unknown-none-softfloat -p test-some-rt --test test --features hv -- --show-output
+

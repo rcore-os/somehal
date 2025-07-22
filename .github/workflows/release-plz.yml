@@ -1,9 +1,12 @@
 name: Release-plz
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Test"]
+    types:
+      - completed
     branches:
-      - master
+      - main
 
 env:
   qemu-version: 9.2.4
@@ -12,7 +15,7 @@ jobs:
   release-plz-release:
     name: Release-plz release
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'rcore-os' }}
+    if: ${{ github.repository_owner == 'rcore-os' && github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: write
     steps:
@@ -23,27 +26,6 @@ jobs:
           token: ${{ secrets.RELEASE_PLZ_TOKEN }}
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: cargo-bin-cache
-          cache-targets: false
-        
-      - run: cargo install cargo-binutils
-      - uses: arceos-org/setup-qemu@v1
-        with:
-          version: ${{ env.qemu-version }}
-          arch_list: aarch64
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: libudev-dev
-          version: 1.0
-      - run: cargo install ostool
-      - name: Build
-        run: cargo build -p somehal --target aarch64-unknown-none-softfloat
-      - name: Test kernel
-        run: cargo test --target aarch64-unknown-none-softfloat -p test-some-rt --test test -- --show-output
-      - name: Test Hypervisor
-        run: cargo test --target aarch64-unknown-none-softfloat -p test-some-rt --test test --features hv -- --show-output
       - name: Run release-plz
         uses: release-plz/action@v0.5
         with:
@@ -55,7 +37,7 @@ jobs:
   release-plz-pr:
     name: Release-plz PR
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'rcore-os' }}
+    if: ${{ github.repository_owner == 'rcore-os' && github.event.workflow_run.conclusion == 'success' }}
     permissions:
       pull-requests: write
       contents: write
