@@ -1,49 +1,36 @@
 [package]
-name = "somehal"
-version.workspace = true
+authors.workspace = true
+categories.workspace = true
+description.workspace = true
 edition.workspace = true
+keywords.workspace = true
+license.workspace = true
+name = "somehal"
+repository.workspace = true
+version = "0.3.0"
 
 [features]
-vm = ["pie-boot/vm"]
-early-debug = ["pie-boot/early-debug"]
-sv39 = ["kmem-region/sv39"]
+hv = ["pie-boot-loader-aarch64/el2", "kdef-pgtable/space-low"]
 
 [dependencies]
-somehal-macros = { path = "../somehal-macros" }
-kmem-region = { path = "../kmem-region" }
-spin = "0.10.0"
-tock-registers = "0.9"
-log = "0.4"
-bitflags = "2.9"
-pie-boot = { path = "../pie-boot" }
-cfg-if = "1.0.0"
-linked_list_allocator = "0.10"
+fdt-parser = {version = "0.4"}
 heapless = "0.8"
-page-table-generic = { path = "../page-table-generic" }
-bit_field = "0.10"
-any-uart = "0.2.11"
-rdrive = { version = "0.13" }
+kdef-pgtable = {workspace = true}
+pie-boot-if = {workspace = true}
+pie-boot-macros = {workspace = true}
+spin = "0.10"
+any-uart = {version = "0.2"}
+num-align = "0.1"
+page-table-generic = "0.6"
+log = "0.4"
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "10.0"
+aarch64-cpu-ext = "0.1"
+kasm-aarch64 = {workspace = true}
+pie-boot-loader-aarch64 = {path = "../loader/pie-boot-loader-aarch64", version = "0.1.25" }
 smccc = "0.2"
-fdt-parser = "0.4"
-
-[target.'cfg(target_arch = "x86_64")'.dependencies]
-x86 = "0.52"
-x86_64 = "0.15"
-acpi = { version = "5.2", default-features = false, features = [
-    "allocator_api",
-] }
-raw-cpuid = "11.5.0"
-
-[target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
-riscv = "0.13"
-sbi-rt = { version = "0.0.3" }
-riscv_goldfish = { version = "0.1" }
-fdt-parser = "0.4"
 
 [build-dependencies]
-prettyplease = "0.2"
-quote = "1.0"
-syn = "2.0"
+bindeps-simple = {version = "0.2"}
+kdef-pgtable = {workspace = true}

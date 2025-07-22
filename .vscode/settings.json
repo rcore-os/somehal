@@ -2,9 +2,7 @@
     "rust-analyzer.check.allTargets": false,
     "rust-analyzer.check.command": "clippy",
     "rust-analyzer.cargo.features": [
-        "early-debug", 
-        // "sv39"
-        "vm"
+        // "hv"
     ],
     "rust-targets.targets": [
         "aarch64-unknown-none",

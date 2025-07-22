@@ -1,60 +1,41 @@
-use std::path::PathBuf;
-
-struct Config {
-    addr_bits: usize,
-}
+use kdef_pgtable::*;
+use std::{io::Write, path::PathBuf, process::Command};
 
 fn main() {
-    println!("cargo::rustc-link-arg=-Tlink.x");
-    println!("cargo::rustc-link-arg=-no-pie");
-    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=link.ld");
+    println!("cargo:rerun-if-changed=link_base.ld");
     println!("cargo:rustc-link-search={}", out_dir().display());
 
-    println!("cargo::rustc-check-cfg=cfg(addr_bits, values(\"39\", \"48\", \"57\", \"64\"))");
-    println!("cargo::rustc-check-cfg=cfg(hard_float)");
+    let kimage_vaddr = KIMAGE_VADDR;
+    let page_size = PAGE_SIZE;
 
-    if std::env::var("TARGET").unwrap() == "aarch64-unknown-none" {
-        println!("cargo::rustc-cfg=hard_float");
+    let mut ld = include_str!("link_base.ld").to_string();
+
+    macro_rules! set_var {
+        ($v:ident) => {
+            ld = ld.replace(concat!("{", stringify!($v), "}"), &format!("{:#x}", $v));
+        };
     }
 
-    let mut config = Config { addr_bits: 48 };
+    set_var!(kimage_vaddr);
+    set_var!(page_size);
 
-    if std::env::var("CARGO_FEATURE_SV39").is_ok() {
-        println!("cargo::rustc-cfg=addr_bits=\"39\"");
-        config.addr_bits = 39;
-    } else {
-        println!("cargo::rustc-cfg=addr_bits=\"48\"");
-    }
+    let ld_name_out = "pie_boot.x";
 
-    let arch = Arch::default();
+    let mut file = std::fs::File::create(out_dir().join(ld_name_out))
+        .unwrap_or_else(|_| panic!("{ld_name_out} create failed"));
+    file.write_all(ld.as_bytes())
+        .unwrap_or_else(|_| panic!("{ld_name_out} write failed"));
 
-    println!("cargo::rustc-check-cfg=cfg(use_fdt)");
-    if matches!(arch, Arch::Aarch64 | Arch::Riscv64) {
-        println!("cargo::rustc-cfg=use_fdt");
-    }
-    println!("cargo::rustc-check-cfg=cfg(use_acpi)");
-    if matches!(arch, Arch::X86_64) {
-        println!("cargo::rustc-cfg=use_acpi");
-    }
+    let ld = include_str!("link.ld").to_string();
+    let ld_name_out = "somehal.x";
+    let mut file = std::fs::File::create(out_dir().join(ld_name_out))
+        .unwrap_or_else(|_| panic!("{ld_name_out} create failed"));
+    file.write_all(ld.as_bytes())
+        .unwrap_or_else(|_| panic!("{ld_name_out} write failed"));
 
-    arch.gen_linker_script(&config);
-}
-
-#[derive(Debug)]
-pub enum Arch {
-    Aarch64,
-    Riscv64,
-    X86_64,
-}
-
-impl Default for Arch {
-    fn default() -> Self {
-        match std::env::var("CARGO_CFG_TARGET_ARCH").unwrap().as_str() {
-            "aarch64" => Arch::Aarch64,
-            "riscv64" => Arch::Riscv64,
-            "x86_64" => Arch::X86_64,
-            _ => unimplemented!(),
-        }
+    if std::env::var("TARGET").unwrap().contains("aarch64-") {
+        aarch64_set_loader();
     }
 }
 
@@ -62,23 +43,42 @@ fn out_dir() -> PathBuf {
     PathBuf::from(std::env::var("OUT_DIR").unwrap())
 }
 
-impl Arch {
-    fn gen_linker_script(&self, _config: &Config) {
-        let script = "link.ld";
+fn aarch64_set_loader() {
+    let mut builder = bindeps_simple::Builder::new("pie-boot-loader-aarch64")
+        .target("aarch64-unknown-none-softfloat")
+        .env("RUSTFLAGS", "-C relocation-model=pic -Clink-args=-pie")
+        .cargo_args(&["-Z", "build-std=core,alloc"]);
 
-        let output_arch = if matches!(self, Arch::X86_64) {
-            // script = "src/arch/x86_64/link.ld";
-            "i386:x86-64".to_string()
-        } else if matches!(self, Arch::Riscv64) {
-            "riscv".to_string() // OUTPUT_ARCH of both riscv32/riscv64 is "riscv"
-        } else {
-            format!("{:?}", self)
-        };
-
-        println!("cargo:rerun-if-changed={}", script);
-        let ld_content = std::fs::read_to_string(script).unwrap();
-        let ld_content = ld_content.replace("%ARCH%", &output_arch);
-
-        std::fs::write(out_dir().join("link.x"), ld_content).expect("link.x write failed");
+    if std::env::var("CARGO_FEATURE_HV").is_ok() {
+        builder = builder.feature("el2");
     }
+
+    let output = builder.build().unwrap();
+
+    let loader_path = output.elf;
+    let loader_dst = out_dir().join("loader.bin");
+
+    let _ = std::fs::remove_file(&loader_dst);
+
+    let status = Command::new("rust-objcopy")
+        .args(["--strip-all", "-O", "binary"])
+        .arg(&loader_path)
+        .arg(loader_dst)
+        .status()
+        .expect("objcopy failed");
+
+    assert!(status.success());
+
+    println!("target dir: {}", target_dir().display());
+
+    let _ = std::fs::remove_file(target_dir().join("loader.elf"));
+    std::fs::copy(&loader_path, target_dir().join("loader.elf")).unwrap();
+}
+
+fn target_dir() -> PathBuf {
+    PathBuf::from(std::env::var("OUT_DIR").unwrap())
+        .ancestors()
+        .nth(3)
+        .unwrap()
+        .into()
 }

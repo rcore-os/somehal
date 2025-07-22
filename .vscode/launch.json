@@ -5,12 +5,43 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "lldb-dap",
-            "request": "attach",
-            "name": "lldb-dap aarch64",
+            "name": "KDebug lldb",
+            "type": "lldb",
+            "request": "launch",
             "program": "${workspaceFolder}/target/kernel.elf",
-            "gdb-remote-port": 1234,
-            "preLaunchTask": "qemu debug aarch64",
+            "initCommands": [
+                "platform select remote-gdb-server"
+            ],
+            "targetCreateCommands": [
+                "target create ${workspaceFolder}/target/kernel.elf"
+            ],
+            "processCreateCommands": [
+                "gdb-remote localhost:1234" // Connect to the GDB Server
+            ],
+            "preLaunchTask": "qemu debug aarch64 rt",
+            "preRunCommands": [
+                "target modules load --file ${workspaceFolder}/target/kernel.elf .head.text 0x40200000",
+                "image add ${workspaceFolder}/target/aarch64-unknown-none/debug/loader.elf",
+                "target modules load --file ${workspaceFolder}/target/aarch64-unknown-none/debug/loader.elf .text 0x40203000",
+                // "target modules load --file ${workspaceFolder}/target/aarch64-unknown-none/debug/loader.elf --slide 0xF00000000",
+            ]
+        },
+        {
+            "type": "cppdbg",
+            "name": "Debug aarch64 rt test",
+            "request": "launch",
+            "miDebuggerServerAddress": "localhost:1234",
+            "program": "${workspaceFolder}/target/kernel.elf",
+            "miDebuggerPath": "gdb-multiarch",
+            "cwd": "${workspaceRoot}",
+            "preLaunchTask": "qemu debug aarch64 rt",
+            "stopAtConnect": true,
+            "showDisplayString": true,
+            // "setupCommands": [
+            //     {
+            //         "text": "add-symbol-file ${workspaceFolder}/target/kernel.elf -s .boot.text 0x40200000",
+            //     },
+            // ]
         },
         {
             "type": "cppdbg",
@@ -24,7 +55,7 @@
             "stopAtConnect": true,
             // "setupCommands": [
             //     {
-            //         "text": "add-symbol-file ${workspaceFolder}/target/kernel.elf 0x40200000",
+            //         "text": "add-symbol-file ${workspaceFolder}/target/kernel.elf -s .boot.text 0x40200000",
             //     },
             // ]
         },

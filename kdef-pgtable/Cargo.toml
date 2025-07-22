@@ -1,0 +1,25 @@
+[package]
+name = "kdef-pgtable"
+version = "0.1.4"
+edition.workspace = true
+authors.workspace = true
+categories.workspace = true
+description.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+pg-sz16k = []
+pg-l3 = []
+# no heigh address support
+space-low = []
+
+[dependencies]
+bitflags = "2.9"
+
+
+[build-dependencies]
+prettyplease = "0.2"
+quote = "1.0"
+syn = "2.0"

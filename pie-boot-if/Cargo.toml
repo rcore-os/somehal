@@ -1,0 +1,13 @@
+[package]
+authors.workspace = true
+categories.workspace = true
+description.workspace = true
+edition.workspace = true
+keywords.workspace = true
+license.workspace = true
+name = "pie-boot-if"
+repository.workspace = true
+version = "0.6.0"
+
+[dependencies]
+heapless = "0.8"
