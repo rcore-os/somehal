@@ -7,5 +7,7 @@ pub use pie_boot_if::BootInfo;
 mod _macros;
 
 mod reg;
+mod def;
 
 pub use reg::*;
+pub use def::*;

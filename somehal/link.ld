@@ -9,6 +9,7 @@ SECTIONS{
         _etext = .;
     }
     .rodata : ALIGN(4K) {
+        _srodata = .;
         *(.rodata .rodata.*)
         *(.srodata .srodata.*)
         *(.sdata2 .sdata2.*)
@@ -48,6 +49,7 @@ SECTIONS{
     _edata = .;
 
     .bss : ALIGN(4K) {
+        __cpu0_stack = .;
         . += STACK_SIZE;
         __cpu0_stack_top = .;
 

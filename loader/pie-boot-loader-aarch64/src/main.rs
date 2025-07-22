@@ -14,7 +14,7 @@ mod console;
 mod context;
 #[cfg(feature = "console")]
 mod debug;
-mod reg;
+mod def;
 #[cfg(el = "1")]
 mod el1;
 #[cfg(el = "2")]
@@ -23,6 +23,7 @@ mod lang_items;
 mod mmu;
 mod paging;
 mod ram;
+mod reg;
 mod relocate;
 mod staticcell;
 mod trap;

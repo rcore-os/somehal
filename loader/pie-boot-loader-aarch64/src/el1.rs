@@ -1,7 +1,7 @@
 use core::arch::asm;
 
 use crate::{
-    mmu::CacheKind,
+    def::CacheKind,
     paging::{PTEGeneric, PhysAddr, TableGeneric, VirtAddr},
 };
 use aarch64_cpu::{asm::*, registers::*};

@@ -16,8 +16,8 @@ hv = ["somehal/hv"]
 [dependencies]
 any-uart = {version = "0.2"}
 log = "0.4"
-# pie-boot = {path = "../../pie-boot", version = "0.2"}
 somehal = {workspace = true}
+buddy_system_allocator = "0.11"
 
 [[test]]
 harness = false

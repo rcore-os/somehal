@@ -1,4 +1,5 @@
 use crate::{
+    def::CacheKind,
     paging::{GB, MB, MapConfig, PageTableRef, PhysAddr, TableGeneric},
     ram::Ram,
     reg::*,
@@ -116,13 +117,6 @@ pub fn new_boot_table(args: &EarlyBootArgs, fdt: usize) -> PhysAddr {
     );
 
     table.paddr()
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CacheKind {
-    Normal,
-    Device,
-    NoCache,
 }
 
 fn add_rams(
