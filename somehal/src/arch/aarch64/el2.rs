@@ -1,6 +1,8 @@
 use core::arch::asm;
 
 use aarch64_cpu::{asm::barrier, registers::*};
+use aarch64_cpu_ext::asm::tlb::*;
+use page_table_generic::VirtAddr;
 use pie_boot_macros::start_code;
 
 #[start_code]
@@ -36,4 +38,17 @@ pub fn switch_to_elx(bootargs: usize) {
             );
         }
     }
+}
+#[inline(always)]
+pub(crate) fn flush_tlb(vaddr: Option<VirtAddr>) {
+    match vaddr {
+        Some(addr) => {
+            tlbi(VAE2IS::new(0, addr.raw()));
+        }
+        None => {
+            tlbi(ALLE2);
+        }
+    }
+    barrier::dsb(barrier::SY);
+    barrier::isb(barrier::SY);
 }
