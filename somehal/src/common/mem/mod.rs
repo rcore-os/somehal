@@ -12,7 +12,7 @@ type MemoryRegionVec = Vec<MemoryRegion, 128>;
 
 static MEMORY_REGIONS: Mutex<MemoryRegionVec> = Mutex::new(Vec::new());
 
-pub fn with_regions<F, R>(f: F) -> R
+pub(crate) fn with_regions<F, R>(f: F) -> R
 where
     F: FnOnce(&mut MemoryRegionVec) -> R,
 {
@@ -20,7 +20,7 @@ where
     f(&mut regions)
 }
 
-pub fn clean_bss() {
+pub(crate) fn clean_bss() {
     unsafe extern "C" {
         fn __bss_start();
         fn __bss_stop();
@@ -34,7 +34,7 @@ pub fn clean_bss() {
     }
 }
 
-pub fn init_regions(args_regions: &[MemoryRegion]) {
+pub(crate) fn init_regions(args_regions: &[MemoryRegion]) {
     let mut regions = MEMORY_REGIONS.lock();
     regions
         .extend_from_slice(args_regions)
@@ -232,7 +232,7 @@ fn region_ram_and_rsv() -> alloc::vec::Vec<MemoryRegion> {
     out
 }
 
-pub fn regions_to_map() -> alloc::vec::Vec<MapRangeConfig> {
+pub(crate) fn regions_to_map() -> alloc::vec::Vec<MapRangeConfig> {
     let mut map_ranges = alloc::vec::Vec::new();
 
     for region in region_ram_and_rsv() {

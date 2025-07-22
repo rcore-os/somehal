@@ -44,7 +44,7 @@ impl Access for Allocator {
     }
 }
 
-static KERNAL_TABLE: Mutex<Option<PageTableRef<'static, TableImpl>>> = Mutex::new(None);
+pub(crate) static KERNAL_TABLE: Mutex<Option<PageTableRef<'static, TableImpl>>> = Mutex::new(None);
 
 impl From<AccessKind> for AccessPermission {
     fn from(value: AccessKind) -> Self {
@@ -95,7 +95,7 @@ pub fn init_mmu() {
     for region in regions_to_map() {
         unsafe {
             debug!(
-                "Map `{:>12}`: {:?} | [{:#p}, {:#p}) -> [{:#x}, {:#x})",
+                "Map `{:<12}`: {:?} | [{:#p}, {:#p}) -> [{:#x}, {:#x})",
                 region.name,
                 region.access,
                 region.vaddr,
@@ -130,6 +130,36 @@ pub fn init_mmu() {
         TTBR0_EL2.set_baddr(addr as _);
     }
     flush_tlb(None);
+}
+
+pub fn mmap(region: MapRangeConfig) -> Result<(), page_table_generic::PagingError> {
+    let mut g = KERNAL_TABLE.lock();
+    let table = g.as_mut().expect("MMU not initialized");
+    let mut alloc = Allocator {};
+    let access = &mut alloc;
+    unsafe {
+        debug!(
+            "Map `{:<12}`: {:?} | [{:#p}, {:#p}) -> [{:#x}, {:#x})",
+            region.name,
+            region.access,
+            region.vaddr,
+            region.vaddr.add(region.size),
+            region.paddr,
+            region.paddr + region.size
+        );
+
+        table.map(
+            MapConfig::new(
+                region.vaddr.into(),
+                region.paddr.into(),
+                region.size,
+                region.into(),
+                true,
+                true,
+            ),
+            access,
+        )
+    }
 }
 
 #[repr(transparent)]

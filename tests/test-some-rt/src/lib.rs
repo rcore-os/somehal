@@ -2,7 +2,7 @@
 #![cfg(target_os = "none")]
 
 use log::{debug, info};
-use somehal::BootInfo;
+use somehal::{BootInfo, mem::iomap};
 
 use crate::debug::init_log;
 
