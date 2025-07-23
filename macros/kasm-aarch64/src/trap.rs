@@ -120,8 +120,8 @@ fn trap_store_regs(is_fp: bool) -> String {
 
 fn trap_restore_regs(is_fp: bool) -> String {
     let mut out = "
-    ldp X0, X10,    [sp], #0x10
-    msr	ELR_EL1,    X10
+    ldp x0, x10,    [sp], #0x10
+    msr	ELR_EL1,    x10
         "
     .to_string();
     out += &ctx_restore_x_q(is_fp);
