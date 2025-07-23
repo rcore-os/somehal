@@ -6,6 +6,13 @@ fn main() {
     println!("cargo:rerun-if-changed=link_base.ld");
     println!("cargo:rustc-link-search={}", out_dir().display());
 
+    let target = std::env::var("TARGET").unwrap();
+
+    println!("cargo::rustc-check-cfg=cfg(hard_float)");
+    if target.as_str() == "aarch64-unknown-none" {
+        println!("cargo::rustc-cfg=hard_float");
+    }
+
     let kimage_vaddr = KIMAGE_VADDR;
     let page_size = PAGE_SIZE;
 

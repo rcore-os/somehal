@@ -20,7 +20,7 @@ use pie_boot_if::EarlyBootArgs;
 pub use pie_boot_if::{BootInfo, MemoryRegion, MemoryRegionKind, MemoryRegions};
 #[allow(unused)]
 use pie_boot_macros::start_code;
-pub use pie_boot_macros::{entry, secondary_entry};
+pub use pie_boot_macros::{entry, irq_handler, secondary_entry};
 
 #[allow(unused)]
 #[unsafe(link_section = ".data")]

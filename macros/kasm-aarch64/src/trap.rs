@@ -28,7 +28,7 @@ pub fn trap_handle_irq(func: ItemFn) -> proc_macro2::TokenStream {
         #[cfg(not(hard_float))]
         #sp
 
-        fn #inner_name(#inputs)->usize{
+        fn #inner_name(#inputs) -> usize {
             #(#stmts)*
         }
     }
@@ -61,7 +61,7 @@ pub fn __trap_handle_irq(
         #[unsafe(naked)]
         #vis unsafe extern "C" fn #func_name() {
             core::arch::naked_asm!(
-                #(#asm),*,
+                #(#asm,)*
                 f = sym #inner_name,
             );
         }
@@ -98,7 +98,7 @@ pub fn tcb_switch(is_fp: bool) -> proc_macro2::TokenStream {
         #[unsafe(naked)]
         pub unsafe extern "C" fn __tcb_switch(_prev: *mut u8, _next: *mut u8) {
             core::arch::naked_asm!(
-               #(#asm),*,
+                #(#asm,)*
                 sp_addr = const core::mem::offset_of!(sparreal_kernel::task::TaskControlBlockData, sp),
                 lr_addr = const core::mem::offset_of!(Context, lr),
                 pc_addr = const core::mem::offset_of!(Context, pc)

@@ -116,15 +116,15 @@ pub fn def_dcache_inval_poc(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn def_adr_l(_input: TokenStream) -> TokenStream {
     quote!(
-                                core::arch::global_asm!(
-                                r"
+                                    core::arch::global_asm!(
+                                    r"
 	.macro	adr_l, dst, sym
 	adrp	\dst, \sym
 	add	\dst, \dst, :lo12:\sym
 	.endm
 "
-                            );
-                                )
+                                );
+                                    )
     .into()
 }
 

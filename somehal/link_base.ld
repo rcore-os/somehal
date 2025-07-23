@@ -2,8 +2,10 @@
 PAGE_SIZE = {page_size};
 
 EXTERN(__pie_boot_default_secondary);
+EXTERN(__somehal_handle_irq_default);
 
 PROVIDE(__pie_boot_secondary = __pie_boot_default_secondary);
+PROVIDE(__somehal_handle_irq = __somehal_handle_irq_default);
 
 SECTIONS{
     .head.text : {

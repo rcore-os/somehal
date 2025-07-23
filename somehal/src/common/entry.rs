@@ -1,6 +1,6 @@
 use pie_boot_if::BootInfo;
 
-use crate::{common, lazy_static::LazyStatic, power, println};
+use crate::{common, lazy_static::LazyStatic, power, println, setup_exception_vectors};
 
 static BOOT_INFO: LazyStatic<BootInfo> = LazyStatic::new();
 
@@ -13,6 +13,7 @@ pub fn virt_entry(args: &BootInfo) {
     BOOT_INFO.init(args.clone());
     common::fdt::init_debugcon(boot_info().fdt);
     println!("SomeHAL booting...");
+    setup_exception_vectors();
     power::init_by_fdt(boot_info().fdt);
     common::fdt::setup_plat_info();
     common::mem::init_regions(&args.memory_regions);

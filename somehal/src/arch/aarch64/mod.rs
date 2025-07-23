@@ -6,8 +6,10 @@ use pie_boot_loader_aarch64::{set_table, setup_sctlr, setup_table_regs};
 def_adr_l!();
 
 mod cache;
+pub mod context;
 pub mod mem;
 pub mod power;
+pub mod trap;
 
 macro_rules! sym_lma {
     ($sym:expr) => {{
@@ -172,4 +174,8 @@ unsafe extern "C" fn switch_sp(_args: usize) -> ! {
         ",
         next =sym crate::common::entry::virt_entry,
     )
+}
+
+pub fn setup_exception_vectors() {
+    trap::setup();
 }

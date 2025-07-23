@@ -119,3 +119,16 @@ pub fn entry(args: TokenStream, input: TokenStream) -> TokenStream {
 pub fn secondary_entry(args: TokenStream, input: TokenStream) -> TokenStream {
     entry::entry(args, input, "__pie_boot_secondary")
 }
+
+#[proc_macro_attribute]
+pub fn irq_handler(_args: TokenStream, input: TokenStream) -> TokenStream {
+    let func = parse_macro_input!(input as ItemFn);
+    let block = func.block;
+    quote! {
+        #[unsafe(no_mangle)]
+        extern "Rust" fn __somehal_handle_irq() {
+            #block
+        }
+    }
+    .into()
+}
