@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3](https://github.com/rcore-os/somehal/compare/kasm-aarch64-v0.1.2...kasm-aarch64-v0.1.3) - 2025-07-24
+
+### Other
+
+- 简化trap
+- fmt
+- add irq handler
+
 ## [0.1.2](https://github.com/rcore-os/pie-boot/compare/kasm-aarch64-v0.1.1...kasm-aarch64-v0.1.2) - 2025-06-17
 
 ### Fixed

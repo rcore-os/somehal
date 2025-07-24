@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3](https://github.com/rcore-os/somehal/compare/pie-boot-macros-v0.1.2...pie-boot-macros-v0.1.3) - 2025-07-24
+
+### Other
+
+- add irq handler
+
 ## [0.1.2](https://github.com/rcore-os/pie-boot/compare/pie-boot-macros-v0.1.1...pie-boot-macros-v0.1.2) - 2025-07-08
 
 ### Added
