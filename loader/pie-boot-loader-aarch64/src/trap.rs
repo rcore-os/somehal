@@ -6,20 +6,13 @@ use log::*;
 use super::context::Context;
 
 #[aarch64_trap_handler(kind = "irq")]
-fn handle_irq(ctx: &Context) -> usize {
-    let sp = ctx.sp;
-    sp as _
-}
+fn handle_irq(_ctx: &Context) {}
 
 #[aarch64_trap_handler(kind = "fiq")]
-fn handle_fiq(ctx: &Context) -> usize {
-    let sp = ctx.sp;
-    sp as _
-}
+fn handle_fiq(_ctx: &Context) {}
 
 #[aarch64_trap_handler(kind = "sync")]
-fn handle_sync(ctx: &Context) -> usize {
-    let sp = ctx.sp;
+fn handle_sync(ctx: &Context) {
     let esr = ESR_EL1.extract();
     let iss = esr.read(ESR_EL1::ISS);
     let elr = ctx.pc;
@@ -47,11 +40,10 @@ fn handle_sync(ctx: &Context) -> usize {
             }
         }
     }
-    sp as _
 }
 
 #[aarch64_trap_handler(kind = "serror")]
-fn handle_serror(ctx: &Context) -> usize {
+fn handle_serror(ctx: &Context) {
     error!("SError exception:");
     let esr = ESR_EL1.extract();
     let _iss = esr.read(ESR_EL1::ISS);

@@ -28,7 +28,7 @@ pub fn trap_handle_irq(func: ItemFn) -> proc_macro2::TokenStream {
         #[cfg(not(hard_float))]
         #sp
 
-        fn #inner_name(#inputs) -> usize {
+        fn #inner_name(#inputs) {
             #(#stmts)*
         }
     }
@@ -46,7 +46,6 @@ pub fn __trap_handle_irq(
     asm_str += "
     mov x0, sp
     BL {f}
-    mov sp, x0
     ";
 
     asm_str += &trap_restore_regs(is_fp);
