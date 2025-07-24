@@ -1,5 +1,6 @@
 # SomeHAL
 
+[![Test](https://github.com/rcore-os/somehal/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/rcore-os/somehal/actions/workflows/test.yml)
 [![Crates.io](https://img.shields.io/crates/v/somehal.svg)](https://crates.io/crates/somehal)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](../LICENSE)
 
