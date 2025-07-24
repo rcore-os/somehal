@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.27](https://github.com/rcore-os/somehal/compare/pie-boot-loader-aarch64-v0.1.26...pie-boot-loader-aarch64-v0.1.27) - 2025-07-24
+
+### Other
+
+- 简化trap
+- add irq handler
+
 ## [0.1.26](https://github.com/rcore-os/somehal/compare/pie-boot-loader-aarch64-v0.1.25...pie-boot-loader-aarch64-v0.1.26) - 2025-07-22
 
 ### Other
