@@ -3,10 +3,12 @@ name: Test
 on:
   push:
     branches:
-      - main
+      - main  # Triggers after PR merge to main
   pull_request:
     branches:
-      - main
+      - main  # Triggers on PR creation/update
+  merge_group:
+    types: [checks_requested]  # Triggers during merge queue checks
 
 env:
   qemu-version: 9.2.4
