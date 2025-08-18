@@ -1032,14 +1032,14 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "pie-boot-if"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "heapless",
 ]
 
 [[package]]
 name = "pie-boot-loader-aarch64"
-version = "0.1.27"
+version = "0.2.0"
 dependencies = [
  "aarch64-cpu",
  "aarch64-cpu-ext",
