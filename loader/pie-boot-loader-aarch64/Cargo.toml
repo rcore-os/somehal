@@ -12,14 +12,10 @@ name = "pie-boot-loader-aarch64"
 repository.workspace = true
 version = "0.1.27"
 
-[features]
-console = ["dep:any-uart"]
-default = ["console"]
-
 [dependencies]
 aarch64-cpu = "10.0"
 aarch64-cpu-ext = "0.1"
-any-uart = {version = "0.2", optional = true}
+any-uart = {version = "0.2"}
 bitflags = "2.9"
 fdt-parser = {version = "0.4"}
 kasm-aarch64 = {workspace = true}

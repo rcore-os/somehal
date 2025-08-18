@@ -1,10 +1,6 @@
 use core::fmt::Write;
 
-#[cfg(feature = "console")]
 use crate::debug::write_byte;
-
-#[cfg(not(feature = "console"))]
-pub fn write_byte(_b: u8) {}
 
 pub fn __print_str(s: &str) {
     for &b in s.as_bytes() {

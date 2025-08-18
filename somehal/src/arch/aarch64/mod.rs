@@ -123,6 +123,9 @@ fn preserve_boot_args() {
     mov x0, {page_size}
     str x0,  [x8, {args_of_page_size}]
 
+    mov x0, #1
+    str x0,  [x8, {args_of_debug}]
+
 	dmb	sy				// needed before dc ivac with
 						// MMU off
     mov x0, x8                    
@@ -141,6 +144,7 @@ fn preserve_boot_args() {
     args_of_kliner_offset = const offset_of!(EarlyBootArgs, kliner_offset),
     page_size = const PAGE_SIZE,
     args_of_page_size = const offset_of!(EarlyBootArgs, page_size),
+    args_of_debug = const offset_of!(EarlyBootArgs, debug),
     dcache_inval_poc = sym cache::__dcache_inval_poc,
     boot_arg_size = const size_of::<EarlyBootArgs>()
     )

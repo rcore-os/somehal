@@ -12,9 +12,8 @@ mod _macros;
 mod cache;
 mod console;
 mod context;
-#[cfg(feature = "console")]
 mod debug;
-mod def;
+pub mod def;
 mod el1;
 mod el2;
 mod lang_items;
@@ -28,15 +27,12 @@ mod trap;
 
 use aarch64_cpu::{asm::barrier, registers::*};
 
+use crate::mmu::set_page_size;
+use def::EarlyBootArgs;
 use fdt_parser::Fdt;
 use mmu::enable_mmu;
+use pie_boot_if::BootInfo;
 use staticcell::*;
-
-pub use def::EarlyBootArgs;
-
-pub use pie_boot_if::{BootInfo, DebugConsole, String, Vec};
-
-use crate::mmu::set_page_size;
 
 #[unsafe(link_section = ".stack")]
 static STACK: [u8; 0x8000] = [0; 0x8000];
@@ -105,8 +101,9 @@ fn entry(bootargs: &EarlyBootArgs) -> *mut () {
         set_page_size(bootargs.page_size);
         ram::init(bootargs.kcode_end as _);
 
-        #[cfg(feature = "console")]
-        debug::fdt::init_debugcon(fdt as _);
+        if bootargs.debug() {
+            debug::fdt::init_debugcon(fdt as _);
+        }
 
         printkv!("fdt", "{fdt:#x}");
 

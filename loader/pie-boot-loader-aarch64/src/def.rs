@@ -28,11 +28,16 @@ pub struct EarlyBootArgs {
     pub el: usize,
     pub kliner_offset: usize,
     pub page_size: usize,
+    pub debug: usize,
 }
 
 impl EarlyBootArgs {
     pub const fn new() -> Self {
         unsafe { MaybeUninit::zeroed().assume_init() }
+    }
+
+    pub fn debug(&self) -> bool {
+        self.debug > 0
     }
 }
 
