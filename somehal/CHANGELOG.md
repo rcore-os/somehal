@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4](https://github.com/rcore-os/somehal/compare/somehal-v0.3.3...somehal-v0.3.4) - 2025-08-18
+
+### Other
+
+- Loader 改为动态参数 ([#35](https://github.com/rcore-os/somehal/pull/35))
+
 ## [0.3.3](https://github.com/rcore-os/somehal/compare/somehal-v0.3.2...somehal-v0.3.3) - 2025-07-24
 
 ### Other
