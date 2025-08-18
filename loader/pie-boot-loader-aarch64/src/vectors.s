@@ -1,7 +1,7 @@
 // Typical exception vector table code.
 .balign 0x800
-.global vector_table_el1
-vector_table_el1:
+.global __vector_table
+__vector_table:
     curr_el_sp0_sync: // The exception handler for the synchronous
     B .
     // exception from the current EL using SP0.

@@ -1,7 +1,14 @@
-use core::{arch::naked_asm, mem::offset_of};
+use core::{
+    arch::naked_asm,
+    mem::{offset_of, size_of},
+};
 
 use aarch64_cpu_ext::cache::{CacheOp, dcache_all};
-use pie_boot_loader_aarch64::{set_table, setup_sctlr, setup_table_regs};
+use kdef_pgtable::{KLINER_OFFSET, PAGE_SIZE};
+#[cfg(not(feature = "hv"))]
+use pie_boot_loader_aarch64::el1::{set_table, setup_sctlr, setup_table_regs};
+#[cfg(feature = "hv")]
+use pie_boot_loader_aarch64::el2::{set_table, setup_sctlr, setup_table_regs};
 
 def_adr_l!();
 
@@ -34,7 +41,7 @@ mod el;
 use crate::{BOOT_PT, boot_info, start_code};
 use aarch64_cpu::{asm::barrier, registers::*};
 use kasm_aarch64::{self as kasm, def_adr_l};
-use pie_boot_if::EarlyBootArgs;
+use pie_boot_loader_aarch64::EarlyBootArgs;
 
 const FLAG_LE: usize = 0b0;
 const FLAG_PAGE_SIZE_4K: usize = 0b10;
@@ -106,6 +113,19 @@ fn preserve_boot_args() {
     adr_l    x0, __kernel_code_end
     str x0,  [x8, {args_of_kcode_end}]
 
+    // set EL
+    mov x0, {el_value}              // Set target EL based on feature
+    str x0,  [x8, {args_of_el}]
+
+    LDR x0, ={kliner_offset}
+    str x0,  [x8, {args_of_kliner_offset}]
+
+    mov x0, {page_size}
+    str x0,  [x8, {args_of_page_size}]
+
+    mov x0, #1
+    str x0,  [x8, {args_of_debug}]
+
 	dmb	sy				// needed before dc ivac with
 						// MMU off
     mov x0, x8                    
@@ -118,6 +138,13 @@ fn preserve_boot_args() {
     args_of_kimage_addr_lma = const  offset_of!(EarlyBootArgs, kimage_addr_lma),
     args_of_kimage_addr_vma = const  offset_of!(EarlyBootArgs, kimage_addr_vma),
     args_of_kcode_end = const  offset_of!(EarlyBootArgs, kcode_end),
+    args_of_el = const  offset_of!(EarlyBootArgs, el),
+    el_value = const if cfg!(feature = "hv") { 2 } else { 1 },
+    kliner_offset = const KLINER_OFFSET,
+    args_of_kliner_offset = const offset_of!(EarlyBootArgs, kliner_offset),
+    page_size = const PAGE_SIZE,
+    args_of_page_size = const offset_of!(EarlyBootArgs, page_size),
+    args_of_debug = const offset_of!(EarlyBootArgs, debug),
     dcache_inval_poc = sym cache::__dcache_inval_poc,
     boot_arg_size = const size_of::<EarlyBootArgs>()
     )

@@ -7,7 +7,7 @@ keywords.workspace = true
 license.workspace = true
 name = "pie-boot-if"
 repository.workspace = true
-version = "0.6.0"
+version = "0.7.0"
 
 [dependencies]
 heapless = "0.8"

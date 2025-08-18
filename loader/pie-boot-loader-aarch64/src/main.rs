@@ -12,12 +12,9 @@ mod _macros;
 mod cache;
 mod console;
 mod context;
-#[cfg(feature = "console")]
 mod debug;
-mod def;
-#[cfg(el = "1")]
+pub mod def;
 mod el1;
-#[cfg(el = "2")]
 mod el2;
 mod lang_items;
 mod mmu;
@@ -29,16 +26,13 @@ mod staticcell;
 mod trap;
 
 use aarch64_cpu::{asm::barrier, registers::*};
-#[cfg(el = "1")]
-use el1::*;
-#[cfg(el = "2")]
-use el2::*;
+
+use crate::mmu::set_page_size;
+use def::EarlyBootArgs;
 use fdt_parser::Fdt;
 use mmu::enable_mmu;
-use pie_boot_if::EarlyBootArgs;
+use pie_boot_if::BootInfo;
 use staticcell::*;
-
-pub use pie_boot_if::{BootInfo, DebugConsole, String, Vec};
 
 #[unsafe(link_section = ".stack")]
 static STACK: [u8; 0x8000] = [0; 0x8000];
@@ -59,7 +53,7 @@ unsafe extern "C" fn _start(_args: &EarlyBootArgs) -> ! {
         mov   sp, x0
 
         mov   x0, x19
-        BL    {switch_to_elx}",
+        BL    {switch_to_target_el}",
 
         "mov   x0, x19",
         "BL     {entry}",
@@ -76,11 +70,23 @@ unsafe extern "C" fn _start(_args: &EarlyBootArgs) -> ! {
         ",
         stack = sym STACK,
         stack_size = const STACK.len(),
-        switch_to_elx = sym switch_to_elx,
+        switch_to_target_el = sym switch_to_target_el,
         entry = sym entry,
         offset = sym OFFSET,
         res = sym RETURN,
     )
+}
+
+/// Switch to the appropriate exception level based on EarlyBootArgs.el
+fn switch_to_target_el(bootargs: &EarlyBootArgs) {
+    let target_el = bootargs.el;
+    let bootargs_ptr = bootargs as *const _ as usize;
+
+    match target_el {
+        1 => el1::switch_to_elx(bootargs_ptr),
+        2 => el2::switch_to_elx(bootargs_ptr),
+        _ => panic!("Unsupported exception level: {}", target_el),
+    }
 }
 
 fn entry(bootargs: &EarlyBootArgs) -> *mut () {
@@ -92,10 +98,12 @@ fn entry(bootargs: &EarlyBootArgs) -> *mut () {
 
         let mut fdt = bootargs.args[0];
         OFFSET = bootargs.kimage_addr_vma as usize - bootargs.kimage_addr_lma as usize;
+        set_page_size(bootargs.page_size);
         ram::init(bootargs.kcode_end as _);
 
-        #[cfg(feature = "console")]
-        debug::fdt::init_debugcon(fdt as _);
+        if bootargs.debug() {
+            debug::fdt::init_debugcon(fdt as _);
+        }
 
         printkv!("fdt", "{fdt:#x}");
 
@@ -142,7 +150,6 @@ fn enable_fp() {
 }
 
 unsafe fn clean_bss() {
-    concat!();
     unsafe {
         let start = sym_lma_extern!(__start_boot_bss) as *mut u8;
         let end = sym_lma_extern!(__stop_boot_bss) as *mut u8;

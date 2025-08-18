@@ -51,14 +51,10 @@ fn out_dir() -> PathBuf {
 }
 
 fn aarch64_set_loader() {
-    let mut builder = bindeps_simple::Builder::new("pie-boot-loader-aarch64")
+    let builder = bindeps_simple::Builder::new("pie-boot-loader-aarch64")
         .target("aarch64-unknown-none-softfloat")
         .env("RUSTFLAGS", "-C relocation-model=pic -Clink-args=-pie")
         .cargo_args(&["-Z", "build-std=core,alloc"]);
-
-    if std::env::var("CARGO_FEATURE_HV").is_ok() {
-        builder = builder.feature("el2");
-    }
 
     let output = builder.build().unwrap();
 
