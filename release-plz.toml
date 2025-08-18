@@ -6,6 +6,10 @@ name = "somehal"
 git_release_enable = true
 
 [[package]]
+name = "pie-boot-loader-aarch64"
+git_release_enable = true
+
+[[package]]
 name = "test-some-rt"
 release = false # don't process this package
 publish = false
