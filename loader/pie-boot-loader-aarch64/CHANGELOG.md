@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1](https://github.com/rcore-os/somehal/compare/pie-boot-loader-aarch64-v0.2.0...pie-boot-loader-aarch64-v0.2.1) - 2025-08-18
+
+### Other
+
+- 移除对EL配置的条件编译，改为运行时检查当前EL级别
+
 ## [0.2.0](https://github.com/rcore-os/somehal/compare/pie-boot-loader-aarch64-v0.1.26...pie-boot-loader-aarch64-v0.2.0) - 2025-07-24
 
 ### Other
