@@ -18,6 +18,9 @@ jobs:
     if: ${{ github.repository_owner == 'rcore-os' && github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: write
+    outputs:
+      pie-boot-loader-aarch64-released: ${{ steps.check-release.outputs.pie-boot-loader-aarch64-released }}
+      pie-boot-loader-aarch64-tag: ${{ steps.check-release.outputs.pie-boot-loader-aarch64-tag }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,12 +30,36 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Run release-plz
+        id: release-plz
         uses: release-plz/action@v0.5
         with:
           command: release
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      - name: Check if pie-boot-loader-aarch64 was released
+        id: check-release
+        run: |
+          # Check if any pie-boot-loader-aarch64 tag was created in this release
+          latest_tag=$(git tag --sort=-version:refname | grep "^pie-boot-loader-aarch64-v" | head -n1 || echo "")
+          if [ -n "$latest_tag" ]; then
+            # Check if this tag was created in the last minute (indicating it was just created)
+            tag_date=$(git log -1 --format=%ct "$latest_tag" 2>/dev/null || echo "0")
+            current_date=$(date +%s)
+            time_diff=$((current_date - tag_date))
+            
+            if [ $time_diff -lt 300 ]; then  # 5 minutes threshold
+              echo "pie-boot-loader-aarch64-released=true" >> $GITHUB_OUTPUT
+              echo "pie-boot-loader-aarch64-tag=$latest_tag" >> $GITHUB_OUTPUT
+              echo "✅ pie-boot-loader-aarch64 was released with tag: $latest_tag"
+            else
+              echo "pie-boot-loader-aarch64-released=false" >> $GITHUB_OUTPUT
+              echo "ℹ️ No recent pie-boot-loader-aarch64 release detected"
+            fi
+          else
+            echo "pie-boot-loader-aarch64-released=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ No pie-boot-loader-aarch64 tag found"
+          fi
 
   release-plz-pr:
     name: Release-plz PR
@@ -59,3 +86,44 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+  build-and-release-binary:
+    name: Build and release pie-boot-loader-aarch64 binary
+    runs-on: ubuntu-latest
+    needs: release-plz-release
+    if: ${{ needs.release-plz-release.outputs.pie-boot-loader-aarch64-released == 'true' }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-none-softfloat
+          components: rust-src, llvm-tools-preview
+      - name: Install cargo-binutils
+        run: cargo install cargo-binutils
+      - name: Build pie-boot-loader-aarch64 binary
+        run:  ./loader/pie-boot-loader-aarch64/build.sh
+      - name: Upload binary to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.release-plz-release.outputs.pie-boot-loader-aarch64-tag }}
+          files: |
+            target/aarch64-unknown-none-softfloat/release/pie-boot-loader-aarch64.bin
+          body: |
+            🚀 **pie-boot-loader-aarch64 Binary Release**
+            
+            This release includes the compiled binary for pie-boot-loader-aarch64.
+            
+            📦 **Files:**
+            - `pie-boot-loader-aarch64.bin` - The compiled loader binary for AArch64 architecture
+            
+            🔧 **Built with:**
+            - Rust toolchain: stable
+            - Target: aarch64-unknown-none-softfloat
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
