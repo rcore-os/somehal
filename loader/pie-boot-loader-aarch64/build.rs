@@ -23,15 +23,6 @@ fn main() {
     content = content.replace("{PAGE_SIZE}", &format!("{PAGE_SIZE:#x}"));
     let mut file = std::fs::File::create(out_dir().join(ld_file)).expect("ld create failed");
     file.write_all(content.as_bytes()).expect("ld write failed");
-
-    println!("cargo::rustc-check-cfg=cfg(el, values(\"1\", \"2\", \"3\"))");
-    if std::env::var("CARGO_FEATURE_EL3").is_ok() {
-        println!("cargo::rustc-cfg=el=\"3\"");
-    } else if std::env::var("CARGO_FEATURE_EL2").is_ok() {
-        println!("cargo::rustc-cfg=el=\"2\"");
-    } else {
-        println!("cargo::rustc-cfg=el=\"1\"");
-    }
 }
 
 fn out_dir() -> PathBuf {

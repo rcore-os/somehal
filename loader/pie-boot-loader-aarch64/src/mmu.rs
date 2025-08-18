@@ -131,18 +131,20 @@ where
         let start = 0x0usize;
 
         printkv!("eq", "[{:#x}, {:#x})", start, start + size);
-        #[cfg(el = "1")]
-        early_err!(table.map(
-            MapConfig {
-                vaddr: start.into(),
-                paddr: start.into(),
-                size,
-                pte: new_pte(CacheKind::NoCache),
-                allow_huge: true,
-                flush: false,
-            },
-            access,
-        ));
+
+        if CurrentEL.read(CurrentEL::EL) == 1 {
+            early_err!(table.map(
+                MapConfig {
+                    vaddr: start.into(),
+                    paddr: start.into(),
+                    size,
+                    pte: new_pte(CacheKind::NoCache),
+                    allow_huge: true,
+                    flush: false,
+                },
+                access,
+            ));
+        }
     }
 
     let pg = table.paddr().raw() as _;
