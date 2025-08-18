@@ -15,9 +15,7 @@ mod context;
 #[cfg(feature = "console")]
 mod debug;
 mod def;
-#[cfg(el = "1")]
 mod el1;
-#[cfg(el = "2")]
 mod el2;
 mod lang_items;
 mod mmu;
@@ -29,14 +27,12 @@ mod staticcell;
 mod trap;
 
 use aarch64_cpu::{asm::barrier, registers::*};
-#[cfg(el = "1")]
-use el1::*;
-#[cfg(el = "2")]
-use el2::*;
+
 use fdt_parser::Fdt;
 use mmu::enable_mmu;
-use pie_boot_if::EarlyBootArgs;
 use staticcell::*;
+
+pub use def::EarlyBootArgs;
 
 pub use pie_boot_if::{BootInfo, DebugConsole, String, Vec};
 
@@ -45,6 +41,18 @@ static STACK: [u8; 0x8000] = [0; 0x8000];
 
 pub(crate) static RETURN: StaticCell<BootInfo> = StaticCell::new(BootInfo::new());
 static mut OFFSET: usize = 0;
+
+/// Switch to the appropriate exception level based on EarlyBootArgs.el
+fn switch_to_target_el(bootargs: &EarlyBootArgs) {
+    let target_el = bootargs.el;
+    let bootargs_ptr = bootargs as *const _ as usize;
+    
+    match target_el {
+        1 => el1::switch_to_elx(bootargs_ptr),
+        2 => el2::switch_to_elx(bootargs_ptr),
+        _ => panic!("Unsupported exception level: {}", target_el),
+    }
+}
 
 /// The header of the kernel.
 #[unsafe(no_mangle)]
@@ -59,7 +67,7 @@ unsafe extern "C" fn _start(_args: &EarlyBootArgs) -> ! {
         mov   sp, x0
 
         mov   x0, x19
-        BL    {switch_to_elx}",
+        BL    {switch_to_target_el}",
 
         "mov   x0, x19",
         "BL     {entry}",
@@ -76,7 +84,7 @@ unsafe extern "C" fn _start(_args: &EarlyBootArgs) -> ! {
         ",
         stack = sym STACK,
         stack_size = const STACK.len(),
-        switch_to_elx = sym switch_to_elx,
+        switch_to_target_el = sym switch_to_target_el,
         entry = sym entry,
         offset = sym OFFSET,
         res = sym RETURN,
@@ -142,7 +150,6 @@ fn enable_fp() {
 }
 
 unsafe fn clean_bss() {
-    concat!();
     unsafe {
         let start = sym_lma_extern!(__start_boot_bss) as *mut u8;
         let end = sym_lma_extern!(__stop_boot_bss) as *mut u8;

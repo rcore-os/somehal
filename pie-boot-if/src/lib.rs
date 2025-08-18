@@ -7,28 +7,6 @@ mod memregions;
 pub use heapless::{String, Vec};
 pub use memregions::*;
 
-#[repr(C, align(64))]
-#[derive(Clone)]
-pub struct EarlyBootArgs {
-    pub args: [usize; 4],
-    pub virt_entry: *mut (),
-    pub kimage_addr_lma: *mut (),
-    pub kimage_addr_vma: *mut (),
-    pub kcode_end: *mut (),
-}
-
-impl EarlyBootArgs {
-    pub const fn new() -> Self {
-        unsafe { MaybeUninit::zeroed().assume_init() }
-    }
-}
-
-impl Default for EarlyBootArgs {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 #[repr(align(64))]
 #[derive(Debug, Clone)]
 pub struct BootInfo {

@@ -16,7 +16,7 @@ mod loader;
 
 pub use common::entry::boot_info;
 pub use kdef_pgtable::{KIMAGE_VADDR, KIMAGE_VSIZE, KLINER_OFFSET};
-use pie_boot_if::EarlyBootArgs;
+use pie_boot_loader_aarch64::EarlyBootArgs;
 pub use pie_boot_if::{BootInfo, MemoryRegion, MemoryRegionKind, MemoryRegions};
 #[allow(unused)]
 use pie_boot_macros::start_code;

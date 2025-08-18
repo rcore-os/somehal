@@ -2,23 +2,40 @@ use crate::{
     def::CacheKind,
     paging::{GB, MB, MapConfig, PageTableRef, PhysAddr, TableGeneric},
     ram::Ram,
-    reg::*,
     *,
 };
 use kdef_pgtable::KLINER_OFFSET;
 use num_align::{NumAlign, NumAssertAlign};
 use page_table_generic::Access;
 
-pub fn enable_mmu(args: &EarlyBootArgs, fdt: usize) {
-    setup_table_regs();
+fn enable_mmu_el1(args: &EarlyBootArgs, fdt: usize) {
+    reg::el1::setup_table_regs();
+    let addr = new_boot_table::<el1::Table, _>(args, fdt, el1::Pte::new);
+    reg::el1::set_table(addr.raw());
+    reg::el1::setup_sctlr();
+}
 
-    let addr = new_boot_table(args, fdt);
-    set_table(addr.raw());
-    setup_sctlr();
+fn enable_mmu_el2(args: &EarlyBootArgs, fdt: usize) {
+    reg::el2::setup_table_regs();
+    let addr = new_boot_table::<el2::Table, _>(args, fdt, el2::Pte::new);
+    reg::el2::set_table(addr.raw());
+    reg::el2::setup_sctlr();
+}
+
+pub fn enable_mmu(args: &EarlyBootArgs, fdt: usize) {
+    match args.el {
+        1 => enable_mmu_el1(args, fdt),
+        2 => enable_mmu_el2(args, fdt),
+        _ => panic!("Unsupported exception level: {}", args.el),
+    }
 }
 
 /// `rsv_space` 在 `boot stack` 之后保留的空间到校
-pub fn new_boot_table(args: &EarlyBootArgs, fdt: usize) -> PhysAddr {
+pub fn new_boot_table<T, F>(args: &EarlyBootArgs, fdt: usize, new_pte: F) -> PhysAddr
+where
+    T: TableGeneric,
+    F: Fn(CacheKind) -> T::PTE + Copy,
+{
     let kcode_offset = args.kimage_addr_vma as usize - args.kimage_addr_lma as usize;
 
     let mut alloc = Ram {};
@@ -29,7 +46,7 @@ pub fn new_boot_table(args: &EarlyBootArgs, fdt: usize) -> PhysAddr {
 
     printkv!("BootTable space", "[{:p} --)", table_start);
 
-    let mut table = early_err!(PageTableRef::<'_, Table>::create_empty(access));
+    let mut table = early_err!(PageTableRef::<'_, T>::create_empty(access));
     unsafe {
         let align = if kcode_offset.is_aligned_to(GB) {
             GB
@@ -59,14 +76,14 @@ pub fn new_boot_table(args: &EarlyBootArgs, fdt: usize) -> PhysAddr {
                 vaddr: code_start.into(),
                 paddr: code_start_phys.into(),
                 size,
-                pte: Pte::new(CacheKind::Normal),
+                pte: new_pte(CacheKind::Normal),
                 allow_huge: true,
                 flush: false,
             },
             access,
         ));
 
-        early_err!(add_rams(fdt, &mut table, access));
+        early_err!(add_rams(fdt, &mut table, access, new_pte));
 
         if debug::reg_base() > 0 {
             let paddr = debug::reg_base();
@@ -77,7 +94,7 @@ pub fn new_boot_table(args: &EarlyBootArgs, fdt: usize) -> PhysAddr {
                     vaddr: vaddr.into(),
                     paddr: paddr.into(),
                     size,
-                    pte: Pte::new(CacheKind::Device),
+                    pte: new_pte(CacheKind::Device),
                     allow_huge: true,
                     flush: false,
                 },
@@ -86,9 +103,9 @@ pub fn new_boot_table(args: &EarlyBootArgs, fdt: usize) -> PhysAddr {
         }
 
         let size = if table.entry_size() == table.max_block_size() {
-            table.entry_size() * (Table::TABLE_LEN / 2)
+            table.entry_size() * (T::TABLE_LEN / 2)
         } else {
-            table.max_block_size() * Table::TABLE_LEN
+            table.max_block_size() * T::TABLE_LEN
         };
         let start = 0x0usize;
 
@@ -99,7 +116,7 @@ pub fn new_boot_table(args: &EarlyBootArgs, fdt: usize) -> PhysAddr {
                 vaddr: start.into(),
                 paddr: start.into(),
                 size,
-                pte: Pte::new(CacheKind::NoCache),
+                pte: new_pte(CacheKind::NoCache),
                 allow_huge: true,
                 flush: false,
             },
@@ -119,11 +136,16 @@ pub fn new_boot_table(args: &EarlyBootArgs, fdt: usize) -> PhysAddr {
     table.paddr()
 }
 
-fn add_rams(
+fn add_rams<T, F>(
     fdt: usize,
-    table: &mut PageTableRef<'_, Table>,
+    table: &mut PageTableRef<'_, T>,
     access: &mut impl Access,
-) -> Result<(), &'static str> {
+    new_pte: F,
+) -> Result<(), &'static str>
+where
+    T: TableGeneric,
+    F: Fn(CacheKind) -> T::PTE,
+{
     let fdt = match NonNull::new(fdt as _) {
         Some(v) => v,
         _ => {
@@ -145,7 +167,7 @@ fn add_rams(
                     vaddr: vaddr.into(),
                     paddr: paddr.into(),
                     size: memory.size,
-                    pte: Pte::new(CacheKind::Normal),
+                    pte: new_pte(CacheKind::Normal),
                     allow_huge: true,
                     flush: false,
                 },

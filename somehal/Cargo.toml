@@ -28,7 +28,7 @@ log = "0.4"
 aarch64-cpu = "10.0"
 aarch64-cpu-ext = "0.1"
 kasm-aarch64 = {workspace = true}
-pie-boot-loader-aarch64 = {path = "../loader/pie-boot-loader-aarch64", version = "0.1.27" }
+pie-boot-loader-aarch64 = {path = "../loader/pie-boot-loader-aarch64", version = "0.1" }
 smccc = "0.2"
 
 [build-dependencies]
