@@ -90,13 +90,21 @@ global_asm!(
 );
 
 pub fn setup() {
+    let addr: usize;
     unsafe {
         asm!(
-            "
-        adr      {0}, vector_table_el1
-        MSR      VBAR_EL1, {0}
-        ",
-            out(reg) _,
+            "adr {0}, __vector_table",
+            out(reg) addr,
         );
+    }
+
+    match CurrentEL.read(CurrentEL::EL) {
+        1 => unsafe {
+            asm!("msr vbar_el1, {0}", in(reg) addr);
+        },
+        2 => unsafe {
+            asm!("msr vbar_el2, {0}", in(reg) addr);
+        },
+        _ => panic!("Unsupported exception level for vector table setup"),
     }
 }

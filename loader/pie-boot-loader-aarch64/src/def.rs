@@ -26,6 +26,8 @@ pub struct EarlyBootArgs {
     pub kimage_addr_vma: *mut (),
     pub kcode_end: *mut (),
     pub el: usize,
+    pub kliner_offset: usize,
+    pub page_size: usize,
 }
 
 impl EarlyBootArgs {

@@ -4,9 +4,11 @@ use crate::{
     ram::Ram,
     *,
 };
-use kdef_pgtable::KLINER_OFFSET;
 use num_align::{NumAlign, NumAssertAlign};
 use page_table_generic::Access;
+
+static mut KLINER_OFFSET: usize = 0;
+static mut PAGE_SIZE: usize = 0;
 
 fn enable_mmu_el1(args: &EarlyBootArgs, fdt: usize) {
     reg::el1::setup_table_regs();
@@ -22,7 +24,25 @@ fn enable_mmu_el2(args: &EarlyBootArgs, fdt: usize) {
     reg::el2::setup_sctlr();
 }
 
+fn kliner_offset() -> usize {
+    unsafe { KLINER_OFFSET }
+}
+
+pub(crate) fn set_page_size(size: usize) {
+    unsafe {
+        PAGE_SIZE = size;
+    }
+}
+
+pub(crate) fn page_size() -> usize {
+    unsafe { PAGE_SIZE }
+}
+
 pub fn enable_mmu(args: &EarlyBootArgs, fdt: usize) {
+    unsafe {
+        KLINER_OFFSET = args.kliner_offset;
+        PAGE_SIZE = args.page_size;
+    }
     match args.el {
         1 => enable_mmu_el1(args, fdt),
         2 => enable_mmu_el2(args, fdt),
@@ -159,7 +179,7 @@ where
             continue; // Skip zero-sized regions
         }
         let paddr = memory.address as usize;
-        let vaddr = paddr + KLINER_OFFSET;
+        let vaddr = paddr + kliner_offset();
         printkv!("ram", "{:#x}-> {:#x}", vaddr, paddr);
         unsafe {
             early_err!(table.map(

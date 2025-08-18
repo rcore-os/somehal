@@ -36,23 +36,13 @@ pub use def::EarlyBootArgs;
 
 pub use pie_boot_if::{BootInfo, DebugConsole, String, Vec};
 
+use crate::mmu::set_page_size;
+
 #[unsafe(link_section = ".stack")]
 static STACK: [u8; 0x8000] = [0; 0x8000];
 
 pub(crate) static RETURN: StaticCell<BootInfo> = StaticCell::new(BootInfo::new());
 static mut OFFSET: usize = 0;
-
-/// Switch to the appropriate exception level based on EarlyBootArgs.el
-fn switch_to_target_el(bootargs: &EarlyBootArgs) {
-    let target_el = bootargs.el;
-    let bootargs_ptr = bootargs as *const _ as usize;
-    
-    match target_el {
-        1 => el1::switch_to_elx(bootargs_ptr),
-        2 => el2::switch_to_elx(bootargs_ptr),
-        _ => panic!("Unsupported exception level: {}", target_el),
-    }
-}
 
 /// The header of the kernel.
 #[unsafe(no_mangle)]
@@ -91,6 +81,18 @@ unsafe extern "C" fn _start(_args: &EarlyBootArgs) -> ! {
     )
 }
 
+/// Switch to the appropriate exception level based on EarlyBootArgs.el
+fn switch_to_target_el(bootargs: &EarlyBootArgs) {
+    let target_el = bootargs.el;
+    let bootargs_ptr = bootargs as *const _ as usize;
+
+    match target_el {
+        1 => el1::switch_to_elx(bootargs_ptr),
+        2 => el2::switch_to_elx(bootargs_ptr),
+        _ => panic!("Unsupported exception level: {}", target_el),
+    }
+}
+
 fn entry(bootargs: &EarlyBootArgs) -> *mut () {
     enable_fp();
     unsafe {
@@ -100,6 +102,7 @@ fn entry(bootargs: &EarlyBootArgs) -> *mut () {
 
         let mut fdt = bootargs.args[0];
         OFFSET = bootargs.kimage_addr_vma as usize - bootargs.kimage_addr_lma as usize;
+        set_page_size(bootargs.page_size);
         ram::init(bootargs.kcode_end as _);
 
         #[cfg(feature = "console")]

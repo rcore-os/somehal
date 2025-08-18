@@ -4,6 +4,7 @@ use core::{
 };
 
 use aarch64_cpu_ext::cache::{CacheOp, dcache_all};
+use kdef_pgtable::{KLINER_OFFSET, PAGE_SIZE};
 #[cfg(not(feature = "hv"))]
 use pie_boot_loader_aarch64::el1::{set_table, setup_sctlr, setup_table_regs};
 #[cfg(feature = "hv")]
@@ -116,6 +117,12 @@ fn preserve_boot_args() {
     mov x0, {el_value}              // Set target EL based on feature
     str x0,  [x8, {args_of_el}]
 
+    LDR x0, ={kliner_offset}
+    str x0,  [x8, {args_of_kliner_offset}]
+
+    mov x0, {page_size}
+    str x0,  [x8, {args_of_page_size}]
+
 	dmb	sy				// needed before dc ivac with
 						// MMU off
     mov x0, x8                    
@@ -130,6 +137,10 @@ fn preserve_boot_args() {
     args_of_kcode_end = const  offset_of!(EarlyBootArgs, kcode_end),
     args_of_el = const  offset_of!(EarlyBootArgs, el),
     el_value = const if cfg!(feature = "hv") { 2 } else { 1 },
+    kliner_offset = const KLINER_OFFSET,
+    args_of_kliner_offset = const offset_of!(EarlyBootArgs, kliner_offset),
+    page_size = const PAGE_SIZE,
+    args_of_page_size = const offset_of!(EarlyBootArgs, page_size),
     dcache_inval_poc = sym cache::__dcache_inval_poc,
     boot_arg_size = const size_of::<EarlyBootArgs>()
     )

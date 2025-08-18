@@ -15,7 +15,6 @@ version = "0.1.27"
 [features]
 console = ["dep:any-uart"]
 default = ["console"]
-el2 = ["kdef-pgtable/space-low"]
 
 [dependencies]
 aarch64-cpu = "10.0"
@@ -24,7 +23,6 @@ any-uart = {version = "0.2", optional = true}
 bitflags = "2.9"
 fdt-parser = {version = "0.4"}
 kasm-aarch64 = {workspace = true}
-kdef-pgtable = {workspace = true}
 log = "0.4"
 num-align = "0.1"
 page-table-generic = "0.6"

@@ -1,11 +1,10 @@
 use core::cell::UnsafeCell;
 
 use any_uart::Sender;
-use kdef_pgtable::PAGE_SIZE;
 use num_align::NumAlign;
 use pie_boot_if::{DebugConsole, String, Vec};
 
-use crate::RETURN;
+use crate::{RETURN, mmu::page_size};
 
 pub mod fdt;
 
@@ -17,7 +16,7 @@ pub fn reg_base() -> usize {
 
 fn setup_debugcon<'a>(base: usize, compatibles: impl core::iter::Iterator<Item = &'a str>) {
     unsafe {
-        REG_BASE = base.align_down(PAGE_SIZE);
+        REG_BASE = base.align_down(page_size());
         let mut ls = Vec::new();
         for c in compatibles {
             let mut s = String::new();
