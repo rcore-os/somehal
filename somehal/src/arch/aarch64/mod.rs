@@ -10,8 +10,6 @@ use pie_boot_loader_aarch64::el1::{set_table, setup_sctlr, setup_table_regs};
 #[cfg(feature = "hv")]
 use pie_boot_loader_aarch64::el2::{set_table, setup_sctlr, setup_table_regs};
 
-// def_adr_l!();
-
 mod cache;
 pub mod context;
 pub mod mem;

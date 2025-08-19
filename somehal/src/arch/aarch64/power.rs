@@ -1,10 +1,11 @@
 use core::{fmt::Display, ops::Deref, ptr::NonNull};
 
 use aarch64_cpu::asm::wfi;
+use aarch64_cpu_ext::cache::{CacheOp, dcache_all};
 use fdt_parser::Fdt;
 use smccc::{Hvc, Smc, psci};
 
-use crate::{lazy_static::LazyStatic, println};
+use crate::{_start_secondary, boot_info, lazy_static::LazyStatic, println};
 
 #[unsafe(link_section = ".data")]
 static METHOD: LazyStatic<Method> = LazyStatic::new();
@@ -47,6 +48,7 @@ pub(crate) fn init_by_fdt(fdt: Option<NonNull<u8>>) -> Option<()> {
     Some(())
 }
 
+// Shutdown the system
 pub fn shutdown() -> ! {
     match METHOD.deref() {
         Method::Smc => psci::system_off::<Smc>(),
@@ -56,4 +58,26 @@ pub fn shutdown() -> ! {
     loop {
         wfi();
     }
+}
+
+/// Power on a CPU
+pub fn cpu_on(cpu_id: u64, stack_top: u64) -> Result<(), psci::error::Error> {
+    dcache_all(CacheOp::CleanAndInvalidate);
+    let entry = secondary_entry_addr();
+    _cpu_on(cpu_id, entry as _, stack_top)
+}
+
+fn _cpu_on(cpu_id: u64, entry: u64, stack_top: u64) -> Result<(), smccc::psci::error::Error> {
+    match METHOD.deref() {
+        Method::Smc => psci::cpu_on::<Smc>(cpu_id, entry, stack_top)?,
+        Method::Hvc => psci::cpu_on::<Hvc>(cpu_id, entry, stack_top)?,
+    };
+    Ok(())
+}
+
+/// secondary entry address
+/// arg0 is stack top
+fn secondary_entry_addr() -> usize {
+    let ptr = _start_secondary as usize;
+    ptr - boot_info().kcode_offset()
 }

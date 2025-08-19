@@ -29,12 +29,7 @@ static mut BOOT_ARGS: EarlyBootArgs = EarlyBootArgs::new();
 #[unsafe(link_section = ".data")]
 static mut BOOT_PT: usize = 0;
 
-/// secondary entry address
-/// arg0 is stack top
-pub fn secondary_entry_addr() -> usize {
-    let ptr = arch::_start_secondary as usize;
-    ptr - boot_info().kcode_offset()
-}
+
 
 #[unsafe(no_mangle)]
 unsafe extern "C" fn __pie_boot_default_secondary(_cpu_id: usize) {}
