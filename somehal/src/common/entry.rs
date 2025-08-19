@@ -11,7 +11,6 @@ pub fn boot_info() -> &'static BootInfo {
 
 pub fn virt_entry(args: &BootInfo) {
     common::mem::clean_bss();
-    unsafe { BOOT_INFO.clean() };
     BOOT_INFO.init(args.clone());
     common::fdt::init_debugcon(boot_info().fdt);
     println!("SomeHAL booting...");

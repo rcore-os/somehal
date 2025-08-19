@@ -6,6 +6,7 @@ use smccc::{Hvc, Smc, psci};
 
 use crate::{lazy_static::LazyStatic, println};
 
+#[unsafe(link_section = ".data")]
 static METHOD: LazyStatic<Method> = LazyStatic::new();
 
 #[derive(Debug, Clone, Copy)]
@@ -40,6 +41,7 @@ pub(crate) fn init_by_fdt(fdt: Option<NonNull<u8>>) -> Option<()> {
         .find_compatible(&["arm,psci-1.0", "arm,psci-0.2", "arm,psci"])
         .next()?;
     let method: Method = node.find_property("method")?.str().into();
+
     METHOD.init(method);
     println!("Power management method : {method}");
     Some(())

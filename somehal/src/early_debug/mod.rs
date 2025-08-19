@@ -6,7 +6,9 @@ use crate::lazy_static::LazyStatic;
 
 type TxFun = fn(u8) -> Result<(), TError>;
 
+#[unsafe(link_section = ".data")]
 static TX_FUN: LazyStatic<TxFun> = LazyStatic::with_default(empty_tx);
+#[unsafe(link_section = ".data")]
 static TX_MUTEX: Mutex<()> = Mutex::new(());
 
 #[derive(Debug, Clone, Copy)]

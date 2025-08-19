@@ -10,6 +10,7 @@ use crate::boot_info;
 
 type MemoryRegionVec = Vec<MemoryRegion, 128>;
 
+#[unsafe(link_section = ".data")]
 static MEMORY_REGIONS: Mutex<MemoryRegionVec> = Mutex::new(Vec::new());
 
 pub(crate) fn with_regions<F, R>(f: F) -> R

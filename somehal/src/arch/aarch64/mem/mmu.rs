@@ -44,6 +44,7 @@ impl Access for Allocator {
     }
 }
 
+#[unsafe(link_section = ".data")]
 pub(crate) static KERNAL_TABLE: Mutex<Option<PageTableRef<'static, TableImpl>>> = Mutex::new(None);
 
 impl From<AccessKind> for AccessPermission {
