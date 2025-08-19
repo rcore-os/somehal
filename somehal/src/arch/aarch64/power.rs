@@ -7,6 +7,8 @@ use smccc::{Hvc, Smc, psci};
 
 use crate::{_start_secondary, boot_info, lazy_static::LazyStatic, println};
 
+pub use smccc::psci::error::Error as PsciError;
+
 #[unsafe(link_section = ".data")]
 static METHOD: LazyStatic<Method> = LazyStatic::new();
 
@@ -61,7 +63,7 @@ pub fn shutdown() -> ! {
 }
 
 /// Power on a CPU
-pub fn cpu_on(cpu_id: u64, stack_top: u64) -> Result<(), psci::error::Error> {
+pub fn cpu_on(cpu_id: u64, stack_top: u64) -> Result<(), PsciError> {
     dcache_all(CacheOp::CleanAndInvalidate);
     let entry = secondary_entry_addr();
     _cpu_on(cpu_id, entry as _, stack_top)
