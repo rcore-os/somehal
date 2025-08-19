@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.8](https://github.com/rcore-os/somehal/compare/somehal-v0.3.7...somehal-v0.3.8) - 2025-08-19
+
+### Added
+
+- add cpu_on
+
+### Fixed
+
+- update cpu_on return type to use PsciError for consistency
+
+### Other
+
+- static link to .data to avoid bss clean by others
+
 ## [0.3.7](https://github.com/rcore-os/somehal/compare/somehal-v0.3.6...somehal-v0.3.7) - 2025-08-19
 
 ### Added
