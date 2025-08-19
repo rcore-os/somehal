@@ -2,6 +2,7 @@ use pie_boot_if::BootInfo;
 
 use crate::{common, lazy_static::LazyStatic, power, println, setup_exception_vectors};
 
+#[unsafe(link_section = ".data")]
 static BOOT_INFO: LazyStatic<BootInfo> = LazyStatic::new();
 
 pub fn boot_info() -> &'static BootInfo {
@@ -10,6 +11,7 @@ pub fn boot_info() -> &'static BootInfo {
 
 pub fn virt_entry(args: &BootInfo) {
     common::mem::clean_bss();
+    unsafe { BOOT_INFO.clean() };
     BOOT_INFO.init(args.clone());
     common::fdt::init_debugcon(boot_info().fdt);
     println!("SomeHAL booting...");

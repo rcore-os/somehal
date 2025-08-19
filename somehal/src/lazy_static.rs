@@ -23,6 +23,14 @@ impl<T> LazyStatic<T> {
         }
     }
 
+    pub unsafe fn clean(&self) {
+        unsafe {
+            *self.value.get() = None;
+            self.initialized
+                .store(false, core::sync::atomic::Ordering::Release);
+        }
+    }
+
     pub fn init(&self, value: T) {
         self.try_init(value)
             .expect("StaticOnce already initialized");
