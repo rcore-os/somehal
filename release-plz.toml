@@ -2,10 +2,6 @@
 git_release_enable = false
 
 [[package]]
-name = "somehal"
-git_release_enable = true
-
-[[package]]
 name = "pie-boot-loader-aarch64"
 git_release_enable = true
 

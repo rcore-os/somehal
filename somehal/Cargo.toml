@@ -35,7 +35,7 @@ smccc = "0.2"
 bindeps-simple = {version = "0.2"}
 futures = "0.3"
 kdef-pgtable = {workspace = true}
-reqwest = {version = "0.11", features = ["json"]}
-serde = {version = "1.0", features = ["derive"]}
-tokio = {version = "1.0", features = ["full"]}
+release-dep = {version = "0.1"}
+toml = "0.9"
 url = "2.0"
+serde = {version = "1.0", features = ["derive"]}
