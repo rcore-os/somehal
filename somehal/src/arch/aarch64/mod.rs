@@ -10,7 +10,7 @@ use pie_boot_loader_aarch64::el1::{set_table, setup_sctlr, setup_table_regs};
 #[cfg(feature = "hv")]
 use pie_boot_loader_aarch64::el2::{set_table, setup_sctlr, setup_table_regs};
 
-def_adr_l!();
+// def_adr_l!();
 
 mod cache;
 pub mod context;
@@ -40,7 +40,7 @@ mod el;
 
 use crate::{BOOT_PT, boot_info, start_code};
 use aarch64_cpu::{asm::barrier, registers::*};
-use kasm_aarch64::{self as kasm, def_adr_l};
+use kasm_aarch64::{self as kasm, adr_l};
 use pie_boot_loader_aarch64::EarlyBootArgs;
 
 const FLAG_LE: usize = 0b0;
@@ -80,13 +80,12 @@ pub unsafe extern "C" fn _start() -> ! {
 #[start_code(naked)]
 fn primary_entry() -> ! {
     naked_asm!(
-        "
-    bl  {preserve_boot_args}
-
-    adr_l	x0, {boot_args}
-    adr_l x8, {loader}
-    br    x8
-        ",
+    "
+    bl  {preserve_boot_args}",
+    adr_l!(x0, "{boot_args}"),
+    adr_l!(x8, "{loader}"),
+    "
+    br   x8",
         preserve_boot_args = sym preserve_boot_args,
         boot_args = sym crate::BOOT_ARGS,
         loader = sym crate::loader::LOADER_BIN,
@@ -96,21 +95,22 @@ fn primary_entry() -> ! {
 #[start_code(naked)]
 fn preserve_boot_args() {
     naked_asm!(
-        "
-	adr_l	 x8, {boot_args}			// record the contents of
+    adr_l!(x8, "{boot_args}"), // record the contents of
+    "
 	stp	x0,  x1, [x8]			// x0 .. x3 at kernel entry
 	stp	x2,  x3, [x8, #16]
 
     LDR  x0,  ={virt_entry}
-    str  x0,  [x8, {args_of_entry_vma}]
-    
-    adr_l x0,  _start
+    str  x0,  [x8, {args_of_entry_vma}]",
+    adr_l!(x0, "_start"),
+    "
     str x0,  [x8, {args_of_kimage_addr_lma}]
 
     LDR  x0,  =_start
-    str x0,  [x8, {args_of_kimage_addr_vma}]
-
-    adr_l    x0, __kernel_code_end
+    str x0,  [x8, {args_of_kimage_addr_vma}]",
+    
+    adr_l!(x0, "__kernel_code_end"),
+    "
     str x0,  [x8, {args_of_kcode_end}]
 
     // set EL

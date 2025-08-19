@@ -67,6 +67,20 @@ impl Parse for DCacheMacroArgs {
         Ok(Self { section })
     }
 }
+
+struct AdrLArgs {
+    reg: syn::Ident,
+    symbol: syn::LitStr,
+}
+
+impl Parse for AdrLArgs {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let reg: syn::Ident = input.parse()?;
+        input.parse::<Token![,]>()?;
+        let symbol: syn::LitStr = input.parse()?;
+        Ok(Self { reg, symbol })
+    }
+}
 ///`pub fn __dcache_inval_poc(_start: usize, _end: usize)`
 #[proc_macro]
 pub fn def_dcache_inval_poc(input: TokenStream) -> TokenStream {
@@ -114,17 +128,16 @@ pub fn def_dcache_inval_poc(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
-pub fn def_adr_l(_input: TokenStream) -> TokenStream {
-    quote!(
-                                    core::arch::global_asm!(
-                                    r"
-	.macro	adr_l, dst, sym
-	adrp	\dst, \sym
-	add	\dst, \dst, :lo12:\sym
-	.endm
-"
-                                );
-                                    )
+pub fn adr_l(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as AdrLArgs);
+    let reg = input.reg.to_string();
+    let symbol = input.symbol.value();
+
+    let combined = format!("adrp {reg}, {symbol}\n    add {reg}, {reg}, :lo12:{symbol}");
+
+    quote! {
+        #combined
+    }
     .into()
 }
 
