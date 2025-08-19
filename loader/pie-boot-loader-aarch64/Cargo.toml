@@ -10,7 +10,7 @@ keywords.workspace = true
 license.workspace = true
 name = "pie-boot-loader-aarch64"
 repository.workspace = true
-version = "0.2.1"
+version = "0.2.2"
 
 [dependencies]
 aarch64-cpu = "10.0"

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.5](https://github.com/rcore-os/somehal/compare/somehal-v0.3.4...somehal-v0.3.5) - 2025-08-18
+
+### Other
+
+- Use prebuild loader
+
 ## [0.3.4](https://github.com/rcore-os/somehal/compare/somehal-v0.3.3...somehal-v0.3.4) - 2025-08-18
 
 ### Other
