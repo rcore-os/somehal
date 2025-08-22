@@ -1199,7 +1199,7 @@ dependencies = [
 
 [[package]]
 name = "pie-boot-loader-aarch64"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "aarch64-cpu",
  "aarch64-cpu-ext",
