@@ -7,7 +7,7 @@ keywords.workspace = true
 license.workspace = true
 name = "somehal"
 repository.workspace = true
-version = "0.3.8"
+version = "0.3.9"
 
 [features]
 hv = ["kdef-pgtable/space-low"]
