@@ -5,6 +5,8 @@ use aarch64_cpu_ext::asm::tlb::{VAAE1IS, VMALLE1, tlbi};
 use page_table_generic::VirtAddr;
 use pie_boot_macros::start_code;
 
+use crate::mem::PageTable;
+
 #[start_code]
 pub fn switch_to_elx(bootargs: usize) {
     SPSel.write(SPSel::SP::ELx);
@@ -79,6 +81,21 @@ pub(crate) fn flush_tlb(vaddr: Option<VirtAddr>) {
             tlbi(VMALLE1);
         }
     }
+    barrier::dsb(barrier::SY);
+    barrier::isb(barrier::SY);
+}
+
+pub fn get_kernal_table() -> PageTable {
+    let val = TTBR1_EL1.extract();
+    PageTable {
+        id: val.read(TTBR1_EL1::ASID) as _,
+        addr: val.read(TTBR1_EL1::BADDR) as _,
+    }
+}
+
+pub fn set_kernal_table(tb: PageTable) {
+    TTBR1_EL1.write(TTBR1_EL1::ASID.val(tb.id as u64) + TTBR1_EL1::BADDR.val(tb.addr as u64));
+    tlbi(VMALLE1);
     barrier::dsb(barrier::SY);
     barrier::isb(barrier::SY);
 }

@@ -6,12 +6,18 @@ use num_align::NumAlign;
 use pie_boot_if::{MemoryRegion, MemoryRegionKind};
 use spin::Mutex;
 
+pub use page_table_generic::PagingError;
+
 use crate::boot_info;
 
 type MemoryRegionVec = Vec<MemoryRegion, 128>;
 
 #[unsafe(link_section = ".data")]
 static MEMORY_REGIONS: Mutex<MemoryRegionVec> = Mutex::new(Vec::new());
+
+pub const fn page_size() -> usize {
+    PAGE_SIZE
+}
 
 pub(crate) fn with_regions<F, R>(f: F) -> R
 where
@@ -353,4 +359,10 @@ mod ld {
     ld_range!(data, _sdata, _edata);
     ld_range!(stack0, __cpu0_stack, __cpu0_stack_top);
     ld_range!(bss, __bss_start, __bss_stop);
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct PageTable {
+    pub id: usize,
+    pub addr: usize,
 }

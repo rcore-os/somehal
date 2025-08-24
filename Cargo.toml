@@ -3,6 +3,7 @@ members = [
   "kdef-pgtable",
   "tests/test-some-rt",
   "loader/*",
+  "page-table-generic",
   "pie-boot-if",
   "macros/*",
   "somehal",
@@ -20,7 +21,7 @@ repository = "https://github.com/rcore-os/somehal"
 version = "0.1.0"
 
 [workspace.dependencies]
-kasm-aarch64 = {path = "macros/kasm-aarch64", version = "0.2" }
+kasm-aarch64 = {path = "macros/kasm-aarch64", version = "0.2"}
 kdef-pgtable = {path = "kdef-pgtable", version = "0.1"}
 pie-boot-if = {path = "pie-boot-if", version = "0.7.0"}
 pie-boot-loader-macros = {path = "loader/pie-boot-loader-macros", version = "0.1"}

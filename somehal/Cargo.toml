@@ -7,7 +7,7 @@ keywords.workspace = true
 license.workspace = true
 name = "somehal"
 repository.workspace = true
-version = "0.3.9"
+version = "0.3.10"
 
 [features]
 hv = ["kdef-pgtable/space-low"]
@@ -19,7 +19,7 @@ heapless = "0.8"
 kdef-pgtable = {workspace = true}
 log = "0.4"
 num-align = "0.1"
-page-table-generic = "0.6"
+page-table-generic = {version="0.6", path="../page-table-generic"}
 pie-boot-if = {workspace = true}
 pie-boot-macros = {workspace = true}
 spin = "0.10"

@@ -1,6 +1,8 @@
-mod mmu;
+pub mod mmu;
 
 use core::ptr::NonNull;
+
+pub use page_table_generic::{PhysAddr, VirtAddr};
 
 pub use crate::common::mem::*;
 
@@ -23,3 +25,6 @@ pub fn iomap(phys: usize, size: usize) -> Result<NonNull<u8>, page_table_generic
 
     Ok(NonNull::new(vaddr).unwrap())
 }
+
+
+

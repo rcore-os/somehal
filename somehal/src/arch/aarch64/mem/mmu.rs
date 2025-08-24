@@ -16,6 +16,7 @@ use crate::{
         self,
         mem::{AccessKind, MapRangeConfig, regions_to_map},
     },
+    mem::PageTable,
 };
 
 struct Allocator;
@@ -88,7 +89,13 @@ impl From<MapRangeConfig> for Tte {
     }
 }
 
-pub fn init_mmu() {
+pub fn new_table<'a>(
+    access: &mut impl Access,
+) -> Result<Table<'a>, page_table_generic::PagingError> {
+    PageTableRef::create_empty(access)
+}
+
+pub(crate) fn init_mmu() {
     let mut alloc = Allocator {};
     let access = &mut alloc;
     let mut table = Table::create_empty(access).unwrap();
@@ -138,6 +145,38 @@ pub fn mmap(region: MapRangeConfig) -> Result<(), page_table_generic::PagingErro
     let table = g.as_mut().expect("MMU not initialized");
     let mut alloc = Allocator {};
     let access = &mut alloc;
+    unsafe {
+        debug!(
+            "Map `{:<12}`: {:?} | [{:#p}, {:#p}) -> [{:#x}, {:#x})",
+            region.name,
+            region.access,
+            region.vaddr,
+            region.vaddr.add(region.size),
+            region.paddr,
+            region.paddr + region.size
+        );
+
+        table.map(
+            MapConfig::new(
+                region.vaddr.into(),
+                region.paddr.into(),
+                region.size,
+                region.into(),
+                true,
+                true,
+            ),
+            access,
+        )
+    }
+}
+
+pub fn table_map(
+    table: PageTable,
+    access: &mut impl Access,
+    region: MapRangeConfig,
+) -> Result<(), page_table_generic::PagingError> {
+    let mut table: PageTableRef<'_, TableImpl> = PageTableRef::root_from_addr(table.addr.into());
+
     unsafe {
         debug!(
             "Map `{:<12}`: {:?} | [{:#p}, {:#p}) -> [{:#x}, {:#x})",
@@ -246,3 +285,6 @@ impl TableGeneric for TableImpl {
         flush_tlb(vaddr.map(|o| o.raw().into()));
     }
 }
+
+pub use super::super::el::get_kernal_table;
+pub use super::super::el::set_kernal_table;

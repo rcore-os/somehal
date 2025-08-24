@@ -2,7 +2,7 @@
     "rust-analyzer.check.allTargets": false,
     "rust-analyzer.check.command": "clippy",
     "rust-analyzer.cargo.features": [
-        // "hv"
+        "hv"
     ],
     "rust-targets.targets": [
         "aarch64-unknown-none",
