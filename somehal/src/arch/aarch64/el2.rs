@@ -59,12 +59,12 @@ pub fn get_kernal_table() -> PageTable {
     let val = TTBR0_EL2.extract();
     PageTable {
         id: 0,
-        addr: val.read(TTBR0_EL2::BADDR) as _,
+        addr: val.get() as _,
     }
 }
 
 pub fn set_kernal_table(tb: PageTable) {
-    TTBR0_EL2.write(TTBR0_EL2::BADDR.val(tb.addr as u64));
+    TTBR0_EL2.set(tb.addr as u64);
     tlbi(ALLE2);
     barrier::dsb(barrier::SY);
     barrier::isb(barrier::SY);
