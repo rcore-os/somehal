@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5](https://github.com/rcore-os/somehal/compare/kdef-pgtable-v0.1.4...kdef-pgtable-v0.1.5) - 2025-09-04
+
+### Fixed
+
+- 修复空间配置相关常量的计算逻辑
+
 ## [0.1.4](https://github.com/rcore-os/pie-boot/compare/kdef-pgtable-v0.1.3...kdef-pgtable-v0.1.4) - 2025-07-08
 
 ### Added

@@ -1076,7 +1076,7 @@ dependencies = [
 
 [[package]]
 name = "kdef-pgtable"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "bitflags 2.9.2",
  "prettyplease",
