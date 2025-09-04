@@ -13,11 +13,18 @@ pub const PAGE_SIZE: usize = 1usize << PAGE_SHIFT;
 
 const MODULES_VADDR: usize = _page_end(PG_VA_BITS);
 
-const MODULES_VSIZE: usize = (1usize << PG_VA_BITS) / 0x10 * 0x8;
+#[cfg(not(feature = "space-low"))]
+const VSIZE_P: usize = 0x10;
 
-pub const KIMAGE_VSIZE: usize = (1usize << PG_VA_BITS) / 0x10;
+#[cfg(feature = "space-low")]
+const VSIZE_P: usize = 0x100;
+
+const MODULES_VSIZE: usize = (1usize << PG_VA_BITS) / VSIZE_P * 0x8;
+
+pub const KIMAGE_VSIZE: usize = (1usize << PG_VA_BITS) / VSIZE_P;
 
 pub const KIMAGE_VADDR: usize = MODULES_VADDR + MODULES_VSIZE;
+
 #[cfg(not(feature = "space-low"))]
 pub const KLINER_OFFSET: usize = KIMAGE_VADDR + KIMAGE_VSIZE;
 #[cfg(feature = "space-low")]
@@ -32,8 +39,8 @@ const fn _page_end(va: usize) -> usize {
     !((1usize << va) - 1)
 }
 #[cfg(feature = "space-low")]
-const fn _page_end(_va: usize) -> usize {
-    0
+const fn _page_end(va: usize) -> usize {
+    (1usize << va) / 0x10 * 0xF
 }
 
 #[cfg(test)]
