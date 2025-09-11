@@ -3,7 +3,6 @@ use core::{
     mem::{offset_of, size_of},
 };
 
-use aarch64_cpu_ext::cache::{CacheOp, dcache_all};
 use kdef_pgtable::{KLINER_OFFSET, PAGE_SIZE};
 #[cfg(not(feature = "hv"))]
 use pie_boot_loader_aarch64::el1::{set_table, setup_sctlr, setup_table_regs};
@@ -40,6 +39,10 @@ use crate::{BOOT_PT, boot_info, start_code};
 use aarch64_cpu::{asm::barrier, registers::*};
 use kasm_aarch64::{self as kasm, adr_l};
 use pie_boot_loader_aarch64::EarlyBootArgs;
+
+#[unsafe(link_section = ".data")]
+static mut UART_DEBUG: usize = 0;
+// static mut UART_DEBUG: usize = 0x2800d000;
 
 const FLAG_LE: usize = 0b0;
 const FLAG_PAGE_SIZE_4K: usize = 0b10;
@@ -154,45 +157,26 @@ pub fn _start_secondary(_stack_top: usize) -> ! {
         "
         mrs     x19, mpidr_el1
         and     x19, x19, #0xffffff     // get current CPU id
+        mov     x20, x0
 
-        mov     sp, x0
+        mov     sp, x20
+        mov     x0, x20
         bl      {switch_to_elx}
         bl      {enable_fp}
         bl      {init_mmu} // return va_offset x0
-
         add     sp, sp, x0
 
         mov     x0, x19                 // call_secondary_main(cpu_id)
         ldr     x8, =__pie_boot_secondary
         blr     x8
         b      .",
+
+        // t = sym test_print,
         switch_to_elx = sym el::switch_to_elx,
         init_mmu = sym init_mmu,
         enable_fp = sym enable_fp,
     )
 }
-
-// const UART: usize = 0x2800d000;
-// const UART: usize = 0x9000000;
-
-// #[unsafe(naked)]
-// unsafe extern "C" fn test_print() -> ! {
-//     core::arch::naked_asm!(
-//         "
-//         ldr x0, ={uart}            // 使用 ldr 指令加载常量地址
-//         mov w1, #0x41              // 'A' 字符的 ASCII 码
-//         str w1, [x0]               // 将字符写入 UARTDR 寄存器
-//         mov w1, {r}              //
-//         str w1, [x0]               // 将字符写入 UARTDR 寄存器
-//         mov w1, {n}              //
-//         str w1, [x0]               // 将字符写入 UARTDR 寄存器
-//         ret
-//     ",
-//         uart = const UART,
-//         r = const b'\r',
-//         n = const b'\n',
-//     )
-// }
 
 #[start_code]
 fn enable_fp() {
@@ -202,11 +186,12 @@ fn enable_fp() {
 
 #[start_code]
 fn init_mmu() -> usize {
-    dcache_all(CacheOp::CleanAndInvalidate);
     setup_table_regs();
+
     let addr = unsafe { BOOT_PT };
     set_table(addr);
     setup_sctlr();
+
     boot_info().kcode_offset()
 }
 

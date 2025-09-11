@@ -263,20 +263,20 @@ pub(crate) fn regions_to_map() -> alloc::vec::Vec<MapRangeConfig> {
             name: "debug-con",
             cache: CacheKind::Device,
             access: AccessKind::ReadWrite,
-            cpu_share: false,
+            cpu_share: true,
         });
     }
 
     map_ranges.push(ld_range_to_map_config(
         "text",
         ld::text,
-        false,
+        true,
         AccessKind::ReadExecute,
     ));
     map_ranges.push(ld_range_to_map_config(
         "rodata",
         ld::rodata,
-        false,
+        true,
         AccessKind::ReadExecute,
     ));
     map_ranges.push(ld_range_to_map_config(

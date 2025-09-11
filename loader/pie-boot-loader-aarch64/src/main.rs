@@ -137,10 +137,16 @@ fn entry(bootargs: &EarlyBootArgs) -> *mut () {
 
         ret.memory_regions = ram::memory_regions().into();
         ret.free_memory_start = ram::current();
+        cache::flush_dcache_range(_stext as usize, _end as usize - _stext as usize);
     }
     let jump = bootargs.virt_entry;
     printkv!("jump to", "{:p}", jump);
     jump
+}
+
+unsafe extern "C" {
+    fn _stext();
+    fn _end();
 }
 
 #[inline]

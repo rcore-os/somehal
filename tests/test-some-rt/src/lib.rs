@@ -2,10 +2,7 @@
 #![cfg(target_os = "none")]
 
 use log::{debug, info};
-use somehal::{
-    BootInfo, boot_info,
-    power::{cpu_on, cpu_on_test},
-};
+use somehal::{BootInfo, power::cpu_on};
 
 use crate::debug::init_log;
 
@@ -29,7 +26,7 @@ fn main(args: &BootInfo) -> ! {
     // cpu_on_test();
     // debug!("cpu_on_1 returned");
     // while !CPU_STATED.load(core::sync::atomic::Ordering::SeqCst) {
-    // core::hint::spin_loop();
+    //     core::hint::spin_loop();
     // }
 
     // unsafe {
@@ -49,16 +46,29 @@ fn irq_handler() {
 
 #[somehal::secondary_entry]
 fn secondary(cpu_id: usize) {
-    debug!("Secondary CPU {cpu_id} started");
+    // unsafe {
+    //     let addr = 0xffff90002800d000usize;
+    //     (addr as *mut u8).write_volatile(b'E');
+    //     (addr as *mut u8).write_volatile(b'\r');
+    //     (addr as *mut u8).write_volatile(b'\n');
+    // }
+
+    // debug!("Secondary CPU {cpu_id} started");
     CPU_STATED.store(true, core::sync::atomic::Ordering::SeqCst);
     loop {
         core::hint::spin_loop();
     }
 }
 
-// /// Power on a CPU
-// fn cpu_on_1() {
-//     let cpu_id = 0x201;
-//     let stack_top = 0xf1000000; // Example stack top address for the new CPU
-//     cpu_on(cpu_id, stack_top).unwrap();
-// }
+/// Power on a CPU
+fn cpu_on_1() {
+    // let cpu_id = 0x201;
+    // let stack_top = 0xf1000000; // Example stack top address for the new CPU
+
+    // let cpu_id = 0x1;
+    // let stack_top = 0x47000000;
+
+    let cpu_id = 0x200;
+    let stack_top = 0xf0000000;
+    cpu_on(cpu_id, stack_top).unwrap();
+}
