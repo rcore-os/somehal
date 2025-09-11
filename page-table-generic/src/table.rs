@@ -58,7 +58,6 @@ pub struct PageTableRef<'a, T: TableGeneric> {
 }
 
 impl<'a, T: TableGeneric> PageTableRef<'a, T> {
-
     #[inline(always)]
     /// Creates a new page table reference.
     pub fn create_empty(access: &mut impl Access) -> PagingResult<Self> {

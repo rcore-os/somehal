@@ -106,7 +106,7 @@ fn preserve_boot_args() {
 
     LDR  x0,  =_start
     str x0,  [x8, {args_of_kimage_addr_vma}]",
-    
+
     adr_l!(x0, "__kernel_code_end"),
     "
     str x0,  [x8, {args_of_kcode_end}]
@@ -171,6 +171,28 @@ pub fn _start_secondary(_stack_top: usize) -> ! {
         enable_fp = sym enable_fp,
     )
 }
+
+// const UART: usize = 0x2800d000;
+// const UART: usize = 0x9000000;
+
+// #[unsafe(naked)]
+// unsafe extern "C" fn test_print() -> ! {
+//     core::arch::naked_asm!(
+//         "
+//         ldr x0, ={uart}            // 使用 ldr 指令加载常量地址
+//         mov w1, #0x41              // 'A' 字符的 ASCII 码
+//         str w1, [x0]               // 将字符写入 UARTDR 寄存器
+//         mov w1, {r}              //
+//         str w1, [x0]               // 将字符写入 UARTDR 寄存器
+//         mov w1, {n}              //
+//         str w1, [x0]               // 将字符写入 UARTDR 寄存器
+//         ret
+//     ",
+//         uart = const UART,
+//         r = const b'\r',
+//         n = const b'\n',
+//     )
+// }
 
 #[start_code]
 fn enable_fp() {
