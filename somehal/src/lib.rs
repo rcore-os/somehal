@@ -26,8 +26,5 @@ pub use pie_boot_macros::{entry, irq_handler, secondary_entry};
 #[unsafe(link_section = ".data")]
 static mut BOOT_ARGS: EarlyBootArgs = EarlyBootArgs::new();
 
-#[unsafe(link_section = ".data")]
-static mut BOOT_PT: usize = 0;
-
 #[unsafe(no_mangle)]
 unsafe extern "C" fn __pie_boot_default_secondary(_cpu_id: usize) {}

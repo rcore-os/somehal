@@ -1,8 +1,18 @@
 #![no_std]
 #![cfg(target_os = "none")]
 
-use log::{debug, info};
-use somehal::{BootInfo, power::cpu_on};
+extern crate alloc;
+#[macro_use]
+extern crate log;
+
+use core::sync::atomic::{AtomicUsize, Ordering};
+
+use alloc::vec::Vec;
+use somehal::{
+    BootInfo,
+    mem::{cpu_id_list, cpu_stack},
+    power::cpu_on,
+};
 
 use crate::debug::init_log;
 
@@ -12,7 +22,7 @@ mod debug;
 pub mod lang_items;
 mod mem;
 
-static CPU_STATED: core::sync::atomic::AtomicBool = core::sync::atomic::AtomicBool::new(false);
+static CPU_STATED: AtomicUsize = AtomicUsize::new(1);
 
 #[somehal::entry]
 fn main(args: &BootInfo) -> ! {
@@ -22,12 +32,21 @@ fn main(args: &BootInfo) -> ! {
 
     mem::init_this();
 
-    // cpu_on_1();
-    // cpu_on_test();
-    // debug!("cpu_on_1 returned");
-    // while !CPU_STATED.load(core::sync::atomic::Ordering::SeqCst) {
-    //     core::hint::spin_loop();
-    // }
+    let cpu_ls = cpu_id_list().collect::<Vec<_>>();
+
+    for &cpu_id in &cpu_ls {
+        debug!("cpu id: {cpu_id:#x}");
+        if cpu_id == args.cpu_id {
+            continue;
+        }
+        let stack = cpu_stack(cpu_id); // Example stack top address for the new CPU
+
+        cpu_on(cpu_id as _, stack.end as _).unwrap();
+    }
+
+    while CPU_STATED.load(Ordering::SeqCst) < cpu_ls.len() {
+        core::hint::spin_loop();
+    }
 
     // unsafe {
     //     let a = 2usize as *mut u8;
@@ -46,29 +65,9 @@ fn irq_handler() {
 
 #[somehal::secondary_entry]
 fn secondary(cpu_id: usize) {
-    // unsafe {
-    //     let addr = 0xffff90002800d000usize;
-    //     (addr as *mut u8).write_volatile(b'E');
-    //     (addr as *mut u8).write_volatile(b'\r');
-    //     (addr as *mut u8).write_volatile(b'\n');
-    // }
-
-    // debug!("Secondary CPU {cpu_id} started");
-    CPU_STATED.store(true, core::sync::atomic::Ordering::SeqCst);
+    debug!("Secondary CPU {cpu_id} started");
+    CPU_STATED.fetch_add(1, Ordering::SeqCst);
     loop {
         core::hint::spin_loop();
     }
-}
-
-/// Power on a CPU
-fn cpu_on_1() {
-    // let cpu_id = 0x201;
-    // let stack_top = 0xf1000000; // Example stack top address for the new CPU
-
-    // let cpu_id = 0x1;
-    // let stack_top = 0x47000000;
-
-    let cpu_id = 0x200;
-    let stack_top = 0xf0000000;
-    cpu_on(cpu_id, stack_top).unwrap();
 }

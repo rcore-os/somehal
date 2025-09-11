@@ -10,6 +10,11 @@ pub use page_table_generic::PagingError;
 
 use crate::boot_info;
 
+mod stack;
+
+pub(crate) use stack::init_percpu_stack;
+pub use stack::{cpu_id_list, cpu_stack};
+
 type MemoryRegionVec = Vec<MemoryRegion, 128>;
 
 #[unsafe(link_section = ".data")]
@@ -297,6 +302,19 @@ pub(crate) fn regions_to_map() -> alloc::vec::Vec<MapRangeConfig> {
         false,
         AccessKind::ReadWriteExecute,
     ));
+
+    let percpu_stack = stack::percpu_stack_range();
+    if !percpu_stack.is_empty() {
+        map_ranges.push(MapRangeConfig {
+            vaddr: (percpu_stack.start + boot_info().kcode_offset()) as *mut u8,
+            paddr: percpu_stack.start,
+            size: percpu_stack.count(),
+            name: "percpu-stack",
+            cache: CacheKind::Normal,
+            access: AccessKind::ReadWriteExecute,
+            cpu_share: false,
+        });
+    }
 
     map_ranges
 }

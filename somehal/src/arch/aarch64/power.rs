@@ -1,9 +1,10 @@
 use core::{fmt::Display, ops::Deref, ptr::NonNull};
 
 use aarch64_cpu::asm::wfi;
-use aarch64_cpu_ext::cache::{CacheOp, dcache_all, dcache_range};
+use aarch64_cpu_ext::cache::{CacheOp, dcache_range};
 use fdt_parser::Fdt;
 use log::debug;
+use pie_boot_if::BootInfo;
 use smccc::{Hvc, Smc, psci};
 
 use crate::{_start_secondary, boot_info, lazy_static::LazyStatic, println};
@@ -77,18 +78,10 @@ pub fn cpu_on(cpu_id: u64, stack_top: u64) -> Result<(), PsciError> {
 
     let entry = secondary_entry_addr();
 
-    unsafe extern "C" {
-        fn _sdata();
-        fn __kernel_code_end();
-    }
+    let start = boot_info() as *const _ as usize;
+    let size = core::mem::size_of::<BootInfo>();
 
-    let start = _sdata as usize;
-    let end = __kernel_code_end as usize;
-
-    debug!("flush dcache range: {start:#x} - {end:#x}");
-
-    dcache_range(CacheOp::Clean, start, end - start);
-    dcache_all(CacheOp::Clean);
+    dcache_range(CacheOp::Clean, start, size);
 
     _cpu_on(cpu_id, entry as _, stack_top)
 }

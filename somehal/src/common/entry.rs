@@ -20,12 +20,12 @@ pub fn virt_entry(args: &BootInfo) {
     common::mem::init_regions(&args.memory_regions);
 
     unsafe {
+        BOOT_INFO.edit(|info| info.free_memory_start = common::mem::init_percpu_stack());
+
         let (region_ptr, region_len) =
             common::mem::with_regions(|regions| (regions.as_mut_ptr(), regions.len()));
         let region_slice = core::slice::from_raw_parts_mut(region_ptr, region_len);
         BOOT_INFO.edit(|info| info.memory_regions = region_slice.into());
-
-        crate::BOOT_PT = BOOT_INFO.pg_start as usize;
 
         unsafe extern "Rust" {
             fn __pie_boot_main(args: &BootInfo);

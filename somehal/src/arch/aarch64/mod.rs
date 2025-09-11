@@ -35,7 +35,7 @@ macro_rules! sym_lma {
 #[cfg_attr(not(feature = "hv"), path = "el1.rs")]
 mod el;
 
-use crate::{BOOT_PT, boot_info, start_code};
+use crate::{boot_info, start_code};
 use aarch64_cpu::{asm::barrier, registers::*};
 use kasm_aarch64::{self as kasm, adr_l};
 use pie_boot_loader_aarch64::EarlyBootArgs;
@@ -188,7 +188,7 @@ fn enable_fp() {
 fn init_mmu() -> usize {
     setup_table_regs();
 
-    let addr = unsafe { BOOT_PT };
+    let addr = boot_info().pg_start as usize;
     set_table(addr);
     setup_sctlr();
 
