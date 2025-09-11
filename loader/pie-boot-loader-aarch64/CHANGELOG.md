@@ -7,17 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-<<<<<<< HEAD
 ## [0.2.5](https://github.com/rcore-os/somehal/compare/pie-boot-loader-aarch64-v0.2.3...pie-boot-loader-aarch64-v0.2.5) - 2025-08-22
-=======
-## [0.2.5](https://github.com/rcore-os/somehal/compare/pie-boot-loader-aarch64-v0.2.4...pie-boot-loader-aarch64-v0.2.5) - 2025-09-11
 
 ### Fixed
 
 - cpu on cache
 
 ## [0.2.4](https://github.com/rcore-os/somehal/compare/pie-boot-loader-aarch64-v0.2.3...pie-boot-loader-aarch64-v0.2.4) - 2025-08-22
->>>>>>> c96ce29572227b1620c457409892b0530c374d6d
 
 ### Other
 
