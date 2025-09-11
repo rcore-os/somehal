@@ -1276,18 +1276,6 @@ dependencies = [
 [[package]]
 name = "page-table-generic"
 version = "0.6.0"
-dependencies = [
- "bitflags 2.9.2",
- "env_logger",
- "log",
- "num-align",
- "thiserror 2.0.15",
- "tock-registers 0.9.0",
-]
-
-[[package]]
-name = "page-table-generic"
-version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "79217ff706e8dd356df4b6d624bae950ae5c39a17c6959b81d73dedfc9653316"
 dependencies = [
@@ -1295,6 +1283,18 @@ dependencies = [
  "log",
  "num-align",
  "thiserror 2.0.15",
+]
+
+[[package]]
+name = "page-table-generic"
+version = "0.6.1"
+dependencies = [
+ "bitflags 2.9.2",
+ "env_logger",
+ "log",
+ "num-align",
+ "thiserror 2.0.15",
+ "tock-registers 0.9.0",
 ]
 
 [[package]]
@@ -1346,7 +1346,7 @@ dependencies = [
  "kdef-pgtable",
  "log",
  "num-align",
- "page-table-generic 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "page-table-generic 0.6.0",
  "pie-boot-if",
  "prettyplease",
  "quote",
@@ -1901,7 +1901,7 @@ dependencies = [
 
 [[package]]
 name = "somehal"
-version = "0.3.12"
+version = "0.3.13"
 dependencies = [
  "aarch64-cpu",
  "aarch64-cpu-ext",
@@ -1914,7 +1914,7 @@ dependencies = [
  "kdef-pgtable",
  "log",
  "num-align",
- "page-table-generic 0.6.0",
+ "page-table-generic 0.6.1",
  "pie-boot-if",
  "pie-boot-loader-aarch64",
  "pie-boot-macros",
