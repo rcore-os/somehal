@@ -2,13 +2,13 @@ use core::ops::Range;
 
 use heapless::Vec;
 use kdef_pgtable::{KLINER_OFFSET, PAGE_SIZE};
-use num_align::NumAlign;
+use num_align::{NumAlign, NumAssertAlign};
 use pie_boot_if::{MemoryRegion, MemoryRegionKind};
 use spin::Mutex;
 
 pub use page_table_generic::PagingError;
 
-use crate::boot_info;
+use crate::{boot_info, common::entry::boot_info_edit};
 
 mod stack;
 
@@ -51,6 +51,18 @@ pub(crate) fn init_regions(args_regions: &[MemoryRegion]) {
     regions
         .extend_from_slice(args_regions)
         .expect("Memory regions overflow");
+
+    for region in regions.iter_mut() {
+        if !region.end.is_aligned_to(page_size()) {
+            let is_main = region.end == boot_info().free_memory_start as usize;
+
+            region.end = region.end.align_up(page_size());
+
+            if is_main {
+                unsafe { boot_info_edit(|info| info.free_memory_start = region.end as _) };
+            }
+        }
+    }
 
     mainmem_start_rsv(&mut regions);
 }

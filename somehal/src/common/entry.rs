@@ -9,6 +9,10 @@ pub fn boot_info() -> &'static BootInfo {
     &BOOT_INFO
 }
 
+pub(crate) unsafe fn boot_info_edit<R>(f: impl FnOnce(&mut BootInfo) -> R) -> R {
+    unsafe { BOOT_INFO.edit(f) }
+}
+
 pub fn virt_entry(args: &BootInfo) {
     common::mem::clean_bss();
     BOOT_INFO.init(args.clone());
