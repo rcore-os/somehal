@@ -7,6 +7,10 @@ extern crate alloc;
 #[path = "arch/aarch64/mod.rs"]
 mod arch;
 
+#[cfg(target_arch = "loongarch64")]
+#[path = "arch/loongarch64/mod.rs"]
+mod arch;
+
 pub use arch::*;
 
 mod common;
