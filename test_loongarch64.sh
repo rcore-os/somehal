@@ -5,6 +5,8 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET_DIR="${HERE}/target"
 TARGET_FILE="${TARGET_DIR}/ek2.tar.xz"
 
+echo "Starting LoongArch64 kernel build and test..."
+
 mkdir -p "${TARGET_DIR}"
 
 if [ -f "${TARGET_FILE}" ]; then
@@ -69,7 +71,70 @@ rm -rf "${TMP_EXTRACT_DIR}"
 
 echo "Extraction complete: ${TARGET_DIR}/edk2"
 
-qemu-system-loongarch64 -machine virt  -cpu la464 \
-     -bios target/edk2/loongarch64/code.fd \
-    --nographic
+echo "Building LoongArch64 kernel..."
+
+# Build the somehal kernel for LoongArch64
+echo "Compiling somehal for loongarch64-unknown-none-softfloat target..."
+cargo build --target loongarch64-unknown-none-softfloat --release -p somehal
+
+# Check if the build was successful
+if [ ! -f "${TARGET_DIR}/loongarch64-unknown-none-softfloat/release/libsomehal.rlib" ]; then
+    echo "Failed to build somehal library"
+    exit 1
+fi
+
+echo "Building test binary..."
+cargo test --target loongarch64-unknown-none-softfloat -p test-some-rt --test test --no-run -- --show-output
+
+# Find the built kernel binary 
+KERNEL_ELF=$(find "${TARGET_DIR}/loongarch64-unknown-none-softfloat" -name "test-*" -type f -executable | head -n1)
+
+if [ -z "$KERNEL_ELF" ] || [ ! -f "$KERNEL_ELF" ]; then
+    echo "Error: Could not find built kernel ELF file"
+    echo "Looking in: ${TARGET_DIR}/loongarch64-unknown-none-softfloat"
+    find "${TARGET_DIR}/loongarch64-unknown-none-softfloat" -name "*test*" -type f
+    exit 1
+fi
+
+echo "Found kernel ELF: $KERNEL_ELF"
+
+# Copy kernel to a known location
+cp "$KERNEL_ELF" "${TARGET_DIR}/kernel.elf"
+
+echo "Kernel build completed successfully!"
+echo "Starting QEMU with EFI firmware and LoongArch64 kernel..."
+
+# Check if qemu-system-loongarch64 is available
+if ! command -v qemu-system-loongarch64 >/dev/null 2>&1; then
+    echo "Error: qemu-system-loongarch64 not found. Please install QEMU with LoongArch64 support."
+    exit 1
+fi
+
+# Check if EFI firmware exists
+if [ ! -f "${TARGET_DIR}/edk2/loongarch64/code.fd" ]; then
+    echo "Error: LoongArch64 EFI firmware not found at ${TARGET_DIR}/edk2/loongarch64/code.fd"
+    ls -la "${TARGET_DIR}/edk2/" || true
+    ls -la "${TARGET_DIR}/edk2/loongarch64/" || true
+    exit 1
+fi
+
+echo "Running QEMU with the following configuration:"
+echo "  Machine: virt"
+echo "  CPU: la464"
+echo "  EFI firmware: ${TARGET_DIR}/edk2/loongarch64/code.fd"
+echo "  Kernel: ${TARGET_DIR}/kernel.elf"
+echo ""
+
+# Run QEMU with the LoongArch64 EFI firmware and our kernel
+qemu-system-loongarch64 \
+    -machine virt \
+    -cpu la464 \
+    -m 1G \
+    -bios "${TARGET_DIR}/edk2/loongarch64/code.fd" \
+    -kernel "${TARGET_DIR}/kernel.elf" \
+    -nographic \
+    -serial stdio \
+    -monitor none \
+    -d guest_errors \
+    "$@"
 

@@ -14,173 +14,226 @@ pub unsafe extern "C" fn _head() -> ! {
         // EFI header following Linux kernel format
         ".word {dos_signature}",        // "MZ", MS-DOS header
         ".org 0x8",
-        ".dword _kernel_entry",               // Kernel entry point (physical address)
+        ".dword _kernel_entry",         // Kernel entry point (physical address)
         ".dword _kernel_asize",         // Kernel image effective size
         ".quad {phys_link_kaddr}",      // PHYS_LINK_KADDR - Kernel image load offset
         ".org 0x38",                    // 0x20 ~ 0x37 reserved
         ".long {linux_pe_magic}",
-        ".long 1f - _head",               // Offset to the PE header
+        ".long 4f - _head",             // Offset to the PE header
 
-        ".long {image_nt_signature}",               // IMAGE_NT_SIGNATURE
+        "4:",                           // pe_header
+        // PE header
+        ".long {image_nt_signature}",   // IMAGE_NT_SIGNATURE
 
-        "1:",
         // COFF header
-        ".short {file_machine}",                  // IMAGE_FILE_MACHINE_LOONGARCH64
-        ".short 2",                       // NumberOfSections
-        ".long 0",                        // TimeDateStamp
-        ".long 0",                        // PointerToSymbolTable
-        ".long 0",                        // NumberOfSymbols
-        ".short 3f - 2f",                 // SizeOfOptionalHeader
-        ".short 0x0206",                  // Characteristics
+        ".short {file_machine}",        // IMAGE_FILE_MACHINE_LOONGARCH64
+        ".short 2",                     // NumberOfSections
+        ".long 0",                      // TimeDateStamp
+        ".long 0",                      // PointerToSymbolTable
+        ".long 0",                      // NumberOfSymbols
+        ".short 2f - 1f",               // SizeOfOptionalHeader
+        ".short 0x0206",                // Characteristics (IMAGE_FILE_DEBUG_STRIPPED | IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_LINE_NUMS_STRIPPED)
 
         // Optional header
-        "2:",  // optional_header
-        ".short 0x020b",                  // IMAGE_NT_OPTIONAL_HDR64_MAGIC
-        ".byte 0x02",                     // MajorLinkerVersion
-        ".byte 0x14",                     // MinorLinkerVersion
-        ".long _etext - 4f",              // SizeOfCode
-        ".long _kernel_vsize",            // SizeOfInitializedData
-        ".long 0",                        // SizeOfUninitializedData
-        ".long {entry} - _head",     // AddressOfEntryPoint
-        ".long 4f - _head",               // BaseOfCode
+        "1:",
+        ".short 0x020b",                // IMAGE_NT_OPTIONAL_HDR64_MAGIC
+        ".byte 0x02",                   // MajorLinkerVersion
+        ".byte 0x14",                   // MinorLinkerVersion
+        ".long _etext - 3f",            // SizeOfCode
+        ".long _kernel_vsize",          // SizeOfInitializedData
+        ".long 0",                      // SizeOfUninitializedData
+        ".long {efi_pe_entry} - _head", // AddressOfEntryPoint
+        ".long 3f - _head",             // BaseOfCode
 
         // Extra header fields
-        ".quad 0",                        // ImageBase
-        ".long 0x10000",                  // SectionAlignment (PECOFF_SEGMENT_ALIGN)
-        ".long 0x200",                    // FileAlignment (PECOFF_FILE_ALIGN)
-        ".short 0",                       // MajorOperatingSystemVersion
-        ".short 0",                       // MinorOperatingSystemVersion
-        ".short 0",                       // MajorImageVersion
-        ".short 0",                       // MinorImageVersion
-        ".short 0",                       // MajorSubsystemVersion
-        ".short 0",                       // MinorSubsystemVersion
-        ".long 0",                        // Win32VersionValue
-        ".long _end - _head",             // SizeOfImage
-        ".long 4f - _head",               // SizeOfHeaders
-        ".long 0",                        // CheckSum
-        ".short 10",                      // IMAGE_SUBSYSTEM_EFI_APPLICATION
-        ".short 0",                       // DllCharacteristics
-        ".quad 0",                        // SizeOfStackReserve
-        ".quad 0",                        // SizeOfStackCommit
-        ".quad 0",                        // SizeOfHeapReserve
-        ".quad 0",                        // SizeOfHeapCommit
-        ".long 0",                        // LoaderFlags
-        ".long 6",                        // NumberOfRvaAndSizes
+        ".quad 0",                      // ImageBase
+        ".long 0x10000",                // SectionAlignment (PECOFF_SEGMENT_ALIGN)
+        ".long 0x200",                  // FileAlignment (PECOFF_FILE_ALIGN)
+        ".short 0",                     // MajorOperatingSystemVersion
+        ".short 0",                     // MinorOperatingSystemVersion
+        ".short 0",                     // MajorImageVersion
+        ".short 0",                     // MinorImageVersion
+        ".short 0",                     // MajorSubsystemVersion
+        ".short 0",                     // MinorSubsystemVersion
+        ".long 0",                      // Win32VersionValue
+        ".long _end - _head",           // SizeOfImage
+        ".long 3f - _head",             // SizeOfHeaders
+        ".long 0",                      // CheckSum
+        ".short 10",                    // IMAGE_SUBSYSTEM_EFI_APPLICATION
+        ".short 0",                     // DllCharacteristics
+        ".quad 0",                      // SizeOfStackReserve
+        ".quad 0",                      // SizeOfStackCommit
+        ".quad 0",                      // SizeOfHeapReserve
+        ".quad 0",                      // SizeOfHeapCommit
+        ".long 0",                      // LoaderFlags
+        ".long 6",                      // NumberOfRvaAndSizes
 
         // Data directories
-        ".quad 0",                        // ExportTable
-        ".quad 0",                        // ImportTable
-        ".quad 0",                        // ResourceTable
-        ".quad 0",                        // ExceptionTable
-        ".quad 0",                        // CertificationTable
-        ".quad 0",                        // BaseRelocationTable
+        ".quad 0",                      // ExportTable
+        ".quad 0",                      // ImportTable
+        ".quad 0",                      // ResourceTable
+        ".quad 0",                      // ExceptionTable
+        ".quad 0",                      // CertificationTable
+        ".quad 0",                      // BaseRelocationTable
 
         // Section table
-        "3:",  // section_table
         // .text section
         ".ascii \".text\\0\\0\\0\"",
-        ".long _etext - 4f",              // VirtualSize
-        ".long 4f - _head",               // VirtualAddress
-        ".long _etext - 4f",              // SizeOfRawData
-        ".long 4f - _head",               // PointerToRawData
-        ".long 0",                        // PointerToRelocations
-        ".long 0",                        // PointerToLineNumbers
-        ".short 0",                       // NumberOfRelocations
-        ".short 0",                       // NumberOfLineNumbers
-        ".long 0x60000020",               // Characteristics
+        ".long _etext - 3f",            // VirtualSize
+        ".long 3f - _head",             // VirtualAddress
+        ".long _etext - 3f",            // SizeOfRawData
+        ".long 3f - _head",             // PointerToRawData
+        ".long 0",                      // PointerToRelocations
+        ".long 0",                      // PointerToLineNumbers
+        ".short 0",                     // NumberOfRelocations
+        ".short 0",                     // NumberOfLineNumbers
+        ".long 0x60000020",             // Characteristics (IMAGE_SCN_CNT_CODE | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_EXECUTE)
 
         // .data section
         ".ascii \".data\\0\\0\\0\"",
-        ".long _kernel_vsize",            // VirtualSize
-        ".long _sdata - _head",           // VirtualAddress
-        ".long _kernel_rsize",            // SizeOfRawData
-        ".long _sdata - _head",           // PointerToRawData
-        ".long 0",                        // PointerToRelocations
-        ".long 0",                        // PointerToLineNumbers
-        ".short 0",                       // NumberOfRelocations
-        ".short 0",                       // NumberOfLineNumbers
-        ".long 0xc0000040",               // Characteristics
+        ".long _kernel_vsize",          // VirtualSize
+        ".long _sdata - _head",         // VirtualAddress
+        ".long _kernel_rsize",          // SizeOfRawData
+        ".long _sdata - _head",         // PointerToRawData
+        ".long 0",                      // PointerToRelocations
+        ".long 0",                      // PointerToLineNumbers
+        ".short 0",                     // NumberOfRelocations
+        ".short 0",                     // NumberOfLineNumbers
+        ".long 0xc0000040",             // Characteristics (IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE)
 
-        ".balign 0x10000",                // PECOFF_SEGMENT_ALIGN
-        "4:",  // efi_header_end
+        "2:",
+        ".balign 0x10000",              // PECOFF_SEGMENT_ALIGN
+        "3:",                           // efi_header_end
 
-        // Jump to kernel_entry
-        "b kernel_entry",
+        // Now starts the real kernel entry point that EFI will jump to
+        "b           {efi_entry}",      // Jump to EFI entry point
+
         dos_signature = const IMAGE_DOS_SIGNATURE,
         linux_pe_magic = const LINUX_PE_MAGIC,
         phys_link_kaddr = const to_phys(VMLINUX_LOAD_ADDRESS),
         image_nt_signature = const IMAGE_NT_SIGNATURE,
         file_machine = const IMAGE_FILE_MACHINE_LOONGARCH64,
-        entry = sym kernel_entry,
+        efi_entry = sym efi_kernel_entry,
+        efi_pe_entry = sym super::efi::efi_pe_entry,
     )
 }
 
-
-/// LoongArch64 kernel entry point implementing functionality similar to
-/// Linux arch/loongarch/kernel/head.S kernel_entry
+/// EFI entry point called by EFI firmware
 #[unsafe(naked)]
-#[unsafe(link_section = ".text")]
-unsafe extern "C" fn kernel_entry() -> ! {
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn efi_kernel_entry() -> ! {
+    // EFI entry point parameters in LoongArch:
+    // a0 = efi_boot flag
+    // a1 = command line pointer
+    // a2 = system table pointer
+
     naked_asm!(
-        // Config direct window and set PG (SETUP_DMWINS)
-        "li.d $t0, 0x9000000000000011",   // DMW0: 0x9000..., PLV0, 0x11
-        "csrwr $t0, 0x180",               // LOONGARCH_CSR_DMWIN0
-        "li.d $t0, 0x8000000000000001",   // DMW1: 0x8000..., PLV0, 0x01
-        "csrwr $t0, 0x181",               // LOONGARCH_CSR_DMWIN1
+        // Save EFI parameters
+        "la.pcrel    $t0, {fw_arg0}",
+        "st.d        $a0, $t0, 0",        // Save efi_boot flag
+        "la.pcrel    $t0, {fw_arg1}",
+        "st.d        $a1, $t0, 0",        // Save cmdline
+        "la.pcrel    $t0, {fw_arg2}",
+        "st.d        $a2, $t0, 0",        // Save systable
 
-        // Jump to virtual address (JUMP_VIRT_ADDR)
-        "pcaddi $t1, 0",                  // Get current PC
-        "li.d $t0, 0x9000000000000000",   // Virtual address base
-        "or $t0, $t0, $t1",               // Combine with current offset
-        "jirl $zero, $t0, 0xc",           // Jump to virtual address
+        // Set up direct mapping windows (DMW)
+        "li.d        $t0, 0x8000000090000011",  // DMW0: 0x8000000000000000-0x8000ffffffffffff
+        "csrwr       $t0, 0x180",               // LOONGARCH_CSR_DMWIN0
+        "li.d        $t0, 0x9000000090000011",  // DMW1: 0x9000000000000000-0x9000ffffffffffff
+        "csrwr       $t0, 0x181",               // LOONGARCH_CSR_DMWIN1
 
-        // Enable PG
-        "li.w $t0, 0xb0",                 // PLV=0, IE=0, PG=1
-        "csrwr $t0, 0x0",                 // LOONGARCH_CSR_CRMD
-        "li.w $t0, 0x04",                 // PLV=0, PIE=1, PWE=0
-        "csrwr $t0, 0x1",                 // LOONGARCH_CSR_PRMD
-        "li.w $t0, 0x00",                 // FPE=0, SXE=0, ASXE=0, BTE=0
-        "csrwr $t0, 0x2",                 // LOONGARCH_CSR_EUEN
+        // Enable paging
+        "li.w        $t0, 0xb0",                // PLV=0, IE=0, PG=1
+        "csrwr       $t0, 0x0",                 // LOONGARCH_CSR_CRMD
+        "li.w        $t0, 0x04",                // PLV=0, PIE=1, PWE=0
+        "csrwr       $t0, 0x1",                 // LOONGARCH_CSR_PRMD
+        "li.w        $t0, 0x00",                // FPE=0, SXE=0, ASXE=0, BTE=0
+        "csrwr       $t0, 0x2",                 // LOONGARCH_CSR_EUEN
 
-        // Clear .bss section
-        "la.pcrel $t0, __bss_start",
-        "st.d $zero, $t0, 0",
-        "la.pcrel $t1, __bss_stop",
-        "addi.d $t1, $t1, -8",            // __bss_stop - LONGSIZE
+        // Clear BSS
+        "la.pcrel    $t0, __bss_start",
+        "la.pcrel    $t1, __bss_stop",
         "1:",
-        "addi.d $t0, $t0, 8",             // LONGSIZE = 8
-        "st.d $zero, $t0, 0",
-        "bne $t0, $t1, 1b",
+        "st.d        $zero, $t0, 0",
+        "addi.d      $t0, $t0, 8",
+        "bne         $t0, $t1, 1b",
 
-        // Save firmware arguments (a0, a1, a2)
-        "la.pcrel $t0, {fw_arg0}",
-        "st.d $a0, $t0, 0",
-        "la.pcrel $t0, {fw_arg1}",
-        "st.d $a1, $t0, 0",
-        "la.pcrel $t0, {fw_arg2}",
-        "st.d $a2, $t0, 0",
+        // Set up stack
+        "la.pcrel    $sp, {init_stack}",
+        "li.w        $t0, 0x4000",
+        "add.d       $sp, $sp, $t0",          // Stack grows down from end of union
 
-        // KSave3 used for percpu base, initialized as 0
-        "csrwr $zero, 0x33",              // PERCPU_BASE_KS
-        // GPR21 used for percpu base (runtime), initialized as 0
-        "move $u0, $zero",
-
-        // Set up stack pointer
-        "la.pcrel $tp, {init_thread_union}",
-        "li.d $sp, {thread_size}",
-        "addi.d $sp, $sp, -{pt_size}",    // _THREAD_SIZE - PT_SIZE
-        "add.d $sp, $sp, $tp",
-
-        // Jump to Rust entry point
-        "b {start_kernel}",
-
+        // Jump to kernel entry
+        "b           {kernel_entry}",
         fw_arg0 = sym FW_ARG0,
         fw_arg1 = sym FW_ARG1,
         fw_arg2 = sym FW_ARG2,
-        init_thread_union = sym INIT_THREAD_UNION,
-        thread_size = const 0x4000,        // _THREAD_SIZE
-        pt_size = const 0x2a0,             // PT_SIZE
-        start_kernel = sym rust_start_kernel,
+        init_stack = sym INIT_THREAD_UNION,
+        kernel_entry = sym kernel_entry,
+    )
+}
+
+/// Kernel entry point called from EFI or directly
+#[unsafe(naked)]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn kernel_entry() -> ! {
+    naked_asm!(
+        // Config direct window and set PG (from Linux head.S)
+        "li.d        $t0, 0x8000000090000011",  // DMW0: 0x8000000000000000-0x8000ffffffffffff
+        "csrwr       $t0, 0x180",               // LOONGARCH_CSR_DMWIN0
+        "li.d        $t0, 0x9000000090000011",  // DMW1: 0x9000000000000000-0x9000ffffffffffff
+        "csrwr       $t0, 0x181",               // LOONGARCH_CSR_DMWIN1
+
+        // Perform early relocation if needed
+        "bl          {early_relocate}",
+
+        // Jump to virtual address space (following Linux implementation)
+        "la.pcrel    $t0, 1f",
+        "li.d        $t1, 0xfffffffffffe0000",  // Virtual address mask
+        "or          $t0, $t0, $t1",             // Convert to virtual address
+        "jirl        $zero, $t0, 0",            // Jump to virtual space
+
+        "1:",
+        // Enable PG (paging)
+        "li.w        $t0, 0xb0",               // PLV=0, IE=0, PG=1
+        "csrwr       $t0, 0x0",                // LOONGARCH_CSR_CRMD
+        "li.w        $t0, 0x04",               // PLV=0, PIE=1, PWE=0
+        "csrwr       $t0, 0x1",                // LOONGARCH_CSR_PRMD
+        "li.w        $t0, 0x00",               // FPE=0, SXE=0, ASXE=0, BTE=0
+        "csrwr       $t0, 0x2",                // LOONGARCH_CSR_EUEN
+
+        // Clear BSS
+        "la.pcrel    $t0, __bss_start",
+        "la.pcrel    $t1, __bss_stop",
+        "beq         $t0, $t1, 3f",             // Skip if no BSS
+        "2:",
+        "st.d        $zero, $t0, 0",
+        "addi.d      $t0, $t0, 8",
+        "bne         $t0, $t1, 2b",
+
+        "3:",
+        // Save firmware arguments (from static variables set by EFI entry)
+        "la.pcrel    $t0, {fw_arg0}",
+        "ld.d        $a0, $t0, 0",              // Load efi_boot flag
+        "la.pcrel    $t0, {fw_arg1}",
+        "ld.d        $a1, $t0, 0",              // Load cmdline
+        "la.pcrel    $t0, {fw_arg2}",
+        "ld.d        $a2, $t0, 0",              // Load systable
+
+        // Set up kernel stack (using init_thread_union)
+        "la.pcrel    $sp, {init_stack}",
+        "li.w        $t0, 0x4000",
+        "add.d       $sp, $sp, $t0",         // Point to end of stack (stack grows down)
+
+        // Jump to Rust kernel start
+        "b           {rust_start}",
+
+        early_relocate = sym super::relocate::early_relocate,
+        fw_arg0 = sym FW_ARG0,
+        fw_arg1 = sym FW_ARG1,
+        fw_arg2 = sym FW_ARG2,
+        init_stack = sym INIT_THREAD_UNION,
+        rust_start = sym rust_start_kernel,
     )
 }
 
@@ -206,7 +259,12 @@ fn rust_start_kernel() -> ! {
     // Create a basic BootInfo structure
     let mut boot_info = BootInfo::new();
 
-    // Set basic values (these will be properly initialized later)
+    // Get EFI parameters from global variables
+    let _efi_boot = unsafe { FW_ARG0 };
+    let _cmdline_ptr = unsafe { FW_ARG1 };
+    let _systable_ptr = unsafe { FW_ARG2 };
+
+    // Set basic values
     boot_info.cpu_id = 0;
     boot_info.kimage_start_lma = core::ptr::null_mut();
     boot_info.kimage_start_vma = core::ptr::null_mut();
@@ -225,7 +283,7 @@ fn rust_start_kernel() -> ! {
     // Should never reach here
     loop {
         unsafe {
-            core::arch::asm!("idle.0");
+            core::arch::asm!("nop");
         }
     }
 }

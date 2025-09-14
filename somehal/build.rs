@@ -18,6 +18,7 @@ struct TargetDependencies {
 fn main() {
     println!("cargo:rerun-if-changed=link.ld");
     println!("cargo:rerun-if-changed=link_base.ld");
+    println!("cargo:rerun-if-changed=src/arch/loongarch64/link.ld");
     println!("cargo:rustc-link-search={}", out_dir().display());
 
     let target = std::env::var("TARGET").unwrap();
@@ -48,7 +49,13 @@ fn main() {
     file.write_all(ld.as_bytes())
         .unwrap_or_else(|_| panic!("{ld_name_out} write failed"));
 
-    let ld = include_str!("link.ld").to_string();
+    // 根据架构选择不同的链接脚本
+    let ld = if target.contains("loongarch64") {
+        include_str!("src/arch/loongarch64/link.ld").to_string()
+    } else {
+        include_str!("link.ld").to_string()
+    };
+    
     let ld_name_out = "somehal.x";
     let mut file = std::fs::File::create(out_dir().join(ld_name_out))
         .unwrap_or_else(|_| panic!("{ld_name_out} create failed"));
