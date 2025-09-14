@@ -1,2 +1,2 @@
-[target.'cfg(target_os = "none")']
+[target.'cfg(and(target_os = "none", not(target_arch = "loongarch64")))']
 runner = "ostool cargo-test"

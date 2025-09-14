@@ -2,7 +2,6 @@ use core::arch::naked_asm;
 
 use super::addrspace::{VMLINUX_LOAD_ADDRESS, to_phys};
 use crate::common::pe::*;
-use pie_boot_macros::start_code;
 
 /// LoongArch64 kernel header implementing functionality similar to
 /// Linux arch/loongarch/kernel/head.S _head section
@@ -32,7 +31,7 @@ pub unsafe extern "C" fn _head() -> ! {
         ".long 0",                      // PointerToSymbolTable
         ".long 0",                      // NumberOfSymbols
         ".short 2f - 1f",               // SizeOfOptionalHeader
-        ".short 0x0206",                // Characteristics (IMAGE_FILE_DEBUG_STRIPPED | IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_LINE_NUMS_STRIPPED)
+        ".short {flags}",                // Characteristics (IMAGE_FILE_DEBUG_STRIPPED | IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_LINE_NUMS_STRIPPED)
 
         // Optional header
         "1:",
@@ -47,26 +46,28 @@ pub unsafe extern "C" fn _head() -> ! {
 
         // Extra header fields
         ".quad 0",                      // ImageBase
-        ".long 0x10000",                // SectionAlignment (PECOFF_SEGMENT_ALIGN)
-        ".long 0x200",                  // FileAlignment (PECOFF_FILE_ALIGN)
+        ".long PECOFF_SEGMENT_ALIGN",                // SectionAlignment (PECOFF_SEGMENT_ALIGN)
+        ".long PECOFF_FILE_ALIGN",                  // FileAlignment (PECOFF_FILE_ALIGN)
         ".short 0",                     // MajorOperatingSystemVersion
         ".short 0",                     // MinorOperatingSystemVersion
-        ".short 0",                     // MajorImageVersion
-        ".short 0",                     // MinorImageVersion
+        ".short {major_image_version}",                     // MajorImageVersion
+        ".short {minor_image_version}",                     // MinorImageVersion
         ".short 0",                     // MajorSubsystemVersion
         ".short 0",                     // MinorSubsystemVersion
         ".long 0",                      // Win32VersionValue
+
         ".long _end - _head",           // SizeOfImage
+
         ".long 3f - _head",             // SizeOfHeaders
         ".long 0",                      // CheckSum
-        ".short 10",                    // IMAGE_SUBSYSTEM_EFI_APPLICATION
+        ".short {image_subsystem}",                    // IMAGE_SUBSYSTEM_EFI_APPLICATION
         ".short 0",                     // DllCharacteristics
         ".quad 0",                      // SizeOfStackReserve
         ".quad 0",                      // SizeOfStackCommit
         ".quad 0",                      // SizeOfHeapReserve
         ".quad 0",                      // SizeOfHeapCommit
         ".long 0",                      // LoaderFlags
-        ".long 6",                      // NumberOfRvaAndSizes
+        ".long (2f - .) / 8",                      // NumberOfRvaAndSizes
 
         // Data directories
         ".quad 0",                      // ExportTable
@@ -76,13 +77,14 @@ pub unsafe extern "C" fn _head() -> ! {
         ".quad 0",                      // CertificationTable
         ".quad 0",                      // BaseRelocationTable
 
+        "2:",
         // Section table
-        // .text section
         ".ascii \".text\\0\\0\\0\"",
         ".long _etext - 3f",            // VirtualSize
         ".long 3f - _head",             // VirtualAddress
         ".long _etext - 3f",            // SizeOfRawData
         ".long 3f - _head",             // PointerToRawData
+
         ".long 0",                      // PointerToRelocations
         ".long 0",                      // PointerToLineNumbers
         ".short 0",                     // NumberOfRelocations
@@ -95,26 +97,28 @@ pub unsafe extern "C" fn _head() -> ! {
         ".long _sdata - _head",         // VirtualAddress
         ".long _kernel_rsize",          // SizeOfRawData
         ".long _sdata - _head",         // PointerToRawData
-        ".long 0",                      // PointerToRelocations
-        ".long 0",                      // PointerToLineNumbers
+
+        ".long  0",                      // PointerToRelocations
+        ".long  0",                      // PointerToLineNumbers
         ".short 0",                     // NumberOfRelocations
         ".short 0",                     // NumberOfLineNumbers
         ".long 0xc0000040",             // Characteristics (IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE)
 
-        "2:",
+        ".set	.Lsection_count, (. - 2f) / 40",
+
         ".balign 0x10000",              // PECOFF_SEGMENT_ALIGN
         "3:",                           // efi_header_end
-
-        // Now starts the real kernel entry point that EFI will jump to
-        "b           {efi_entry}",      // Jump to EFI entry point
 
         dos_signature = const IMAGE_DOS_SIGNATURE,
         linux_pe_magic = const LINUX_PE_MAGIC,
         phys_link_kaddr = const to_phys(VMLINUX_LOAD_ADDRESS),
         image_nt_signature = const IMAGE_NT_SIGNATURE,
         file_machine = const IMAGE_FILE_MACHINE_LOONGARCH64,
-        efi_entry = sym efi_kernel_entry,
+        flags = const IMAGE_FILE_DEBUG_STRIPPED | IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_LINE_NUMS_STRIPPED,
         efi_pe_entry = sym super::efi::efi_pe_entry,
+        major_image_version = const LINUX_EFISTUB_MAJOR_VERSION,
+        minor_image_version = const LINUX_EFISTUB_MINOR_VERSION,
+        image_subsystem = const IMAGE_SUBSYSTEM_EFI_APPLICATION,
     )
 }
 
@@ -252,9 +256,20 @@ static mut FW_ARG2: usize = 0;
 static mut INIT_THREAD_UNION: [u8; 0x4000] = [0; 0x4000];
 
 /// Rust kernel start function that will be called from assembly
-#[start_code]
+#[unsafe(no_mangle)]
 fn rust_start_kernel() -> ! {
     use pie_boot_if::BootInfo;
+
+    // Early debug - try to output something to indicate we reached here
+    // This uses memory-mapped UART typically at 0x1fe001e0 for LoongArch
+    unsafe {
+        let uart_base = 0x1fe001e0 as *mut u8;
+        let msg = b"KERNEL_START\n";
+        for &byte in msg {
+            while (uart_base.add(5).read_volatile() & 0x20) == 0 {}
+            uart_base.write_volatile(byte);
+        }
+    }
 
     // Create a basic BootInfo structure
     let mut boot_info = BootInfo::new();
@@ -276,6 +291,16 @@ fn rust_start_kernel() -> ! {
     // For now, use an empty memory regions
     static mut EMPTY_REGIONS: [pie_boot_if::MemoryRegion; 0] = [];
     boot_info.memory_regions = unsafe { (&mut EMPTY_REGIONS[..]).into() };
+
+    // Output another debug message
+    unsafe {
+        let uart_base = 0x1fe001e0 as *mut u8;
+        let msg = b"CALLING_VIRT_ENTRY\n";
+        for &byte in msg {
+            while (uart_base.add(5).read_volatile() & 0x20) == 0 {}
+            uart_base.write_volatile(byte);
+        }
+    }
 
     // Jump to the common entry point
     crate::common::entry::virt_entry(&boot_info);

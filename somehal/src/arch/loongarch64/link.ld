@@ -3,7 +3,7 @@
  * field of EFI application to 64K.
  */
 PECOFF_FILE_ALIGN = 0x200;
-PECOFF_SEGMENT_ALIGN = 0x10000;
+PECOFF_SEGMENT_ALIGN = 0x1000;
 VMLINUX_LOAD_ADDRESS = 0x9000000000200000;
 
 /* Provide default stack size if not defined */

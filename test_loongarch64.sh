@@ -71,20 +71,8 @@ rm -rf "${TMP_EXTRACT_DIR}"
 
 echo "Extraction complete: ${TARGET_DIR}/edk2"
 
-echo "Building LoongArch64 kernel..."
-
-# Build the somehal kernel for LoongArch64
-echo "Compiling somehal for loongarch64-unknown-none-softfloat target..."
-cargo build --target loongarch64-unknown-none-softfloat --release -p somehal
-
-# Check if the build was successful
-if [ ! -f "${TARGET_DIR}/loongarch64-unknown-none-softfloat/release/libsomehal.rlib" ]; then
-    echo "Failed to build somehal library"
-    exit 1
-fi
-
 echo "Building test binary..."
-cargo test --target loongarch64-unknown-none-softfloat -p test-some-rt --test test --no-run -- --show-output
+cargo test --target loongarch64-unknown-none-softfloat -p test-some-rt --test test --no-run  -- --show-output
 
 # Find the built kernel binary 
 KERNEL_ELF=$(find "${TARGET_DIR}/loongarch64-unknown-none-softfloat" -name "test-*" -type f -executable | head -n1)
@@ -100,6 +88,16 @@ echo "Found kernel ELF: $KERNEL_ELF"
 
 # Copy kernel to a known location
 cp "$KERNEL_ELF" "${TARGET_DIR}/kernel.elf"
+
+# Convert ELF to EFI format by stripping ELF header
+echo "Converting ELF to EFI format..."
+KERNEL_EFI="${TARGET_DIR}/kernel.efi"
+./elf2efi.sh "$KERNEL_ELF" "$KERNEL_EFI"
+
+if [ ! -f "$KERNEL_EFI" ]; then
+    echo "Error: EFI conversion failed"
+    exit 1
+fi
 
 echo "Kernel build completed successfully!"
 echo "Starting QEMU with EFI firmware and LoongArch64 kernel..."
@@ -122,19 +120,31 @@ echo "Running QEMU with the following configuration:"
 echo "  Machine: virt"
 echo "  CPU: la464"
 echo "  EFI firmware: ${TARGET_DIR}/edk2/loongarch64/code.fd"
-echo "  Kernel: ${TARGET_DIR}/kernel.elf"
+echo "  Kernel: ${KERNEL_EFI}"
 echo ""
 
-# Run QEMU with the LoongArch64 EFI firmware and our kernel
+# Create a simple FAT filesystem image with our kernel
+echo "Creating EFI boot disk..."
+EFI_IMG="$TARGET_DIR/efi_boot.img"
+mkdir -p "$TARGET_DIR/efi_mount"
+
+# Create a 10MB disk image
+dd if=/dev/zero of="$EFI_IMG" bs=1M count=10 2>/dev/null
+
+# Format as FAT32
+mkfs.fat -F 32 "$EFI_IMG" >/dev/null 2>&1
+
+
+echo "Trying direct kernel boot method..."
 qemu-system-loongarch64 \
     -machine virt \
     -cpu la464 \
     -m 1G \
     -bios "${TARGET_DIR}/edk2/loongarch64/code.fd" \
-    -kernel "${TARGET_DIR}/kernel.elf" \
+    -kernel "${KERNEL_EFI}" \
     -nographic \
     -serial stdio \
     -monitor none \
-    -d guest_errors \
-    "$@"
+    -d guest_errors
+
 
