@@ -16,16 +16,20 @@ pub use arch::*;
 mod common;
 pub mod early_debug;
 mod lazy_static;
+
+#[cfg(target_arch = "aarch64")]
 mod loader;
 
 pub use common::entry::boot_info;
 pub use kdef_pgtable::{KIMAGE_VADDR, KIMAGE_VSIZE, KLINER_OFFSET};
 pub use pie_boot_if::{BootInfo, MemoryRegion, MemoryRegionKind, MemoryRegions};
+#[cfg(target_arch = "aarch64")]
 use pie_boot_loader_aarch64::EarlyBootArgs;
 #[allow(unused)]
 use pie_boot_macros::start_code;
 pub use pie_boot_macros::{entry, irq_handler, secondary_entry};
 
+#[cfg(target_arch="aarch64")]
 #[allow(unused)]
 #[unsafe(link_section = ".data")]
 static mut BOOT_ARGS: EarlyBootArgs = EarlyBootArgs::new();

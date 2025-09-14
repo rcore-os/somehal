@@ -72,3 +72,4 @@ echo "Extraction complete: ${TARGET_DIR}/edk2"
 qemu-system-loongarch64 -machine virt  -cpu la464 \
      -bios target/edk2/loongarch64/code.fd \
     --nographic
+
