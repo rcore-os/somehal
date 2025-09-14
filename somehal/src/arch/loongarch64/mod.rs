@@ -1,9 +1,7 @@
+mod addrspace;
 mod header;
 
-pub mod power;
 pub mod mem;
+pub mod power;
 
-
-pub fn setup_exception_vectors(){
-
-}
+pub fn setup_exception_vectors() {}
