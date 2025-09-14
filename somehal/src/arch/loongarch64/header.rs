@@ -125,20 +125,24 @@ pub unsafe extern "C" fn _head() -> ! {
 /// EFI entry point called by EFI firmware
 #[unsafe(naked)]
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn efi_kernel_entry() -> ! {
+pub unsafe extern "C" fn efi_kernel_entry(
+    _handle: *mut core::ffi::c_void, // efi_handle_t in a0
+    systab: *mut core::ffi::c_void,  // efi_system_table_t* in a1
+) -> ! {
     // EFI entry point parameters in LoongArch:
-    // a0 = efi_boot flag
-    // a1 = command line pointer
-    // a2 = system table pointer
+    // a0 = efi_handle_t
+    // a1 = efi_system_table_t*
 
     naked_asm!(
-        // Save EFI parameters
+        // Save EFI parameters - convert to our internal format
         "la.pcrel    $t0, {fw_arg0}",
-        "st.d        $a0, $t0, 0",        // Save efi_boot flag
+        "li.d        $t1, 1",               // Set efi_boot flag = 1
+        "st.d        $t1, $t0, 0",          // Save efi_boot flag
         "la.pcrel    $t0, {fw_arg1}",
-        "st.d        $a1, $t0, 0",        // Save cmdline
+        "li.d        $t1, 0",               // No cmdline for now
+        "st.d        $t1, $t0, 0",          // Save cmdline = NULL
         "la.pcrel    $t0, {fw_arg2}",
-        "st.d        $a2, $t0, 0",        // Save systable
+        "st.d        $a1, $t0, 0",          // Save systable pointer
 
         // Set up direct mapping windows (DMW)
         "li.d        $t0, 0x8000000090000011",  // DMW0: 0x8000000000000000-0x8000ffffffffffff
@@ -157,11 +161,13 @@ pub unsafe extern "C" fn efi_kernel_entry() -> ! {
         // Clear BSS
         "la.pcrel    $t0, __bss_start",
         "la.pcrel    $t1, __bss_stop",
+        "beq         $t0, $t1, 2f",             // Skip if no BSS
         "1:",
         "st.d        $zero, $t0, 0",
         "addi.d      $t0, $t0, 8",
         "bne         $t0, $t1, 1b",
 
+        "2:",
         // Set up stack
         "la.pcrel    $sp, {init_stack}",
         "li.w        $t0, 0x4000",

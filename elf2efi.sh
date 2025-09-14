@@ -22,7 +22,10 @@ echo "Stripping ELF header to expose embedded PE header..."
 
 # Use rust-objcopy to strip ELF header and extract raw binary
 # The binary already contains PE header from our _head function
-rust-objcopy --strip-all -O binary "$ELF_FILE" "$EFI_FILE"
+# rust-objcopy --strip-all -O binary "$ELF_FILE" "$EFI_FILE"
+loongarch64-unknown-linux-gnu-objcopy  -O binary --remove-section=.comment \
+ --remove-section=.note --remove-section=.options \
+ --remove-section=.note.gnu.build-id -S $ELF_FILE $EFI_FILE
 
 if [ $? -eq 0 ]; then
     echo "EFI conversion completed successfully"

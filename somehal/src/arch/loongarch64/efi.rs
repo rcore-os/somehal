@@ -6,10 +6,14 @@
 /// 
 /// 这是 PE 头指向的实际入口点，负责处理 EFI 启动参数
 /// 并跳转到内核入口
+#[unsafe(export_name = "efi_main")]
 pub unsafe extern "C" fn efi_pe_entry(
     _handle: *mut core::ffi::c_void,     // efi_handle_t
     systab: *mut core::ffi::c_void,     // efi_system_table_t*
 ) -> usize {                            // efi_status_t
+
+
+    return 0;
     // 验证系统表签名
     if !systab.is_null() {
         let systab_ptr = systab as *const u64;
