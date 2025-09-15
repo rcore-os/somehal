@@ -20,7 +20,7 @@ SECTIONS
 {
     . = VMLINUX_LOAD_ADDRESS;
     _text = .;
-    .head.text : AT(ADDR(.head.text)) { 
+    .head.text :  { 
         KEEP(*(.head.text)) 
     }
     . = ALIGN(PECOFF_SEGMENT_ALIGN);
@@ -75,7 +75,7 @@ SECTIONS
         *(.data.rel*)
     }
     . = ALIGN(8);
-    .la_abs : AT(ADDR(.la_abs) - 0) {
+    .la_abs : {
         __la_abs_begin = .;
         *(.la_abs)
         __la_abs_end = .;
@@ -89,7 +89,7 @@ SECTIONS
         }
     _edata = .;
 
-    .tdata : AT(ADDR(.tdata)) {
+    .tdata : {
         . = ALIGN(0x10);
         __kernel_load_end = .;
         _stdata = .;
@@ -97,7 +97,7 @@ SECTIONS
         _etdata = .;
     }
 
-    .tbss : AT(ADDR(.tbss)) {
+    .tbss : {
         _stbss = .;
         *(.tbss .tbss.*)
         *(.tcommon)
@@ -110,11 +110,11 @@ SECTIONS
     . = ALIGN(0); 
         __bss_start = .; 
     . = ALIGN(0); 
-    .sbss : AT(ADDR(.sbss)) { 
+    .sbss :  { 
         *(.dynsbss) *(.sbss) *(.scommon) 
     } 
     . = ALIGN(0x00010000); 
-    .bss : AT(ADDR(.bss) ) { 
+    .bss :  { 
         /* Init data section marker */
         __initdata_begin = .;
         

@@ -12,9 +12,9 @@ mkdir -p "${TARGET_DIR}"
 if [ -f "${TARGET_FILE}" ]; then
   echo "Found ${TARGET_FILE}, skipping download."
 else
-  echo "${TARGET_FILE} not found. Fetching latest edk2 prebuilt release from GitHub..."
+  echo "${TARGET_FILE} not found. Fetching latest edk2 prebuilt release from Gitee (gitee.com/zr233/ovmf-prebuilt)..."
 
-  API_URL="https://api.github.com/repos/ZR233/ovmf-prebuilt/releases/latest"
+  API_URL="https://gitee.com/api/v5/repos/zr233/ovmf-prebuilt/releases/latest"
 
   # Prefer curl, fallback to wget
   if command -v curl >/dev/null 2>&1; then
@@ -26,16 +26,21 @@ else
     exit 1
   fi
 
-  # Parse JSON to find asset URL ending with .tar.xz and containing edk2 or ek2
-  asset_url=$(printf "%s" "$resp" | grep -Eo 'https://[^"]+\.tar\.xz' | grep -E 'edk2|ek2' | head -n1 || true)
-
-  if [ -z "$asset_url" ]; then
-    # fallback: try to extract browser_download_url field
-    asset_url=$(printf "%s" "$resp" | grep -E '"browser_download_url"' | sed -E 's/.*"(https:[^\"]+)".*/\1/' | grep -E '\.tar\.xz$' | grep -E 'edk2|ek2' | head -n1 || true)
+  # Try to use jq if available for robust parsing
+  asset_url=""
+  if command -v jq >/dev/null 2>&1; then
+    # Gitee release JSON has assets array; each asset may have browser_download_url or direct url
+    asset_url=$(printf "%s" "$resp" | jq -r '.assets[]?.browser_download_url // .assets[]?.url // empty' | grep -E '\.tar\.xz$' | grep -E 'edk2|ek2' | head -n1 || true)
+  else
+    # Fallback parsing: look for any https URL ending with .tar.xz
+    asset_url=$(printf "%s" "$resp" | grep -Eo 'https://[^"]+\.tar\.xz' | grep -E 'edk2|ek2' | head -n1 || true)
+    if [ -z "$asset_url" ]; then
+      asset_url=$(printf "%s" "$resp" | grep -E '"browser_download_url"' | sed -E 's/.*"(https:[^\"]+)".*/\1/' | grep -E '\.tar\.xz$' | grep -E 'edk2|ek2' | head -n1 || true)
+    fi
   fi
 
   if [ -z "$asset_url" ]; then
-    echo "Failed to find edk2 .tar.xz asset in latest release. Full API response saved to ${TARGET_DIR}/release.json" >&2
+    echo "Failed to find edk2 .tar.xz asset in latest Gitee release. Full API response saved to ${TARGET_DIR}/release.json" >&2
     printf "%s" "$resp" > "${TARGET_DIR}/release.json"
     exit 1
   fi

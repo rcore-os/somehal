@@ -1,99 +1,56 @@
 //! EFI PE 启动支持
-//! 
-//! 基于 Linux drivers/firmware/efi/libstub/efi-stub-entry.c 实现
+//!
+//! 为 loongarch64-unknown-none-softfloat 目标实现 EFI API 兼容的 PE 入口
 
-/// EFI PE 入口点
-/// 
-/// 这是 PE 头指向的实际入口点，负责处理 EFI 启动参数
-/// 并跳转到内核入口
-#[unsafe(export_name = "efi_main")]
-pub unsafe extern "C" fn efi_pe_entry(
-    _handle: *mut core::ffi::c_void,     // efi_handle_t
-    systab: *mut core::ffi::c_void,     // efi_system_table_t*
-) -> usize {                            // efi_status_t
+use core::arch::naked_asm;
+use core::ffi;
 
+// 手动定义基本的 EFI 类型，避免依赖 uefi crate
+type EfiHandle = *mut ffi::c_void;
+type EfiSystemTable = *mut ffi::c_void;
 
-    return 0;
-    // 验证系统表签名
-    if !systab.is_null() {
-        let systab_ptr = systab as *const u64;
-        // EFI 系统表的签名应该是 "IBI SYST" (0x5453595320494249)
-        let signature = unsafe { core::ptr::read_volatile(systab_ptr) };
-        if signature == 0x5453595320494249 {
-            // 有效的 EFI 系统表
-        } else {
-            return 0x8000000000000001; // EFI_INVALID_PARAMETER
-        }
-    }
-
-    // 设置固件参数
-    unsafe extern "C" {
-        static mut FW_ARG0: usize;  // efi_boot flag 
-        static mut FW_ARG1: usize;  // cmdline
-        static mut FW_ARG2: usize;  // systab
-    }
-
-    // 设置固件启动标志
-    unsafe {
-        core::ptr::write_volatile(core::ptr::addr_of_mut!(FW_ARG0), 1);
-    }
-    // 暂时没有命令行参数
-    unsafe {
-        core::ptr::write_volatile(core::ptr::addr_of_mut!(FW_ARG1), 0);
-    }
-    // 保存 EFI 系统表指针
-    unsafe {
-        core::ptr::write_volatile(core::ptr::addr_of_mut!(FW_ARG2), systab as usize);
-    }
-
-    // 处理内核镜像
-    if let Some(kernel_addr) = handle_kernel_image() {
-        // 跳转到内核入口
-        let entry_addr = kernel_entry_address(kernel_addr);
-        jump_to_kernel(entry_addr);
-    }
-    
-    // 直接跳转到 kernel_entry
-    unsafe extern "C" {
-        fn kernel_entry() -> !;
-    }
-    
-    unsafe {
-        kernel_entry();
-    }
+// 引用header.rs中定义的固件参数变量
+unsafe extern "C" {
+    static mut FW_ARG0: usize; // efi_boot flag 
+    static mut FW_ARG1: usize; // cmdline
+    static mut FW_ARG2: usize; // systab
+    fn efi_kernel_entry(handle: EfiHandle, systab: EfiSystemTable) -> !;
 }
 
-/// 处理内核镜像
-fn handle_kernel_image() -> Option<usize> {
-    // 简化版本：返回当前地址作为内核地址
-    None
+/// EFI PE 入口点 - 汇编包装器
+///
+/// 这是 PE 头指向的实际入口点，使用 naked 函数手动实现 EFI 调用约定兼容
+/// LoongArch64 EFI 调用约定：
+/// - 参数通过寄存器 a0, a1 传递
+/// - 返回值通过 a0 返回
+#[unsafe(naked)]
+#[unsafe(export_name = "efi_pe_entry")]
+pub unsafe extern "C" fn efi_pe_entry() -> ! {
+    naked_asm!(
+        // 在 LoongArch64 中，EFI 调用约定参数：
+        // a0 = efi_handle_t
+        // a1 = efi_system_table_t*
+        // 这些参数已经在正确的寄存器中，直接调用 Rust 实现
+        "b      {efi_pe_entry_impl}",
+        efi_pe_entry_impl = sym efi_pe_entry_impl,
+    )
 }
 
-/// 获取内核入口地址
-fn kernel_entry_address(_kernel_addr: usize) -> usize {
-    // 返回 kernel_entry 函数地址
-    0x9000000000000000  // 临时地址
-}
-
-/// 跳转到内核
-fn jump_to_kernel(_entry_addr: usize) {
-    // 检查平台特性
-    if !check_platform_features() {
-        return;
-    }
-    
-    // 跳转到内核入口（这里简化处理）
-    unsafe extern "C" {
-        fn kernel_entry() -> !;
-    }
-    
+/// EFI PE 入口点的 Rust 实现
+///
+/// 这个函数处理 EFI 启动参数并跳转到内核入口
+#[unsafe(no_mangle)]
+unsafe extern "C" fn efi_pe_entry_impl(
+    handle: EfiHandle,      // efi_handle_t in a0
+    systab: EfiSystemTable, // efi_system_table_t* in a1
+) -> usize {
+    // 保存 EFI 参数到全局变量，供后续使用
     unsafe {
-        kernel_entry();
-    }
-}
+        FW_ARG0 = 1; // 设置 efi_boot 标志
+        FW_ARG1 = 0; // cmdline (暂时设为 NULL)
+        FW_ARG2 = systab as usize; // 保存系统表指针
 
-/// 检查平台特性
-fn check_platform_features() -> bool {
-    // 简化版本：总是返回 true
-    true
+        // 直接跳转到内核入口，不返回
+        0
+    }
 }

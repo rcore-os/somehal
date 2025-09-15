@@ -41,7 +41,7 @@ pub unsafe extern "C" fn _head() -> ! {
         ".long _etext - 3f",            // SizeOfCode
         ".long _kernel_vsize",          // SizeOfInitializedData
         ".long 0",                      // SizeOfUninitializedData
-        ".long {efi_pe_entry} - _head", // AddressOfEntryPoint
+        ".long efi_pe_entry - _head",   // AddressOfEntryPoint
         ".long 3f - _head",             // BaseOfCode
 
         // Extra header fields
@@ -104,8 +104,6 @@ pub unsafe extern "C" fn _head() -> ! {
         ".short 0",                     // NumberOfLineNumbers
         ".long 0xc0000040",             // Characteristics (IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE)
 
-        ".set	.Lsection_count, (. - 2f) / 40",
-
         ".balign 0x10000",              // PECOFF_SEGMENT_ALIGN
         "3:",                           // efi_header_end
 
@@ -115,7 +113,6 @@ pub unsafe extern "C" fn _head() -> ! {
         image_nt_signature = const IMAGE_NT_SIGNATURE,
         file_machine = const IMAGE_FILE_MACHINE_LOONGARCH64,
         flags = const IMAGE_FILE_DEBUG_STRIPPED | IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_LINE_NUMS_STRIPPED,
-        efi_pe_entry = sym super::efi::efi_pe_entry,
         major_image_version = const LINUX_EFISTUB_MAJOR_VERSION,
         minor_image_version = const LINUX_EFISTUB_MINOR_VERSION,
         image_subsystem = const IMAGE_SUBSYSTEM_EFI_APPLICATION,
