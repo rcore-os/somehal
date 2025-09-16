@@ -27,6 +27,7 @@ SECTIONS
     _stext = .;
     .text : {
         *(.text .text.*)
+        *(.init.text)
         *(.fixup)
         *(.gnu.warning)
     } :text = 0
@@ -58,6 +59,7 @@ SECTIONS
         _sdata = .;
         . = ALIGN(4K);
         *(.data .data.*)
+        *(.init.data)
         *(.sdata .sdata.*)
     }
     .rela.dyn : ALIGN(8) {
@@ -100,6 +102,7 @@ SECTIONS
     .tbss : {
         _stbss = .;
         *(.tbss .tbss.*)
+        *(.init.bss)
         *(.tcommon)
         _etbss = .;
     }

@@ -136,18 +136,7 @@ echo "  EFI firmware: ${TARGET_DIR}/edk2/loongarch64/code.fd"
 echo "  Kernel: ${KERNEL_EFI}"
 echo ""
 
-# Create a simple FAT filesystem image with our kernel
-echo "Creating EFI boot disk..."
-EFI_IMG="$TARGET_DIR/efi_boot.img"
-mkdir -p "$TARGET_DIR/efi_mount"
-
-# Create a 10MB disk image
-dd if=/dev/zero of="$EFI_IMG" bs=1M count=10 2>/dev/null
-
-# Format as FAT32
-mkfs.fat -F 32 "$EFI_IMG" >/dev/null 2>&1
-
-
+# KERNEL_EFI="/home/zhourui/opensource/Build/LoongArchVirtQemu/DEBUG_GCC5/LOONGARCH64/HelloWorld.efi"
 
 echo "Trying direct kernel boot method..."
 QEMU_CMD=(qemu-system-loongarch64 \
