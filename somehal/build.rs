@@ -28,6 +28,15 @@ fn main() {
         println!("cargo::rustc-cfg=hard_float");
     }
 
+    // LoongArch64 EFI-specific configuration matching Linux kernel efistub
+    if target.starts_with("loongarch64") {
+        // Set rustflags for LoongArch64 EFI stub similar to Linux kernel -fpie
+        println!("cargo::rustc-link-arg=-pie");
+        println!("cargo::rustc-link-arg=-fpie");
+        // Optimize for size like Linux kernel efistub (-Os)
+        println!("cargo::rustc-env=RUSTFLAGS=-C opt-level=s");
+    }
+
     let kimage_vaddr = KIMAGE_VADDR;
     let page_size = PAGE_SIZE;
 
