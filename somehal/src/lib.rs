@@ -3,6 +3,9 @@
 
 extern crate alloc;
 
+#[macro_use]
+extern crate log;
+
 #[cfg(target_arch = "aarch64")]
 #[path = "arch/aarch64/mod.rs"]
 mod arch;
@@ -29,7 +32,7 @@ use pie_boot_loader_aarch64::EarlyBootArgs;
 use pie_boot_macros::start_code;
 pub use pie_boot_macros::{entry, irq_handler, secondary_entry};
 
-#[cfg(target_arch="aarch64")]
+#[cfg(target_arch = "aarch64")]
 #[allow(unused)]
 #[unsafe(link_section = ".data")]
 static mut BOOT_ARGS: EarlyBootArgs = EarlyBootArgs::new();

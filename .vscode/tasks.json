@@ -171,7 +171,32 @@
                 "isDefault": true
             },
             "detail": "断点调试 test 测试用例",
-            "isBackground": true,
+            "isBackground": true
+        },
+        {
+            "type": "shell",
+            "label": "qemu debug loongarch64",
+            "command": "${workspaceFolder}/test_loongarch64.sh",
+            "args": [
+                "debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": {
+                "base": "$rustc",
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^Starting LoongArch64 kernel build and test\\.\\.\\.$",
+                    "endsPattern": "^Trying direct kernel boot method\\.\\.\\."
+                }
+            },
+            "group": {
+                "kind": "test",
+                "isDefault": false
+            },
+            "detail": "LoongArch64 QEMU 断点调试，监听 1234 端口",
+            "isBackground": true
         }
     ]
 }

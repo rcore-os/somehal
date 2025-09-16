@@ -1,9 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET_DIR="${HERE}/target"
 TARGET_FILE="${TARGET_DIR}/ek2.tar.xz"
+
+# 检查是否传入 debug 参数
+DEBUG_MODE=0
+if [[ $# -ge 1 && "$1" == "debug" ]]; then
+  DEBUG_MODE=1
+  echo "[DEBUG] QEMU 将以调试模式启动，监听 1234 端口..."
+fi
 
 echo "Starting LoongArch64 kernel build and test..."
 
@@ -140,8 +148,9 @@ dd if=/dev/zero of="$EFI_IMG" bs=1M count=10 2>/dev/null
 mkfs.fat -F 32 "$EFI_IMG" >/dev/null 2>&1
 
 
+
 echo "Trying direct kernel boot method..."
-qemu-system-loongarch64 \
+QEMU_CMD=(qemu-system-loongarch64 \
     -machine virt \
     -cpu la464 \
     -m 1G \
@@ -150,6 +159,12 @@ qemu-system-loongarch64 \
     -nographic \
     -serial stdio \
     -monitor none \
-    -d guest_errors
+    -d guest_errors)
+
+if [ "$DEBUG_MODE" -eq 1 ]; then
+  QEMU_CMD+=( -S -gdb tcp::1234 )
+fi
+
+"${QEMU_CMD[@]}"
 
 

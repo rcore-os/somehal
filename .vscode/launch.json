@@ -92,5 +92,17 @@
             "preLaunchTask": "qemu debug riscv64",
             "stopAtConnect": true
         },
+        {
+            "type": "cppdbg",
+            "name": "Debug loongarch64 test",
+            "request": "launch",
+            "miDebuggerServerAddress": "localhost:1234",
+            "program": "${workspaceFolder}/target/kernel.elf",
+            "miDebuggerPath": "loongarch64-unknown-linux-gnu-gdb",
+            "cwd": "${workspaceRoot}",
+            "preLaunchTask": "qemu debug loongarch64",
+            "stopAtConnect": true,
+            "showDisplayString": true
+        }
     ]
 }
