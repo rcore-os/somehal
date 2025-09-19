@@ -45,9 +45,13 @@ pub fn setup_table_regs() {
 
 pub fn set_table(addr: usize) {
     TTBR0_EL2.set_baddr(addr as _);
+    barrier::dsb(barrier::SY);
+    barrier::isb(barrier::SY);
 }
 
 #[inline(always)]
 pub fn setup_sctlr() {
     SCTLR_EL2.modify(SCTLR_EL2::M::Enable + SCTLR_EL2::C::Cacheable + SCTLR_EL2::I::Cacheable);
+    barrier::dsb(barrier::SY);
+    barrier::isb(barrier::SY);
 }

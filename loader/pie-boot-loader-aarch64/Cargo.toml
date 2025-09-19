@@ -10,7 +10,7 @@ keywords.workspace = true
 license.workspace = true
 name = "pie-boot-loader-aarch64"
 repository.workspace = true
-version = "0.2.6"
+version = "0.3.0"
 
 [dependencies]
 aarch64-cpu = "10.0"
@@ -21,7 +21,7 @@ fdt-parser = {version = "0.4"}
 kasm-aarch64 = {workspace = true}
 log = "0.4"
 num-align = "0.1"
-page-table-generic = "0.6"
+page-table-generic = {version = "0.6", path = "../../page-table-generic"}
 pie-boot-if = {workspace = true}
 spin = "0.10"
 thiserror = {version = "2", default-features = false}

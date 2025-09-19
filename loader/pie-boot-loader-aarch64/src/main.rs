@@ -3,6 +3,7 @@
 
 use core::{
     arch::{asm, naked_asm},
+    mem::offset_of,
     ptr::NonNull,
 };
 
@@ -34,9 +35,6 @@ use mmu::enable_mmu;
 use pie_boot_if::BootInfo;
 use staticcell::*;
 
-#[unsafe(link_section = ".stack")]
-static STACK: [u8; 0x8000] = [0; 0x8000];
-
 pub(crate) static RETURN: StaticCell<BootInfo> = StaticCell::new(BootInfo::new());
 static mut OFFSET: usize = 0;
 
@@ -47,10 +45,10 @@ static mut OFFSET: usize = 0;
 unsafe extern "C" fn _start(_args: &EarlyBootArgs) -> ! {
     naked_asm!(
         "
-        mov   x19, x0 
-        adr   x0, {stack}
-        add   x0, x0, {stack_size}
-        mov   sp, x0
+        mov   x19, x0
+
+        ldr   x8, [x0, {args_of_stack_top_lma}]
+        mov   sp, x8
 
         mov   x0, x19
         BL    {switch_to_target_el}",
@@ -68,8 +66,7 @@ unsafe extern "C" fn _start(_args: &EarlyBootArgs) -> ! {
         add  x0, x0, :lo12:{res}
         br   x8
         ",
-        stack = sym STACK,
-        stack_size = const STACK.len(),
+        args_of_stack_top_lma = const offset_of!(EarlyBootArgs, stack_top_lma),
         switch_to_target_el = sym switch_to_target_el,
         entry = sym entry,
         offset = sym OFFSET,
@@ -93,7 +90,9 @@ fn entry(bootargs: &EarlyBootArgs) -> *mut () {
     enable_fp();
     unsafe {
         clean_bss();
+
         relocate::apply();
+
         cache::dcache_all(cache::DcacheOp::CleanAndInvalidate);
 
         let mut fdt = bootargs.args[0];
@@ -102,7 +101,7 @@ fn entry(bootargs: &EarlyBootArgs) -> *mut () {
         ram::init(bootargs.kcode_end as _);
 
         if bootargs.debug() {
-            debug::fdt::init_debugcon(fdt as _);
+            debug::fdt::init_debugcon(fdt as _, bootargs.kliner_offset);
         }
 
         printkv!("fdt", "{fdt:#x}");
@@ -117,6 +116,7 @@ fn entry(bootargs: &EarlyBootArgs) -> *mut () {
         printkv!("EL", "{}", CurrentEL.read(CurrentEL::EL));
 
         printkv!("_start", "{:p}", bootargs.kimage_addr_vma);
+        printkv!("stack", "{:p}", bootargs.stack_top_vma);
 
         let loader_at = loader_at();
 
@@ -127,6 +127,7 @@ fn entry(bootargs: &EarlyBootArgs) -> *mut () {
             loader_at.add(loader_size())
         );
         enable_mmu(bootargs, fdt);
+        debug::relocate_uart(bootargs.kliner_offset);
         let ret = RETURN.as_mut();
 
         ret.fdt = NonNull::new(fdt as _);

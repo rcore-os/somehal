@@ -53,6 +53,8 @@ const COMPATIBLE_VEC_CAPACITY: usize = 3;
 #[derive(Debug, Clone)]
 pub struct DebugConsole {
     /// IO\MMIO 物理基地址
-    pub base: *mut u8,
+    pub base_phys: usize,
+    /// IO\MMIO 虚拟基地址
+    pub base_virt: *mut u8,
     pub compatibles: Vec<String<COMPATIBLE_STRING_CAPACITY>, COMPATIBLE_VEC_CAPACITY>,
 }

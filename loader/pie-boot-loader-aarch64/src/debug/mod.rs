@@ -14,7 +14,11 @@ pub fn reg_base() -> usize {
     unsafe { REG_BASE }
 }
 
-fn setup_debugcon<'a>(base: usize, compatibles: impl core::iter::Iterator<Item = &'a str>) {
+fn setup_debugcon<'a>(
+    base: usize,
+    liner_offset: usize,
+    compatibles: impl core::iter::Iterator<Item = &'a str>,
+) {
     unsafe {
         REG_BASE = base.align_down(page_size());
         let mut ls = Vec::new();
@@ -24,7 +28,8 @@ fn setup_debugcon<'a>(base: usize, compatibles: impl core::iter::Iterator<Item =
             let _ = ls.push(s);
         }
         RETURN.as_mut().debug_console = Some(DebugConsole {
-            base: base as _,
+            base_phys: base,
+            base_virt: (base + liner_offset) as _,
             compatibles: ls,
         });
     }
@@ -54,6 +59,12 @@ fn set_uart(uart: any_uart::Uart) -> Option<()> {
     let tx = uart.tx?;
     UART.set(tx);
     Some(())
+}
+
+pub fn relocate_uart(liner_offset: usize) {
+    if let Some(uart) = UART.get() {
+        uart.mmio_base_add(liner_offset);
+    }
 }
 
 pub fn write_byte(b: u8) {

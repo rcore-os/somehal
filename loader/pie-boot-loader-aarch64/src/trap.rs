@@ -67,18 +67,15 @@ fn handle_data_abort(iss: u64, _is_user: bool) {
         PageFaultReason::Read
     };
     let vaddr = FAR_EL1.get() as usize;
+    let pc = ELR_EL1.get();
 
-    handle_page_fault(vaddr, reason);
+    panic!("Invalid addr fault @{vaddr:#x}, reason: {reason:?}, pc={pc:#x}");
 }
 
 #[derive(Debug)]
 pub enum PageFaultReason {
     Read,
     Write,
-}
-
-pub fn handle_page_fault(vaddr: usize, reason: PageFaultReason) {
-    panic!("Invalid addr fault @{vaddr:#x}, reason: {reason:?}");
 }
 
 global_asm!(

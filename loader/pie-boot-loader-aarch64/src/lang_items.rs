@@ -4,7 +4,7 @@ use aarch64_cpu::asm::wfi;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    println!("{}", info.message());
+    println!("panic: {}", info.message());
     loop {
         wfi();
     }

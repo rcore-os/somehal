@@ -4,7 +4,7 @@ use fdt_parser::Fdt;
 
 use crate::debug::setup_debugcon;
 
-pub fn init_debugcon(fdt: *mut u8) -> Option<()> {
+pub fn init_debugcon(fdt: *mut u8, liner_offset: usize) -> Option<()> {
     fn phys_to_virt(p: usize) -> *mut u8 {
         p as _
     }
@@ -16,7 +16,7 @@ pub fn init_debugcon(fdt: *mut u8) -> Option<()> {
 
     let reg = node.reg()?.next()?;
 
-    setup_debugcon(reg.address as _, node.compatibles());
+    setup_debugcon(reg.address as _, liner_offset, node.compatibles());
 
     super::set_uart(uart)?;
 

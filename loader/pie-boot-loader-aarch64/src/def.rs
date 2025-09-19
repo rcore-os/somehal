@@ -24,6 +24,8 @@ pub struct EarlyBootArgs {
     pub virt_entry: *mut (),
     pub kimage_addr_lma: *mut (),
     pub kimage_addr_vma: *mut (),
+    pub stack_top_lma: *mut (),
+    pub stack_top_vma: *mut (),
     pub kcode_end: *mut (),
     pub el: usize,
     pub kliner_offset: usize,

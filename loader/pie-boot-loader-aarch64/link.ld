@@ -4,37 +4,34 @@ __page_size = {PAGE_SIZE};
 
 SECTIONS
 {
-    . = 0xF00000000;
+    . = 0x0;
     .text : ALIGN(__page_size) {
         _stext  = .;
         *(.text.init)
         *(.text .text.*)
     } 
 
-    .rodata : ALIGN(__page_size) {
+    .rodata : ALIGN(16) {
         *(.rodata .rodata.*)
         *(.srodata*)
         *(.got .got.*)
     } 
     
-    .data : ALIGN(__page_size) {
+    .data : ALIGN(16) {
 
         *(.data .data.*)
-        . = ALIGN(__page_size);
+        . = ALIGN(16);
         *(.sdata.*)
     } 
 
-    _BSS : ALIGN(__page_size)  {
+    _BSS : ALIGN(16)  {
         __start_boot_bss = .;
         *(.bss .bss.*)
         *(.sbss .sbss.*)
         *(COMMON)
-        . = ALIGN(__page_size);
         __stop_boot_bss = .;
-        *(.stack);
-        __stack_top = .;
     } 
-    .rela.dyn : {
+    .rela.dyn : ALIGN(16) {
         __rela_dyn_start = .;
         *(.rela .rela*)
         __rela_dyn_end = .;

@@ -272,7 +272,7 @@ pub(crate) fn regions_to_map() -> alloc::vec::Vec<MapRangeConfig> {
     }
 
     if let Some(d) = &boot_info().debug_console {
-        let start = (d.base as usize).align_down(PAGE_SIZE);
+        let start = d.base_phys.align_down(PAGE_SIZE);
         map_ranges.push(MapRangeConfig {
             vaddr: (start + KLINER_OFFSET) as *mut u8,
             paddr: start,

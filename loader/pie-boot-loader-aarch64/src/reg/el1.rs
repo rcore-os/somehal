@@ -5,6 +5,8 @@ use aarch64_cpu_ext::asm::tlb::{VMALLE1, tlbi};
 pub fn set_table(addr: usize) {
     TTBR1_EL1.set_baddr(addr as _);
     TTBR0_EL1.set_baddr(addr as _);
+    barrier::dsb(barrier::SY);
+    barrier::isb(barrier::SY);
 }
 
 #[inline(always)]

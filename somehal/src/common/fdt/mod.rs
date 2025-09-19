@@ -12,8 +12,17 @@ use crate::{
 
 static UART: LazyStatic<any_uart::Sender> = LazyStatic::new();
 
+fn debug_uart_phys_to_virt(p: usize) -> *mut u8 {
+    // 如果bootloader已经设置了debug console，说明虚拟地址已经映射好了
+    if boot_info().debug_console.is_some() {
+        (p + crate::KLINER_OFFSET) as _
+    } else {
+        phys_to_virt(p)
+    }
+}
+
 pub(crate) fn init_debugcon(fdt: Option<NonNull<u8>>) -> Option<()> {
-    let uart = any_uart::init(fdt?, phys_to_virt)?;
+    let uart = any_uart::init(fdt?, debug_uart_phys_to_virt)?;
     UART.init(uart.tx?);
 
     crate::early_debug::set_tx_fun(write_byte);

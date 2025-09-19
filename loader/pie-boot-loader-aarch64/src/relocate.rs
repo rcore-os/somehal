@@ -24,7 +24,7 @@ unsafe extern "C" {
 const R_AARCH64_RELATIVE: u32 = 1027;
 /// 计算加载偏移量 (实际地址 - 链接地址)
 fn get_load_offset() -> i64 {
-    sym_lma!(super::_start) as i64 - 0xF_0000_0000_i64
+    sym_lma!(super::_start) as i64
 }
 
 /// 应用 .rela.dyn 重定位

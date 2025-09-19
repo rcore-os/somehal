@@ -42,7 +42,6 @@ use pie_boot_loader_aarch64::EarlyBootArgs;
 
 #[unsafe(link_section = ".data")]
 static mut UART_DEBUG: usize = 0;
-// static mut UART_DEBUG: usize = 0x2800d000;
 
 const FLAG_LE: usize = 0b0;
 const FLAG_PAGE_SIZE_4K: usize = 0b10;
@@ -110,6 +109,15 @@ fn preserve_boot_args() {
     LDR  x0,  =_start
     str x0,  [x8, {args_of_kimage_addr_vma}]",
 
+    adr_l!(x0, "__cpu0_stack_top"),
+    "
+    str x0,  [x8, {args_of_stack_top_lma}]",
+    "
+    LDR x0,  =__cpu0_stack_top
+    str x0,  [x8, {args_of_stack_top_vma}]
+    ",
+
+
     adr_l!(x0, "__kernel_code_end"),
     "
     str x0,  [x8, {args_of_kcode_end}]
@@ -138,6 +146,8 @@ fn preserve_boot_args() {
     args_of_entry_vma = const  offset_of!(EarlyBootArgs, virt_entry),
     args_of_kimage_addr_lma = const  offset_of!(EarlyBootArgs, kimage_addr_lma),
     args_of_kimage_addr_vma = const  offset_of!(EarlyBootArgs, kimage_addr_vma),
+    args_of_stack_top_lma = const  offset_of!(EarlyBootArgs, stack_top_lma),
+    args_of_stack_top_vma = const  offset_of!(EarlyBootArgs, stack_top_vma),
     args_of_kcode_end = const  offset_of!(EarlyBootArgs, kcode_end),
     args_of_el = const  offset_of!(EarlyBootArgs, el),
     el_value = const if cfg!(feature = "hv") { 2 } else { 1 },

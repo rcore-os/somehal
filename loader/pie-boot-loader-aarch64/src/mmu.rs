@@ -105,7 +105,6 @@ where
         ));
 
         early_err!(add_rams(fdt, &mut table, access, new_pte));
-
         if debug::reg_base() > 0 {
             let paddr = debug::reg_base();
             let vaddr = paddr + KLINER_OFFSET;
@@ -114,7 +113,7 @@ where
                 MapConfig {
                     vaddr: vaddr.into(),
                     paddr: paddr.into(),
-                    size,
+                    size: page_size(),
                     pte: new_pte(CacheKind::Device),
                     allow_huge: true,
                     flush: false,
@@ -149,13 +148,9 @@ where
 
     let pg = table.paddr().raw() as _;
     RETURN.as_mut().pg_start = pg;
+    let table_size = access.current() as usize - table_start as usize;
     printkv!("Table", "{pg:#p}");
-    printkv!(
-        "Table size",
-        "{:#x}",
-        access.current() as usize - table_start as usize
-    );
-
+    printkv!("Table size", "{:#x}", table_size);
     table.paddr()
 }
 

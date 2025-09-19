@@ -71,7 +71,7 @@ pub fn cpu_on(cpu_id: u64, stack_top: u64) -> Result<(), PsciError> {
             super::UART_DEBUG = boot_info()
                 .debug_console
                 .as_ref()
-                .map(|p| p.base as usize)
+                .map(|p| p.base_virt as usize)
                 .unwrap_or(0);
         }
     }
