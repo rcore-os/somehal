@@ -40,25 +40,39 @@ jobs:
       - name: Check if pie-boot-loader-aarch64 was released
         id: check-release
         run: |
-          # Check if any pie-boot-loader-aarch64 tag was created in this release
-          latest_tag=$(git tag --sort=-version:refname | grep "^pie-boot-loader-aarch64-v" | head -n1 || echo "")
-          if [ -n "$latest_tag" ]; then
-            # Check if this tag was created in the last minute (indicating it was just created)
-            tag_date=$(git log -1 --format=%ct "$latest_tag" 2>/dev/null || echo "0")
-            current_date=$(date +%s)
-            time_diff=$((current_date - tag_date))
-            
-            if [ $time_diff -lt 300 ]; then  # 5 minutes threshold
-              echo "pie-boot-loader-aarch64-released=true" >> $GITHUB_OUTPUT
-              echo "pie-boot-loader-aarch64-tag=$latest_tag" >> $GITHUB_OUTPUT
-              echo "✅ pie-boot-loader-aarch64 was released with tag: $latest_tag"
+          # Primary method: Check if pie-boot-loader-aarch64 was released by parsing release-plz output
+          releases_output="${{ steps.release-plz.outputs.releases }}"
+          echo "Release-plz output: $releases_output"
+          
+          # Check if pie-boot-loader-aarch64 is in the releases
+          pie_boot_released=$(echo "$releases_output" | jq -r '.[] | select(.package_name == "pie-boot-loader-aarch64") | .tag' 2>/dev/null || echo "")
+          
+          if [ -n "$pie_boot_released" ]; then
+            echo "pie-boot-loader-aarch64-released=true" >> $GITHUB_OUTPUT
+            echo "pie-boot-loader-aarch64-tag=$pie_boot_released" >> $GITHUB_OUTPUT
+            echo "✅ pie-boot-loader-aarch64 was released with tag: $pie_boot_released"
+          else
+            # Backup method: Check if any new pie-boot-loader-aarch64 tag was created recently
+            echo "⚠️ Fallback to tag-based detection method"
+            latest_tag=$(git tag --sort=-version:refname | grep "^pie-boot-loader-aarch64-v" | head -n1 || echo "")
+            if [ -n "$latest_tag" ]; then
+              # Check if this tag was created in the last 10 minutes
+              tag_date=$(git log -1 --format=%ct "$latest_tag" 2>/dev/null || echo "0")
+              current_date=$(date +%s)
+              time_diff=$((current_date - tag_date))
+              
+              if [ $time_diff -lt 600 ]; then  # 10 minutes threshold (increased from 5)
+                echo "pie-boot-loader-aarch64-released=true" >> $GITHUB_OUTPUT
+                echo "pie-boot-loader-aarch64-tag=$latest_tag" >> $GITHUB_OUTPUT
+                echo "✅ pie-boot-loader-aarch64 was detected with tag: $latest_tag (time diff: ${time_diff}s)"
+              else
+                echo "pie-boot-loader-aarch64-released=false" >> $GITHUB_OUTPUT
+                echo "ℹ️ No recent pie-boot-loader-aarch64 release detected (time diff: ${time_diff}s)"
+              fi
             else
               echo "pie-boot-loader-aarch64-released=false" >> $GITHUB_OUTPUT
-              echo "ℹ️ No recent pie-boot-loader-aarch64 release detected"
+              echo "ℹ️ No pie-boot-loader-aarch64 tag found"
             fi
-          else
-            echo "pie-boot-loader-aarch64-released=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ No pie-boot-loader-aarch64 tag found"
           fi
 
   release-plz-pr:
@@ -100,7 +114,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@nightly
         with:
           targets: aarch64-unknown-none-softfloat
           components: rust-src, llvm-tools-preview
