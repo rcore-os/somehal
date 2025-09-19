@@ -122,7 +122,7 @@ pub unsafe extern "C" fn dcache_all(op: DcacheOp) {
 	dsb	sy
 	mrs	x10, clidr_el1		/* read clidr_el1 */
 	ubfx	x11, x10, #24, #3	/* x11 <- loc */
-	cbz	x11, 3b		/* if loc is 0, exit */
+	cbz	x11, 3f		/* if loc is 0, exit */
 	mov	x15, lr
 	mrs	x16, s3_0_c0_c7_2	/* read value of id_aa64mmfr2_el1*/
 	ubfx	x16, x16, #20, #4	/* save FEAT_CCIDX identifier in x16 */
@@ -137,7 +137,7 @@ pub unsafe extern "C" fn dcache_all(op: DcacheOp) {
 	lsr	x12, x10, x12
 	and	x12, x12, #7		/* x12 <- cache type */
 	cmp	x12, #2
-	b.lt	2b			/* skip if no cache or icache */
+	b.lt	2f			/* skip if no cache or icache */
 	bl	{dcache_level}	/* x1 = 0 flush, 1 invalidate */
 /* skip */
 2:
