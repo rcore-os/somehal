@@ -9,7 +9,9 @@ use crate::{
     mem::{page_size, phys_to_virt, with_regions},
 };
 
+#[unsafe(link_section = ".data")]
 static mut STACK_START: usize = 0;
+#[unsafe(link_section = ".data")]
 static mut STACK_END: usize = 0;
 
 pub fn cpu_id_list() -> impl Iterator<Item = usize> {

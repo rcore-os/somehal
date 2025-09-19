@@ -10,6 +10,7 @@ use crate::{
     mem::phys_to_virt,
 };
 
+#[unsafe(link_section = ".data")]
 static UART: LazyStatic<any_uart::Sender> = LazyStatic::new();
 
 fn debug_uart_phys_to_virt(p: usize) -> *mut u8 {
