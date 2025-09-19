@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1](https://github.com/rcore-os/somehal/compare/pie-boot-loader-aarch64-v0.3.0...pie-boot-loader-aarch64-v0.3.1) - 2025-09-19
+
+### Other
+
+- 恢复cache_all
+
 ## [0.3.0](https://github.com/rcore-os/somehal/compare/pie-boot-loader-aarch64-v0.2.3...pie-boot-loader-aarch64-v0.3.0) - 2025-08-22
 
 ### Fixed
