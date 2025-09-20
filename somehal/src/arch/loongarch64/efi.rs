@@ -197,77 +197,35 @@ pub unsafe extern "C" fn efi_pe_entry(
     _image_handle: ::uefi::Handle,
     system_table: *const ::core::ffi::c_void,
 ) -> Status {
-
-    // 将系统表转换为我们的结构
     unsafe {
-        // 从 CSR KS1 寄存器获取 UART 基地址（类似 Linux 内核方式）
-        let uart_base = csr_read(LOONGARCH_CSR_KS1);
-
-        if uart_base != 0 {
-            // 输出 Hello World 字符串
-            uart_puts(
-                uart_base,
-                b"Hello World from Pure Rust UEFI with naked_asm!\r\n",
-            );
+        // 尝试使用 EFI 系统表输出
+        if !system_table.is_null() {
+            let system_table = system_table as *const EfiSystemTable;
+            
+            // 检查系统表的魔数字
+            let hdr = &(*system_table).hdr;
+            if hdr.signature == 0x5453595320494249 {  // "IBI SYST" in little endian
+                let con_out = (*system_table).con_out;
+                if !con_out.is_null() {
+                    // 直接使用最简单的 UTF-16 字符串
+                    let hello_msg: [u16; 14] = [
+                        0x0048, 0x0065, 0x006C, 0x006C, 0x006F, 0x0020,  // "Hello "
+                        0x0045, 0x0046, 0x0049, 0x0021,                  // "EFI!"
+                        0x000D, 0x000A,                                  // "\r\n"
+                        0x0000, 0x0000                                   // null terminator + padding
+                    ];
+                    
+                    // 获取 OutputString 函数指针
+                    let output_string_func = (*con_out).output_string;
+                    
+                    // 使用 EFI 调用约定调用 OutputString
+                    let _result = efi_call!(output_string_func, con_out, hello_msg.as_ptr());
+                }
+            }
         }
     }
 
-    Status::DEVICE_ERROR
+    // 返回成功状态
+    Status::SUCCESS
 }
 
-// LoongArch64 CSR 寄存器定义
-const LOONGARCH_CSR_KS1: u32 = 0x31;
-
-// UART 寄存器偏移
-const UART_THR: u64 = 0x00; // Transmitter Holding Register
-const UART_LSR: u64 = 0x05; // Line Status Register
-const UART_LSR_THRE: u8 = 0x20; // Transmitter Holding Register Empty
-
-// 使用内联汇编读取 CSR 寄存器
-#[inline(always)]
-unsafe fn csr_read(csr: u32) -> u64 {
-    let value: u64;
-    match csr {
-        LOONGARCH_CSR_KS1 => {
-            asm!(
-                "csrrd {}, 0x31",
-                out(reg) value,
-                options(nomem, nostack, preserves_flags)
-            );
-        }
-        _ => {
-            value = 0;
-        }
-    }
-    value
-}
-
-/// 从指定地址读取 8 位值
-#[inline(always)]
-unsafe fn mmio_read8(addr: u64) -> u8 {
-    core::ptr::read_volatile(addr as *const u8)
-}
-
-/// 向指定地址写入 8 位值
-#[inline(always)]
-unsafe fn mmio_write8(addr: u64, value: u8) {
-    core::ptr::write_volatile(addr as *mut u8, value);
-}
-
-/// 直接 UART 输出函数
-unsafe fn uart_putc(uart_base: u64, c: u8) {
-    // 等待 UART 发送器准备就绪
-    while (mmio_read8(uart_base + UART_LSR) & UART_LSR_THRE) == 0 {
-        // 自旋等待
-    }
-
-    // 写入字符到 UART 数据寄存器
-    mmio_write8(uart_base + UART_THR, c);
-}
-
-/// 输出字符串到 UART
-unsafe fn uart_puts(uart_base: u64, s: &[u8]) {
-    for &c in s {
-        uart_putc(uart_base, c);
-    }
-}
