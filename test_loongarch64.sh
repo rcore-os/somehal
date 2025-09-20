@@ -146,13 +146,13 @@ QEMU_CMD=(qemu-system-loongarch64 \
     -bios "${TARGET_DIR}/edk2/loongarch64/code.fd" \
     -kernel "${KERNEL_EFI}" \
     -nographic)
-QEMU_CMD=(qemu-system-loongarch64 \
-    -machine virt \
-    -cpu la464 \
-    -m 1G \
-    -bios "/home/zhourui/opensource/la64-test/Build/LoongArchVirtQemu/DEBUG_GCC5/FV/QEMU_EFI.fd" \
-    -kernel "${KERNEL_EFI}" \
-    -nographic)
+# QEMU_CMD=(qemu-system-loongarch64 \
+#     -machine virt \
+#     -cpu la464 \
+#     -m 1G \
+#     -bios "/home/zhourui/opensource/la64-test/Build/LoongArchVirtQemu/DEBUG_GCC5/FV/QEMU_EFI.fd" \
+#     -kernel "${KERNEL_EFI}" \
+#     -nographic)
   
 
 if [ "$DEBUG_MODE" -eq 1 ]; then
