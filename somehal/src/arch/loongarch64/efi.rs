@@ -201,23 +201,24 @@ pub unsafe extern "C" fn efi_pe_entry(
         // 尝试使用 EFI 系统表输出
         if !system_table.is_null() {
             let system_table = system_table as *const EfiSystemTable;
-            
+
             // 检查系统表的魔数字
             let hdr = &(*system_table).hdr;
-            if hdr.signature == 0x5453595320494249 {  // "IBI SYST" in little endian
+            if hdr.signature == 0x5453595320494249 {
+                // "IBI SYST" in little endian
                 let con_out = (*system_table).con_out;
                 if !con_out.is_null() {
                     // 直接使用最简单的 UTF-16 字符串
                     let hello_msg: [u16; 14] = [
-                        0x0048, 0x0065, 0x006C, 0x006C, 0x006F, 0x0020,  // "Hello "
-                        0x0045, 0x0046, 0x0049, 0x0021,                  // "EFI!"
-                        0x000D, 0x000A,                                  // "\r\n"
-                        0x0000, 0x0000                                   // null terminator + padding
+                        0x0048, 0x0065, 0x006C, 0x006C, 0x006F, 0x0020, // "Hello "
+                        0x0045, 0x0046, 0x0049, 0x0021, // "EFI!"
+                        0x000D, 0x000A, // "\r\n"
+                        0x0000, 0x0000, // null terminator + padding
                     ];
-                    
+
                     // 获取 OutputString 函数指针
                     let output_string_func = (*con_out).output_string;
-                    
+
                     // 使用 EFI 调用约定调用 OutputString
                     let _result = efi_call!(output_string_func, con_out, hello_msg.as_ptr());
                 }
@@ -228,4 +229,3 @@ pub unsafe extern "C" fn efi_pe_entry(
     // 返回成功状态
     Status::SUCCESS
 }
-
