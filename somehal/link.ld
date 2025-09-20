@@ -4,6 +4,7 @@ SECTIONS{
     .text : ALIGN(4K) {
         _stext = .;
         *(.text.boot)
+        KEEP(*(.text.efi))
         *(.text .text.*)
         . = ALIGN(4K);
         _etext = .;

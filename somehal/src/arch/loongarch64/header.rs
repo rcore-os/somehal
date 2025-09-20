@@ -93,9 +93,9 @@ pub unsafe extern "C" fn _head() -> ! {
 
         // .data section
         ".ascii \".data\\0\\0\\0\"",
-        ".long _kernel_vsize",          // VirtualSize
+        ".long _end - _sdata",          // VirtualSize
         ".long _sdata - _head",         // VirtualAddress
-        ".long _kernel_rsize",          // SizeOfRawData
+        ".long _edata - _sdata",        // SizeOfRawData
         ".long _sdata - _head",         // PointerToRawData
 
         ".long  0",                      // PointerToRelocations
@@ -194,14 +194,7 @@ pub unsafe extern "C" fn kernel_entry() -> ! {
         // Perform early relocation if needed
         "bl          {early_relocate}",
 
-        // Jump to virtual address space (following Linux implementation)
-        "la.pcrel    $t0, 1f",
-        "li.d        $t1, 0xfffffffffffe0000",  // Virtual address mask
-        "or          $t0, $t0, $t1",             // Convert to virtual address
-        "jirl        $zero, $t0, 0",            // Jump to virtual space
-
-        "1:",
-        // Enable PG (paging)
+        // Enable PG (paging) directly
         "li.w        $t0, 0xb0",               // PLV=0, IE=0, PG=1
         "csrwr       $t0, 0x0",                // LOONGARCH_CSR_CRMD
         "li.w        $t0, 0x04",               // PLV=0, PIE=1, PWE=0

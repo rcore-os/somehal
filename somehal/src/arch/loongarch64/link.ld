@@ -118,8 +118,13 @@ SECTIONS
     } 
     . = ALIGN(0x00010000); 
     .bss :  { 
-        /* Init data section marker */
-        __initdata_begin = .;
+        *(.bss..swapper_pg_dir) 
+        . = ALIGN(16384); 
+        *(.bss..page_aligned) 
+        . = ALIGN(16384); 
+        *(.dynbss) 
+        *(.bss) 
+        *(COMMON) 
         
         /* CPU stacks */
         . = ALIGN(16384);
@@ -139,14 +144,6 @@ SECTIONS
         . += 8;
         FW_ARG2 = .;
         . += 8;
-        
-        *(.bss..swapper_pg_dir) 
-        . = ALIGN(16384); 
-        *(.bss..page_aligned) 
-        . = ALIGN(16384); 
-        *(.dynbss) 
-        *(.bss) 
-        *(COMMON) 
     } . = ALIGN(8); __bss_stop = .;
     . = ALIGN(PECOFF_SEGMENT_ALIGN);
     _end = .;
@@ -158,8 +155,8 @@ SECTIONS
     _kernel_entry = ABSOLUTE(kernel_entry & 0xffffffffffff);
     _kernel_asize = ABSOLUTE(_end - _text);
     _kernel_fsize = ABSOLUTE(_edata - _text);
-    _kernel_vsize = ABSOLUTE(_end - __initdata_begin);
-    _kernel_rsize = ABSOLUTE(_edata - __initdata_begin);
+    _kernel_vsize = ABSOLUTE(_end - _sdata);
+    _kernel_rsize = ABSOLUTE(_edata - _sdata);
     .gptab.sdata : {
         *(.gptab.data)
         *(.gptab.sdata)

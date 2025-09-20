@@ -2,6 +2,8 @@
 //!
 //! 为 loongarch64-unknown-none-softfloat 目标实现 EFI API 兼容的 PE 入口
 
+use core::{arch::asm, ffi::c_void};
+
 use uefi::prelude::*;
 
 // EFI 系统表结构定义 (简化版本，参考 Linux kernel efistub)
@@ -190,78 +192,82 @@ fn str_to_utf16<'a>(s: &str, buffer: &'a mut [u16]) -> &'a mut [u16] {
 /// EFI PE 入口点 - 符合 EFI ABI 的汇编包装
 /// 参数: a0 = image_handle, a1 = system_table
 #[unsafe(export_name = "efi_pe_entry")]
-#[unsafe(naked)]
-pub unsafe extern "C" fn efi_pe_entry() -> ! {
-    use core::arch::naked_asm;
-    naked_asm!(
-        // 保存 EFI 传入的参数
-        // a0 = image_handle, a1 = system_table
-        "addi.d  $sp, $sp, -32",        // 分配栈空间
-        "st.d    $ra, $sp, 24",         // 保存返回地址
-        "st.d    $fp, $sp, 16",         // 保存帧指针
-        "addi.d  $fp, $sp, 32",         // 设置新的帧指针
-
-        // 设置栈对齐 (16字节对齐，符合 EFI ABI)
-        // 使用 li.d 和 and 指令来避免立即数范围限制
-        "li.d    $t0, -16",             // 加载 -16 到临时寄存器
-        "and     $t0, $sp, $t0",        // 进行按位与操作
-        "move    $sp, $t0",             // 更新栈指针
-
-        // 调用 Rust 实现的 efi_main
-        // 参数已经在 a0, a1 中，符合 C 调用约定
-        "bl      {efi_main}",
-
-        // 恢复栈和返回
-        "ld.d    $ra, $fp, -8",         // 恢复返回地址
-        "ld.d    $fp, $fp, -16",        // 恢复帧指针
-        "addi.d  $sp, $sp, 32",         // 恢复栈指针
-        "jr      $ra",                  // 返回到 EFI 固件
-
-        efi_main = sym efi_main_impl,
-    )
-}
-
-/// EFI 主函数的 Rust 实现
-/// 这是实际的 EFI 应用逻辑，由汇编入口调用
-fn efi_main_impl(
+#[unsafe(link_section = ".text")]
+pub unsafe extern "C" fn efi_pe_entry(
     _image_handle: ::uefi::Handle,
     system_table: *const ::core::ffi::c_void,
 ) -> Status {
+
     // 将系统表转换为我们的结构
-    let system_table = system_table as *const EfiSystemTable;
-
-    if system_table.is_null() {
-        return Status::INVALID_PARAMETER;
-    }
-
     unsafe {
-        let con_out = (*system_table).con_out;
-        if con_out.is_null() {
-            return Status::UNSUPPORTED;
+        // 从 CSR KS1 寄存器获取 UART 基地址（类似 Linux 内核方式）
+        let uart_base = csr_read(LOONGARCH_CSR_KS1);
+
+        if uart_base != 0 {
+            // 输出 Hello World 字符串
+            uart_puts(
+                uart_base,
+                b"Hello World from Pure Rust UEFI with naked_asm!\r\n",
+            );
         }
-
-        // 准备 "Hello World\r\n" 的 UTF-16 版本
-        let mut hello_utf16 = [0u16; 32];
-        let hello_str = str_to_utf16("Hello World\r\n", &mut hello_utf16);
-
-        // 使用 EFI ABI 调用 EFI ConOut->OutputString
-        let output_string_func = (*con_out).output_string;
-        let _result = efi_call_2_abi(
-            output_string_func as *const (),
-            con_out as usize,
-            hello_str.as_ptr() as usize,
-        );
-        // EFI 返回值是 usize，直接使用
-
-        // 也可以输出第二条消息
-        let mut msg2_utf16 = [0u16; 32];
-        let msg2_str = str_to_utf16("EFI Call Success!\r\n", &mut msg2_utf16);
-        let _result2 = efi_call_2_abi(
-            output_string_func as *const (),
-            con_out as usize,
-            msg2_str.as_ptr() as usize,
-        );
     }
 
-    Status::SUCCESS
+    Status::DEVICE_ERROR
+}
+
+// LoongArch64 CSR 寄存器定义
+const LOONGARCH_CSR_KS1: u32 = 0x31;
+
+// UART 寄存器偏移
+const UART_THR: u64 = 0x00; // Transmitter Holding Register
+const UART_LSR: u64 = 0x05; // Line Status Register
+const UART_LSR_THRE: u8 = 0x20; // Transmitter Holding Register Empty
+
+// 使用内联汇编读取 CSR 寄存器
+#[inline(always)]
+unsafe fn csr_read(csr: u32) -> u64 {
+    let value: u64;
+    match csr {
+        LOONGARCH_CSR_KS1 => {
+            asm!(
+                "csrrd {}, 0x31",
+                out(reg) value,
+                options(nomem, nostack, preserves_flags)
+            );
+        }
+        _ => {
+            value = 0;
+        }
+    }
+    value
+}
+
+/// 从指定地址读取 8 位值
+#[inline(always)]
+unsafe fn mmio_read8(addr: u64) -> u8 {
+    core::ptr::read_volatile(addr as *const u8)
+}
+
+/// 向指定地址写入 8 位值
+#[inline(always)]
+unsafe fn mmio_write8(addr: u64, value: u8) {
+    core::ptr::write_volatile(addr as *mut u8, value);
+}
+
+/// 直接 UART 输出函数
+unsafe fn uart_putc(uart_base: u64, c: u8) {
+    // 等待 UART 发送器准备就绪
+    while (mmio_read8(uart_base + UART_LSR) & UART_LSR_THRE) == 0 {
+        // 自旋等待
+    }
+
+    // 写入字符到 UART 数据寄存器
+    mmio_write8(uart_base + UART_THR, c);
+}
+
+/// 输出字符串到 UART
+unsafe fn uart_puts(uart_base: u64, s: &[u8]) {
+    for &c in s {
+        uart_putc(uart_base, c);
+    }
 }
