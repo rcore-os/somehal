@@ -58,9 +58,18 @@ pub fn write_fmt(args: core::fmt::Arguments) {
     let _ = tx.write_fmt(args);
 }
 
-pub fn write_byte(b: u8) -> Result<(), TError> {
+pub fn write_bytes(bytes: &[u8]) -> Result<(), TError> {
     let _lock = TX_MUTEX.lock();
-    _write_byte(b)
+    for &b in bytes {
+        loop {
+            match _write_byte(b) {
+                Ok(_) => break,
+                Err(TError::ReTry) => continue,
+                Err(TError::Other) => break,
+            }
+        }
+    }
+    Ok(())
 }
 
 #[macro_export]
