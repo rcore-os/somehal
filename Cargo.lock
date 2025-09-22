@@ -1331,7 +1331,7 @@ dependencies = [
 
 [[package]]
 name = "pie-boot-loader-aarch64"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "aarch64-cpu",
  "aarch64-cpu-ext",
@@ -1910,7 +1910,7 @@ dependencies = [
 
 [[package]]
 name = "somehal"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "aarch64-cpu",
  "aarch64-cpu-ext",
