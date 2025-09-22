@@ -2082,6 +2082,7 @@ dependencies = [
  "buddy_system_allocator",
  "log",
  "somehal",
+ "spin 0.10.0",
 ]
 
 [[package]]

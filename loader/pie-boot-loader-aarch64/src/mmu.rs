@@ -122,28 +122,28 @@ where
             ));
         }
 
-        let size = if table.entry_size() == table.max_block_size() {
-            table.entry_size() * (T::TABLE_LEN / 2)
-        } else {
-            table.max_block_size() * T::TABLE_LEN
-        };
-        let start = 0x0usize;
+        // let size = if table.entry_size() == table.max_block_size() {
+        //     table.entry_size() * (T::TABLE_LEN / 2)
+        // } else {
+        //     table.max_block_size() * T::TABLE_LEN
+        // };
+        // let start = 0x0usize;
 
-        printkv!("eq", "[{:#x}, {:#x})", start, start + size);
+        // printkv!("eq", "[{:#x}, {:#x})", start, start + size);
 
-        if CurrentEL.read(CurrentEL::EL) == 1 {
-            early_err!(table.map(
-                MapConfig {
-                    vaddr: start.into(),
-                    paddr: start.into(),
-                    size,
-                    pte: new_pte(CacheKind::NoCache),
-                    allow_huge: true,
-                    flush: false,
-                },
-                access,
-            ));
-        }
+        // if CurrentEL.read(CurrentEL::EL) == 1 {
+        //     early_err!(table.map(
+        //         MapConfig {
+        //             vaddr: start.into(),
+        //             paddr: start.into(),
+        //             size,
+        //             pte: new_pte(CacheKind::Normal),
+        //             allow_huge: true,
+        //             flush: false,
+        //         },
+        //         access,
+        //     ));
+        // }
     }
 
     let pg = table.paddr().raw() as _;

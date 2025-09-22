@@ -120,12 +120,17 @@ fn extract_version_from_toml_value(value: &toml::Value) -> Option<String> {
 }
 
 fn aarch64_set_loader() {
-    // 首先尝试从 release 下载，如果失败则回退到本地构建
-    let download_success = download_latest_release();
-
-    if !download_success {
-        // 回退到原来的本地构建逻辑
+    let force_rebuild = std::env::var("CARGO_FEATURE_FORCE_REBUILD_LOADER").is_ok();
+    if force_rebuild {
         build_loader_locally();
+    } else {
+        let download_success = download_latest_release();
+        // 首先尝试从 release 下载，如果失败则回退到本地构建
+
+        if !download_success {
+            // 回退到原来的本地构建逻辑
+            build_loader_locally();
+        }
     }
 }
 

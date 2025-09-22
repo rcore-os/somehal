@@ -3,6 +3,7 @@ use core::{
     mem::{offset_of, size_of},
 };
 
+use aarch64_cpu_ext::cache::{CacheOp, dcache_all};
 use kdef_pgtable::{KLINER_OFFSET, PAGE_SIZE};
 #[cfg(not(feature = "hv"))]
 use pie_boot_loader_aarch64::el1::{set_table, setup_sctlr, setup_table_regs};
@@ -196,6 +197,7 @@ fn enable_fp() {
 
 #[start_code]
 fn init_mmu() -> usize {
+    dcache_all(CacheOp::Invalidate);
     setup_table_regs();
 
     let addr = boot_info().pg_start as usize;
