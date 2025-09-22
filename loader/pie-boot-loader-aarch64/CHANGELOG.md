@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2](https://github.com/rcore-os/somehal/compare/pie-boot-loader-aarch64-v0.3.1...pie-boot-loader-aarch64-v0.3.2) - 2025-09-22
+
+### Added
+
+- 添加 spin 依赖并实现共享数据的互斥锁管理 ([#50](https://github.com/rcore-os/somehal/pull/50))
+
 ## [0.3.1](https://github.com/rcore-os/somehal/compare/pie-boot-loader-aarch64-v0.3.0...pie-boot-loader-aarch64-v0.3.1) - 2025-09-19
 
 ### Other
