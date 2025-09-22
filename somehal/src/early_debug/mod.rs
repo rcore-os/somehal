@@ -25,7 +25,7 @@ pub(crate) fn set_tx_fun(tx: TxFun) {
     TX_FUN.init(tx);
 }
 
-fn write_byte(b: u8) -> Result<(), TError> {
+fn _write_byte(b: u8) -> Result<(), TError> {
     TX_FUN(b)
 }
 
@@ -35,7 +35,7 @@ impl core::fmt::Write for TX {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
         for b in s.bytes() {
             loop {
-                match write_byte(b) {
+                match _write_byte(b) {
                     Ok(_) => break,
                     Err(TError::ReTry) => continue,
                     Err(TError::Other) => break,
@@ -56,6 +56,11 @@ pub fn write_fmt(args: core::fmt::Arguments) {
     let _lock = TX_MUTEX.lock();
     let mut tx = TX;
     let _ = tx.write_fmt(args);
+}
+
+pub fn write_byte(b: u8) -> Result<(), TError> {
+    let _lock = TX_MUTEX.lock();
+    _write_byte(b)
 }
 
 #[macro_export]
