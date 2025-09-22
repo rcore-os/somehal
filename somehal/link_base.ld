@@ -21,8 +21,10 @@ SECTIONS{
 }
 
 SECTIONS{ 
-    .boot_loader  : {
+    .boot_loader : ALIGN(PAGE_SIZE) {
+        __boot_loader_start = .;
         KEEP(*(.boot_loader))
+        __boot_loader_end = .;
     }
 } INSERT BEFORE .data
 

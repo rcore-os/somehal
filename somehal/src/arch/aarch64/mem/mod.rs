@@ -25,3 +25,7 @@ pub fn iomap(phys: usize, size: usize) -> Result<NonNull<u8>, page_table_generic
 
     Ok(NonNull::new(vaddr).unwrap())
 }
+
+pub fn flush_tlb(vaddr: Option<VirtAddr>) {
+    crate::arch::el::flush_tlb(vaddr);
+}

@@ -11,6 +11,7 @@ version = "0.4.1"
 
 [features]
 hv = ["kdef-pgtable/space-low"]
+force-rebuild-loader = []
 
 [dependencies]
 any-uart = {version = "0.2"}
