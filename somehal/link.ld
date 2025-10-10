@@ -64,6 +64,23 @@ SECTIONS{
 
     __kernel_code_end = .;
 
+    .rela.dyn : ALIGN(8) {
+        __rela_dyn_begin = .;
+        *(.rela.dyn) *(.rela*)
+        __rela_dyn_end = .;
+    }
+    .relr.dyn : ALIGN(8) {
+        __relr_dyn_begin = .;
+        *(.relr.dyn)
+        __relr_dyn_end = .;
+    }
+
+    .la.abs : ALIGN(8) {
+        __la_abs_begin = .;
+        *(.la_abs)
+        __la_abs_end = .;
+    }
+
     /DISCARD/ : {
         *(.comment) *(.gnu*) *(.note*) *(.eh_frame*)
     }

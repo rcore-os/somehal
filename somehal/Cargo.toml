@@ -32,7 +32,8 @@ pie-boot-loader-aarch64 = {path = "../loader/pie-boot-loader-aarch64", version =
 smccc = "0.2"
 
 [target.'cfg(target_arch = "loongarch64")'.dependencies]
-uefi = { version = "0.35.0", features = [  "logger" ] }
+uefi = {version = "0.35.0"}
+uefi-raw = "0.11"
 
 [build-dependencies]
 bindeps-simple = {version = "0.2"}
