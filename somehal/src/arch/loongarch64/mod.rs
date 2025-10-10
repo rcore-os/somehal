@@ -1,5 +1,4 @@
 mod addrspace;
-mod efi;
 mod header;
 mod relocate;
 

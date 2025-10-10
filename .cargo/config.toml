@@ -1,8 +1,9 @@
 [target.'cfg(and(target_os = "none", not(target_arch = "loongarch64")))']
 runner = "ostool cargo-test"
 
-[target.loongarch64-unknown-none-softfloat]
-rustflags = [
-  "-C",
-  "link-arg=--emit-relocs",
-]
+# [target.loongarch64-unknown-none-softfloat]
+# rustflags = [
+
+# ]
+[build]
+rustflags = ["-C", "relocation-model=pic", "-Clink-args=-pie"]

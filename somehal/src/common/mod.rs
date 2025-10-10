@@ -1,5 +1,5 @@
 pub mod cpu;
-pub mod efi;
+pub(crate) mod efi;
 pub mod entry;
 pub mod fdt;
 pub mod mem;
