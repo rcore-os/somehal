@@ -43,8 +43,8 @@ pub unsafe extern "C" fn efi_pe_entry(
 ) -> Status {
     unsafe {
         relocate::early_relocate();
-        IMAGE_HANDLE = _image_handle;
-        SYSTEM_TABLE = system_table;
+        // IMAGE_HANDLE = _image_handle;
+        // SYSTEM_TABLE = system_table;
         // uefi::boot::set_image_handle(_image_handle);
         // uefi::table::set_system_table(system_table.cast());
 

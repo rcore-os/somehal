@@ -66,17 +66,24 @@ unsafe fn relocate_relative(reloc_offset: usize) {
         let r_type = rela.r_info & 0xFF;
 
         // 只处理最基本的重定位类型
-        if r_type == R_LARCH_RELATIVE {
-            // R_LARCH_RELATIVE: B + A (base address + addend)
-            let addr = rela.r_offset.wrapping_add(reloc_offset);
-            let value = (rela.r_addend as usize).wrapping_add(reloc_offset);
-
-            // 安全检查：确保地址在合理范围内
-            if (0x9000000000000000..0xA000000000000000).contains(&addr) {
+        match r_type {
+            R_LARCH_RELATIVE => {
+                // R_LARCH_RELATIVE: B + A (base address + addend)
+                let addr = rela.r_offset.wrapping_add(reloc_offset);
+                let value = (rela.r_addend as usize).wrapping_add(reloc_offset);
                 unsafe {
                     core::ptr::write_volatile(addr as *mut usize, value);
                 }
             }
+            R_LARCH_64 => {
+                // R_LARCH_64 entries hold absolute pointers that need the offset applied
+                let addr = rela.r_offset.wrapping_add(reloc_offset) as *mut usize;
+                unsafe {
+                    let current = addr.read_volatile();
+                    addr.write_volatile(current.wrapping_add(reloc_offset));
+                }
+            }
+            _ => {}
         }
 
         rela_ptr = unsafe { rela_ptr.add(1) };
@@ -102,7 +109,7 @@ unsafe fn relocate_relr(reloc_offset: usize) {
 
         if (relr & 1) == 0 {
             // 偶数条目：绝对地址
-            addr = (relr + reloc_offset) as *mut usize;
+            addr = relr.wrapping_add(reloc_offset) as *mut usize;
             unsafe {
                 *addr = (*addr).wrapping_add(reloc_offset);
                 addr = addr.add(1);
@@ -192,16 +199,7 @@ unsafe fn relocate_absolute(reloc_offset: usize) {
 
 /// 主要的内核重定位函数
 /// 参考 Linux arch/loongarch/kernel/relocate.c:relocate_kernel()
-pub unsafe extern "C" fn relocate_kernel() {
-    // 获取当前运行时地址
-    let mut runtime_addr: usize;
-    unsafe {
-        asm!("la.pcrel $t0, .", "move {}, $t0", out(reg) runtime_addr);
-    }
-
-    // 计算重定位偏移
-    let reloc_offset = runtime_addr.wrapping_sub(KERNEL_VADDR);
-
+pub unsafe extern "C" fn relocate_kernel(reloc_offset: usize) {
     if reloc_offset == 0 {
         return; // 无需重定位
     }
@@ -235,17 +233,14 @@ pub unsafe fn early_relocate() {
         // 计算重定位偏移
         let reloc_offset = current_addr.wrapping_sub(KERNEL_VADDR);
 
-        // 安全检查：确保偏移量合理
-        if reloc_offset < 0x1000000000 {
-            // 限制在合理范围内
-            unsafe {
-                relocate_kernel();
-            }
-            // 刷新指令缓存以确保重定位的指令生效
-            unsafe {
-                asm!("ibar 0"); // 指令缓存屏障
-                asm!("dbar 0"); // 数据缓存屏障
-            }
+        unsafe {
+            relocate_kernel(reloc_offset);
+        }
+
+        // 刷新指令与数据缓存，确保新指令立即生效
+        unsafe {
+            asm!("ibar 0");
+            asm!("dbar 0");
         }
     }
 }
