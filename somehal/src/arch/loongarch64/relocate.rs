@@ -47,8 +47,8 @@ struct RelaLaAbs {
 }
 
 /// 主要的重定位函数
-/// 参考 Linux arch/loongarch/kernel/relocate.c:relocate_relative()
-unsafe fn relocate_relative(reloc_offset: usize) {
+/// 参考 Linux 6.17 arch/loongarch/kernel/relocate.c:relocate_relative()
+unsafe fn relocate_relative(reloc_offset: isize) {
     let rela_start = unsafe { &__rela_dyn_begin as *const u8 as usize };
     let rela_end = unsafe { &__rela_dyn_end as *const u8 as usize };
 
@@ -62,28 +62,34 @@ unsafe fn relocate_relative(reloc_offset: usize) {
     while rela_ptr < rela_end_ptr {
         let rela = unsafe { &*rela_ptr };
 
-        // 获取重定位类型
-        let r_type = rela.r_info & 0xFF;
+        // 获取重定位类型 - LoongArch ELF64 r_info 低 32 位是类型
+        let r_type = (rela.r_info & 0xFFFFFFFF) as u32;
 
-        // 只处理最基本的重定位类型
-        match r_type {
+        // 参考 Linux 6.17 arch/loongarch/kernel/relocate.c
+        match r_type as usize {
             R_LARCH_RELATIVE => {
-                // R_LARCH_RELATIVE: B + A (base address + addend)
-                let addr = rela.r_offset.wrapping_add(reloc_offset);
-                let value = (rela.r_addend as usize).wrapping_add(reloc_offset);
+                // R_LARCH_RELATIVE: B + A
+                // B = base address offset, A = addend
+                // 地址需要调整：原地址 + 偏移
+                let addr = (rela.r_offset as isize + reloc_offset) as usize;
+                let value = (rela.r_addend + reloc_offset) as usize;
                 unsafe {
                     core::ptr::write_volatile(addr as *mut usize, value);
                 }
             }
             R_LARCH_64 => {
-                // R_LARCH_64 entries hold absolute pointers that need the offset applied
-                let addr = rela.r_offset.wrapping_add(reloc_offset) as *mut usize;
+                // R_LARCH_64: S + A
+                // S = symbol value, A = addend
+                // 对于 PIE，符号值也需要重定位
+                let addr = (rela.r_offset as isize + reloc_offset) as usize as *mut usize;
+                let value = (rela.r_addend + reloc_offset) as usize;
                 unsafe {
-                    let current = addr.read_volatile();
-                    addr.write_volatile(current.wrapping_add(reloc_offset));
+                    core::ptr::write_volatile(addr, value);
                 }
             }
-            _ => {}
+            _ => {
+                // 忽略其他类型的重定位
+            }
         }
 
         rela_ptr = unsafe { rela_ptr.add(1) };
@@ -91,8 +97,8 @@ unsafe fn relocate_relative(reloc_offset: usize) {
 }
 
 /// RELR 重定位支持
-/// 参考 Linux arch/loongarch/kernel/relocate.c 和 ARM64 实现
-unsafe fn relocate_relr(reloc_offset: usize) {
+/// 参考 Linux 6.17 arch/loongarch/kernel/relocate.c 和通用 RELR 实现
+unsafe fn relocate_relr(reloc_offset: isize) {
     let relr_start = unsafe { &__relr_dyn_begin as *const u8 as usize };
     let relr_end = unsafe { &__relr_dyn_end as *const u8 as usize };
 
@@ -105,29 +111,33 @@ unsafe fn relocate_relr(reloc_offset: usize) {
     let relr_end_ptr = relr_end as *const usize;
 
     while relr_ptr < relr_end_ptr {
-        let relr = unsafe { *relr_ptr };
+        let relr = unsafe { core::ptr::read_volatile(relr_ptr) };
 
         if (relr & 1) == 0 {
-            // 偶数条目：绝对地址
-            addr = relr.wrapping_add(reloc_offset) as *mut usize;
+            // 偶数条目：这是一个绝对地址
+            // 将其重定位，然后处理下一个位置
+            addr = (relr as isize + reloc_offset) as usize as *mut usize;
             unsafe {
-                *addr = (*addr).wrapping_add(reloc_offset);
+                let old_val = core::ptr::read_volatile(addr);
+                let new_val = (old_val as isize + reloc_offset) as usize;
+                core::ptr::write_volatile(addr, new_val);
                 addr = addr.add(1);
             }
         } else {
-            // 奇数条目：位图
+            // 奇数条目：位图，指示接下来的 63 个位置中哪些需要重定位
             let mut bitmap = relr >> 1;
-            let mut p = addr;
-            while bitmap != 0 {
+            let mut i = 0;
+            while i < 63 {
                 if (bitmap & 1) != 0 {
                     unsafe {
-                        *p = (*p).wrapping_add(reloc_offset);
+                        let p = addr.add(i);
+                        let old_val = core::ptr::read_volatile(p);
+                        let new_val = (old_val as isize + reloc_offset) as usize;
+                        core::ptr::write_volatile(p, new_val);
                     }
                 }
-                unsafe {
-                    p = p.add(1);
-                }
                 bitmap >>= 1;
+                i += 1;
             }
             addr = unsafe { addr.add(63) };
         }
@@ -139,7 +149,7 @@ unsafe fn relocate_relr(reloc_offset: usize) {
 /// LoongArch 绝对地址重定位
 /// 参考 Linux arch/loongarch/kernel/relocate.c:relocate_absolute()
 #[allow(dead_code)]
-unsafe fn relocate_absolute(reloc_offset: usize) {
+unsafe fn relocate_absolute(reloc_offset: isize) {
     let la_abs_start = unsafe { &__la_abs_begin as *const u8 as usize };
     let la_abs_end = unsafe { &__la_abs_end as *const u8 as usize };
 
@@ -154,8 +164,8 @@ unsafe fn relocate_absolute(reloc_offset: usize) {
         let abs_entry = unsafe { &*abs_ptr };
 
         // 计算需要重定位的指令地址
-        let relocated_pc = (abs_entry.pc as usize).wrapping_add(reloc_offset);
-        let symvalue = (abs_entry.symvalue as usize).wrapping_add(reloc_offset);
+        let relocated_pc = (abs_entry.pc + reloc_offset) as usize;
+        let symvalue = (abs_entry.symvalue + reloc_offset) as usize;
 
         // LoongArch 64位地址加载指令序列：
         // lu12i.w rd, %abs_hi20(symbol)
@@ -199,7 +209,7 @@ unsafe fn relocate_absolute(reloc_offset: usize) {
 
 /// 主要的内核重定位函数
 /// 参考 Linux arch/loongarch/kernel/relocate.c:relocate_kernel()
-pub unsafe extern "C" fn relocate_kernel(reloc_offset: usize) {
+pub unsafe extern "C" fn relocate_kernel(reloc_offset: isize) {
     if reloc_offset == 0 {
         return; // 无需重定位
     }
@@ -222,25 +232,39 @@ pub unsafe extern "C" fn relocate_kernel(reloc_offset: usize) {
 
 /// 早期重定位入口点
 /// 在内核初始化的最早阶段调用
+///
+/// 参考 Linux 6.17 arch/loongarch/kernel/relocate.c
 pub unsafe fn early_relocate() {
+    // 获取当前函数的链接地址（编译时确定的虚拟地址）
+    let link_addr = early_relocate as usize;
+
+    // 使用 PC 相对寻址获取当前函数的实际运行地址
     let mut current_addr: usize;
     unsafe {
-        asm!("la.pcrel $t0, .", "move {}, $t0", out(reg) current_addr);
+        // pcaddi $rd, imm 指令：$rd = PC + SignExtend(imm << 2)
+        // 使用 imm=0 获取当前 PC 值
+        asm!(
+            "pcaddi {out}, 0",
+            out = out(reg) current_addr,
+            options(nomem, nostack)
+        );
     }
 
-    // 检查是否需要重定位
-    if current_addr != KERNEL_VADDR {
-        // 计算重定位偏移
-        let reloc_offset = current_addr.wrapping_sub(KERNEL_VADDR);
+    // 计算重定位偏移量：实际地址 - 链接地址
+    // 对于 EFI 应用，UEFI固件可能将代码加载到任意地址
+    // 所有使用绝对地址的地方都需要加上这个偏移
+    let reloc_offset: isize = current_addr.wrapping_sub(link_addr) as isize;
 
+    if reloc_offset != 0 {
+        // 需要重定位
         unsafe {
             relocate_kernel(reloc_offset);
         }
 
-        // 刷新指令与数据缓存，确保新指令立即生效
+        // 刷新指令与数据缓存，确保重定位后的数据立即生效
         unsafe {
-            asm!("ibar 0");
-            asm!("dbar 0");
+            asm!("ibar 0", options(nostack));
+            asm!("dbar 0", options(nostack));
         }
     }
 }

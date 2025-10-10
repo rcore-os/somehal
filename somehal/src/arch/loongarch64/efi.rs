@@ -26,7 +26,9 @@ fn str_to_utf16<'a>(s: &str, buffer: &'a mut [u16]) -> &'a mut [u16] {
 
 static mut IMAGE_HANDLE: uefi_raw::Handle = null_mut();
 static mut SYSTEM_TABLE: *const uefi_raw::table::system::SystemTable = null_mut();
-const UEFI_HELLO_MSG: [u16; 14] = [
+
+// 使用 static mut 而非 const，确保通过 .data 节并需要重定位
+static mut UEFI_HELLO_MSG: [u16; 14] = [
     0x0048, 0x0065, 0x006C, 0x006C, 0x006F, 0x0020, // "Hello "
     0x0045, 0x0046, 0x0049, 0x0021, // "EFI!"
     0x000D, 0x000A, // "\r\n"
@@ -64,10 +66,12 @@ pub unsafe extern "C" fn efi_pe_entry(
             0x0000, 0x0000, // null terminator + padding
         ];
 
-        let hello = cstr16!("Hello from somehal EFI PE entry!\r\n");
+        let _hello = cstr16!("Hello from somehal EFI PE entry!\r\n");
 
         let _ = ((*st.stdout).output_string)(st.stdout, hello_msg.as_ptr());
-        let _ = ((*st.stdout).output_string)(st.stdout, UEFI_HELLO_MSG.as_ptr());
+        // 使用 addr_of! 宏获取地址，避免创建引用
+        let msg_ptr = core::ptr::addr_of!(UEFI_HELLO_MSG) as *const u16;
+        let _ = ((*st.stdout).output_string)(st.stdout, msg_ptr);
     }
 
     // 返回成功状态
