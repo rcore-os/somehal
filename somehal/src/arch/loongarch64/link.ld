@@ -35,10 +35,11 @@ SECTIONS
     _etext = .;
     _sdata = .;
     .rodata : AT(ADDR(.rodata)) { 
-        __start_rodata = .; 
+        _srodata = .; 
         *(.rodata) 
         *(.rodata.*) 
         *(.data.rel.ro*) 
+        _erodata = .;
     }
     .got : ALIGN(16) { 
         *(.got) 
@@ -49,11 +50,8 @@ SECTIONS
     .got.plt : ALIGN(16) { 
         *(.got.plt)
     }
-    . = ALIGN(16384); 
+
     .data : AT(ADDR(.data)) { 
-        . = ALIGN(0x00004000); 
-        _sdata = .;
-        . = ALIGN(4K);
         *(.data .data.*)
         *(.init.data)
         *(.sdata .sdata.*)
@@ -67,7 +65,7 @@ SECTIONS
     .relr.dyn : ALIGN(8) {
         __relr_dyn_begin = .;
         *(.relr.dyn)
-    __relr_dyn_end = .;
+        __relr_dyn_end = .;
     }
     .data.rel : { 
         *(.data.rel*)
