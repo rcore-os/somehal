@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET_DIR="${HERE}/target"
 TARGET_FILE="${TARGET_DIR}/ek2.tar.xz"
@@ -85,7 +84,7 @@ rm -rf "${TMP_EXTRACT_DIR}"
 echo "Extraction complete: ${TARGET_DIR}/edk2"
 
 echo "Building test binary..."
-cargo test --target loongarch64-unknown-none-softfloat -p test-some-rt --test test --no-run  -- --show-output
+cargo test --target loongarch64-unknown-none-softfloat -p test-some-rt --test test -Zbuild-std=core,alloc  --no-run  -- --show-output
 
 # Find the built kernel binary 
 KERNEL_ELF=$(find "${TARGET_DIR}/loongarch64-unknown-none-softfloat" -name "test-*" -type f -executable | head -n1)

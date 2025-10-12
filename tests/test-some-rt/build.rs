@@ -4,14 +4,13 @@ fn main() {
     println!("cargo:rustc-link-search={}", out_dir().display());
 
     println!("cargo::rustc-link-arg=-Tlink_test.x");
-    #[cfg(not(target_arch = "loongarch64"))]
-    println!("cargo::rustc-link-arg-tests=-no-pie");
+    // #[cfg(not(target_arch = "loongarch64"))]
+    // println!("cargo::rustc-link-arg-tests=-no-pie");
     
     // LoongArch64 EFI stub needs PIE support like Linux kernel efistub
-    #[cfg(target_arch = "loongarch64")]
+    // #[cfg(target_arch = "loongarch64")]
     {
-        println!("cargo::rustc-link-arg-tests=-pie");
-        println!("cargo::rustc-link-arg-tests=-fpie");
+        // println!("cargo::rustc-link-arg-tests=-pie");
     }
     println!("cargo::rustc-link-arg-tests=-znostart-stop-gc");
     println!("cargo::rustc-link-arg-tests=-Map=target/kernel.map");
