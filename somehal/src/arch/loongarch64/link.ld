@@ -33,17 +33,13 @@ SECTIONS
     } :text = 0
     . = ALIGN(PECOFF_SEGMENT_ALIGN);
     _etext = .;
-    . = ALIGN(16384); 
     _sdata = .;
-    . = ALIGN((4096)); 
-
     .rodata : AT(ADDR(.rodata)) { 
         __start_rodata = .; 
         *(.rodata) 
         *(.rodata.*) 
         *(.data.rel.ro*) 
     }
-
     .got : ALIGN(16) { 
         *(.got) 
     }

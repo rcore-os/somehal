@@ -41,6 +41,16 @@ pub unsafe extern "C" fn efi_pe_entry(
         let msg_ptr = core::ptr::addr_of!(UEFI_HELLO_MSG) as *const u16;
         printk::char16_puts(core::slice::from_raw_parts(msg_ptr, 14));
 
+        const MSG: &[u16] = &[
+            0x0048, 0x0065, 0x006C, 0x006C, 0x006F, 0x0020, // "Hello "
+            0x0045, 0x0046, 0x0049, 0x0021, // "EFI!"
+            0x000D, 0x000A, // "\r\n"
+            0x0000, 0x0000, // null terminator + padding
+        ];
+
+        // 使用常量测试字符串常量是否能正常访问
+        printk::char16_puts(MSG);
+
         let msg = [
             0x0048, 0x0065, 0x006C, 0x006C, 0x006F, 0x0020, // "Hello "
             0x0045, 0x0046, 0x0049, 0x0021, // "EFI!"

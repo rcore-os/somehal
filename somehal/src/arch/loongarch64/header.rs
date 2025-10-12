@@ -67,7 +67,7 @@ pub unsafe extern "C" fn _head() -> ! {
         ".quad 0",                      // SizeOfHeapReserve
         ".quad 0",                      // SizeOfHeapCommit
         ".long 0",                      // LoaderFlags
-        ".long (2f - .) / 8",                      // NumberOfRvaAndSizes
+        ".long (2f - .) / 8",           // NumberOfRvaAndSizes
 
         // Data directories
         ".quad 0",                      // ExportTable
