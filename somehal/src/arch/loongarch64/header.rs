@@ -39,15 +39,15 @@ pub unsafe extern "C" fn _head() -> ! {
         ".byte 0x02",                   // MajorLinkerVersion
         ".byte 0x14",                   // MinorLinkerVersion
         ".long _etext - _stext",        // SizeOfCode
-        ".long _kernel_vsize",          // SizeOfInitializedData
-        ".long 0",                      // SizeOfUninitializedData
+        ".long _kernel_rsize",          // SizeOfInitializedData
+        ".long _kernel_vsize - _kernel_rsize", // SizeOfUninitializedData
         ".long efi_pe_entry - _head",   // AddressOfEntryPoint
         ".long _stext - _head",         // BaseOfCode
 
         // Extra header fields
         ".quad 0",                      // ImageBase
-        ".long PECOFF_SEGMENT_ALIGN",                // SectionAlignment (PECOFF_SEGMENT_ALIGN)
-        ".long PECOFF_FILE_ALIGN",                  // FileAlignment (PECOFF_FILE_ALIGN)
+        ".long PAGE_SIZE",              // SectionAlignment (PECOFF_SEGMENT_ALIGN)
+        ".long PECOFF_FILE_ALIGN",      // FileAlignment (PECOFF_FILE_ALIGN)
         ".short 0",                     // MajorOperatingSystemVersion
         ".short 0",                     // MinorOperatingSystemVersion
         ".short {major_image_version}",                     // MajorImageVersion
@@ -93,10 +93,10 @@ pub unsafe extern "C" fn _head() -> ! {
 
         // .data section
         ".ascii \".data\\0\\0\\0\"",
-        ".long __kernel_load_end - _sdata",          // VirtualSize
-        ".long _sdata - _head",         // VirtualAddress
-        ".long __kernel_load_end - _sdata",        // SizeOfRawData
-        ".long _sdata - _head",         // PointerToRawData
+        ".long _kernel_vsize",          // VirtualSize
+        ".long _etext - _head",         // VirtualAddress
+        ".long _kernel_rsize",          // SizeOfRawData
+        ".long _etext - _head",         // PointerToRawData
 
         ".long  0",                      // PointerToRelocations
         ".long  0",                      // PointerToLineNumbers
