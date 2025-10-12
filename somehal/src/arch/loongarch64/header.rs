@@ -31,18 +31,18 @@ pub unsafe extern "C" fn _head() -> ! {
         ".long 0",                      // PointerToSymbolTable
         ".long 0",                      // NumberOfSymbols
         ".short 2f - 1f",               // SizeOfOptionalHeader
-        ".short {flags}",                // Characteristics (IMAGE_FILE_DEBUG_STRIPPED | IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_LINE_NUMS_STRIPPED)
+        ".short {flags}",               // Characteristics (IMAGE_FILE_DEBUG_STRIPPED | IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_LINE_NUMS_STRIPPED)
 
         // Optional header
         "1:",
         ".short 0x020b",                // IMAGE_NT_OPTIONAL_HDR64_MAGIC
         ".byte 0x02",                   // MajorLinkerVersion
         ".byte 0x14",                   // MinorLinkerVersion
-        ".long _etext - 3f",            // SizeOfCode
+        ".long _etext - _stext",        // SizeOfCode
         ".long _kernel_vsize",          // SizeOfInitializedData
         ".long 0",                      // SizeOfUninitializedData
         ".long efi_pe_entry - _head",   // AddressOfEntryPoint
-        ".long 3f - _head",             // BaseOfCode
+        ".long _stext - _head",         // BaseOfCode
 
         // Extra header fields
         ".quad 0",                      // ImageBase
@@ -58,7 +58,7 @@ pub unsafe extern "C" fn _head() -> ! {
 
         ".long _end - _head",           // SizeOfImage
 
-        ".long 3f - _head",             // SizeOfHeaders
+        ".long _stext - _head",         // SizeOfHeaders
         ".long 0",                      // CheckSum
         ".short {image_subsystem}",                    // IMAGE_SUBSYSTEM_EFI_APPLICATION
         ".short 0",                     // DllCharacteristics
@@ -80,10 +80,10 @@ pub unsafe extern "C" fn _head() -> ! {
         "2:",
         // Section table
         ".ascii \".text\\0\\0\\0\"",
-        ".long _etext - 3f",            // VirtualSize
-        ".long 3f - _head",             // VirtualAddress
-        ".long _etext - 3f",            // SizeOfRawData
-        ".long 3f - _head",             // PointerToRawData
+        ".long _etext - _stext",            // VirtualSize
+        ".long _stext - _head",             // VirtualAddress
+        ".long _etext - _stext",            // SizeOfRawData
+        ".long _stext - _head",             // PointerToRawData
 
         ".long 0",                      // PointerToRelocations
         ".long 0",                      // PointerToLineNumbers
@@ -93,9 +93,9 @@ pub unsafe extern "C" fn _head() -> ! {
 
         // .data section
         ".ascii \".data\\0\\0\\0\"",
-        ".long _end - _sdata",          // VirtualSize
+        ".long __kernel_load_end - _sdata",          // VirtualSize
         ".long _sdata - _head",         // VirtualAddress
-        ".long _edata - _sdata",        // SizeOfRawData
+        ".long __kernel_load_end - _sdata",        // SizeOfRawData
         ".long _sdata - _head",         // PointerToRawData
 
         ".long  0",                      // PointerToRelocations
@@ -103,9 +103,6 @@ pub unsafe extern "C" fn _head() -> ! {
         ".short 0",                     // NumberOfRelocations
         ".short 0",                     // NumberOfLineNumbers
         ".long 0xc0000040",             // Characteristics (IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE)
-
-        ".balign 0x10000",              // PECOFF_SEGMENT_ALIGN
-        "3:",                           // efi_header_end
 
         dos_signature = const IMAGE_DOS_SIGNATURE,
         linux_pe_magic = const LINUX_PE_MAGIC,
