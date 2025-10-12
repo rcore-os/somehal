@@ -2,7 +2,7 @@
 //!
 //! 基于 Linux 6.11 arch/loongarch/kernel/relocate.c 实现
 
-use core::arch::asm;
+use core::arch::{asm, naked_asm};
 
 // 内核虚拟地址
 const KERNEL_VADDR: usize = 0x9000000000000000;
@@ -235,25 +235,14 @@ pub unsafe extern "C" fn relocate_kernel(reloc_offset: isize) {
 ///
 /// 参考 Linux 6.17 arch/loongarch/kernel/relocate.c
 pub unsafe fn early_relocate() {
-    // 获取当前函数的链接地址（编译时确定的虚拟地址）
-    let link_addr = early_relocate as usize;
-
-    // 使用 PC 相对寻址获取当前函数的实际运行地址
-    let mut current_addr: usize;
-    unsafe {
-        // pcaddi $rd, imm 指令：$rd = PC + SignExtend(imm << 2)
-        // 使用 imm=0 获取当前 PC 值
-        asm!(
-            "pcaddi {out}, 0",
-            out = out(reg) current_addr,
-            options(nomem, nostack)
-        );
+    unsafe extern "C" {
+        fn _text();
     }
-
+    let offset = _text as usize;
     // 计算重定位偏移量：实际地址 - 链接地址
     // 对于 EFI 应用，UEFI固件可能将代码加载到任意地址
     // 所有使用绝对地址的地方都需要加上这个偏移
-    let reloc_offset: isize = current_addr.wrapping_sub(link_addr) as isize;
+    let reloc_offset: isize = -(offset as isize);
 
     if reloc_offset != 0 {
         // 需要重定位

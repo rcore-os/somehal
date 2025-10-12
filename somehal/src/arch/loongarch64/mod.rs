@@ -1,6 +1,6 @@
 mod addrspace;
 mod header;
-mod relocate;
+pub(crate) mod relocate;
 
 pub mod mem;
 pub mod power;
