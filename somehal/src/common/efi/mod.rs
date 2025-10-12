@@ -43,7 +43,7 @@ pub unsafe extern "C" fn efi_pe_entry(
         // 使用 efi_puts 测试字符串常量是否能正常访问
         printk::efi_puts("Hello from somehal EFI application!\n");
 
-        crate::relocate::early_relocate();
+        crate::relocate::efi_relocate();
 
         let a = 123;
         printk::efi_puts_fmt(format_args!("Hello {a}"));

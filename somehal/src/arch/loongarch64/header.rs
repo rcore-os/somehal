@@ -225,7 +225,7 @@ pub unsafe extern "C" fn kernel_entry() -> ! {
         // Jump to Rust kernel start
         "b           {rust_start}",
 
-        early_relocate = sym super::relocate::early_relocate,
+        early_relocate = sym super::relocate::efi_relocate,
         fw_arg0 = sym FW_ARG0,
         fw_arg1 = sym FW_ARG1,
         fw_arg2 = sym FW_ARG2,

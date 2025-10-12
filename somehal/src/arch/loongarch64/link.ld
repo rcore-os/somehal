@@ -58,8 +58,7 @@ SECTIONS
     }
     .rela.dyn : ALIGN(8) {
         __rela_dyn_begin = .;
-        *(.rela.dyn) 
-        *(.rela*)
+        *(.rela .rela*)
         __rela_dyn_end = .;
     }
     .relr.dyn : ALIGN(8) {
