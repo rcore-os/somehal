@@ -121,3 +121,18 @@ pub fn efi_puts(str: &str) {
         char16_puts(&buf[..=pos]);
     }
 }
+
+pub fn efi_puts_fmt(args: core::fmt::Arguments) {
+    use core::fmt::Write;
+
+    struct EfiWriter;
+
+    impl core::fmt::Write for EfiWriter {
+        fn write_str(&mut self, s: &str) -> core::fmt::Result {
+            efi_puts(s);
+            Ok(())
+        }
+    }
+
+    let _ = EfiWriter.write_fmt(args);
+}
