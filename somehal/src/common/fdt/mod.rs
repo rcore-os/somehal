@@ -11,7 +11,9 @@ use crate::{
 };
 
 #[unsafe(link_section = ".data")]
-static UART: LazyStatic<any_uart::Sender> = LazyStatic::new();
+static TX: LazyStatic<any_uart::Sender> = LazyStatic::new();
+#[unsafe(link_section = ".data")]
+static RX: LazyStatic<any_uart::Receiver> = LazyStatic::new();
 
 fn debug_uart_phys_to_virt(p: usize) -> *mut u8 {
     // 如果bootloader已经设置了debug console，说明虚拟地址已经映射好了
@@ -24,19 +26,33 @@ fn debug_uart_phys_to_virt(p: usize) -> *mut u8 {
 
 pub(crate) fn init_debugcon(fdt: Option<NonNull<u8>>) -> Option<()> {
     let uart = any_uart::init(fdt?, debug_uart_phys_to_virt)?;
-    UART.init(uart.tx?);
+    TX.init(uart.tx?);
+    RX.init(uart.rx?);
 
     crate::early_debug::set_tx_fun(write_byte);
+    crate::early_debug::set_rx_fun(read_byte);
     Some(())
 }
 
 fn write_byte(b: u8) -> Result<(), crate::early_debug::TError> {
     unsafe {
-        UART.edit(|tx| match tx.write(b) {
+        TX.edit(|tx| match tx.write(b) {
             Ok(_) => Ok(()),
             Err(e) => Err(match e {
                 any_uart::Error::WouldBlock => crate::early_debug::TError::ReTry,
                 any_uart::Error::Other(_e) => crate::early_debug::TError::Other,
+            }),
+        })
+    }
+}
+
+fn read_byte() -> Result<u8, crate::early_debug::RError> {
+    unsafe {
+            RX.edit(|tx| match tx.read() {
+            Ok(b) => Ok(b),
+            Err(e) => Err(match e {
+                any_uart::Error::WouldBlock => crate::early_debug::RError::NoData,
+                any_uart::Error::Other(_e) => crate::early_debug::RError::Other,
             }),
         })
     }
