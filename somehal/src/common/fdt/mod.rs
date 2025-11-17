@@ -48,7 +48,7 @@ fn write_byte(b: u8) -> Result<(), crate::early_debug::TError> {
 
 fn read_byte() -> Result<u8, crate::early_debug::RError> {
     unsafe {
-            RX.edit(|tx| match tx.read() {
+        RX.edit(|tx| match tx.read() {
             Ok(b) => Ok(b),
             Err(e) => Err(match e {
                 any_uart::Error::WouldBlock => crate::early_debug::RError::NoData,

@@ -1,6 +1,6 @@
+use crate::lazy_static::LazyStatic;
 use core::fmt::Write;
 use spin::Mutex;
-use crate::lazy_static::LazyStatic;
 
 type RxFun = fn() -> Result<u8, RError>;
 
@@ -94,7 +94,7 @@ pub fn read_byte_timeout(max_spins: usize) -> Result<u8, RError> {
 pub fn read_bytes(buffer: &mut [u8]) -> Result<usize, RError> {
     let _lock = RX_MUTEX.lock();
     let mut count = 0;
-    
+
     for slot in buffer.iter_mut() {
         match _read_byte() {
             Ok(b) => {
@@ -105,14 +105,14 @@ pub fn read_bytes(buffer: &mut [u8]) -> Result<usize, RError> {
             Err(e) => return Err(e),
         }
     }
-    
+
     Ok(count)
 }
 
 /// 阻塞读取多个字节，直到填满缓冲区
 pub fn read_bytes_blocking(buffer: &mut [u8]) -> Result<usize, RError> {
     let _lock = RX_MUTEX.lock();
-    
+
     for (_idx, slot) in buffer.iter_mut().enumerate() {
         loop {
             match _read_byte() {
@@ -128,7 +128,7 @@ pub fn read_bytes_blocking(buffer: &mut [u8]) -> Result<usize, RError> {
             }
         }
     }
-    
+
     Ok(buffer.len())
 }
 
@@ -136,7 +136,7 @@ pub fn read_bytes_blocking(buffer: &mut [u8]) -> Result<usize, RError> {
 pub fn read_line(buffer: &mut [u8]) -> Result<usize, RError> {
     let _lock = RX_MUTEX.lock();
     let mut count = 0;
-    
+
     loop {
         if count >= buffer.len() {
             return Err(RError::BufferFull);
@@ -157,27 +157,25 @@ pub fn read_line(buffer: &mut [u8]) -> Result<usize, RError> {
             b'\n' => {
                 return Ok(count);
             }
-            b'\r' => {
-                loop {
-                    match _read_byte() {
-                        Ok(b'\n') => {
-                            return Ok(count);
-                        }
-                        Ok(next_byte) => {
-                            if count < buffer.len() {
-                                buffer[count] = next_byte;
-                                count += 1;
-                            }
-                            return Ok(count);
-                        }
-                        Err(RError::NoData) => {
-                            core::hint::spin_loop();
-                            continue;
-                        }
-                        Err(e) => return Err(e),
+            b'\r' => loop {
+                match _read_byte() {
+                    Ok(b'\n') => {
+                        return Ok(count);
                     }
+                    Ok(next_byte) => {
+                        if count < buffer.len() {
+                            buffer[count] = next_byte;
+                            count += 1;
+                        }
+                        return Ok(count);
+                    }
+                    Err(RError::NoData) => {
+                        core::hint::spin_loop();
+                        continue;
+                    }
+                    Err(e) => return Err(e),
                 }
-            }
+            },
             _ => {
                 buffer[count] = b;
                 count += 1;
@@ -191,12 +189,12 @@ pub fn read_line_timeout(buffer: &mut [u8], max_spins: usize) -> Result<usize, R
     let _lock = RX_MUTEX.lock();
     let mut count = 0;
     let mut total_spins = 0;
-    
+
     loop {
         if count >= buffer.len() {
             return Err(RError::BufferFull);
         }
-        
+
         if total_spins >= max_spins {
             return Err(RError::Timeout);
         }
@@ -221,29 +219,27 @@ pub fn read_line_timeout(buffer: &mut [u8], max_spins: usize) -> Result<usize, R
 
         match b {
             b'\n' => return Ok(count),
-            b'\r' => {
-                loop {
-                    match _read_byte() {
-                        Ok(b'\n') => return Ok(count),
-                        Ok(next_byte) => {
-                            if count < buffer.len() {
-                                buffer[count] = next_byte;
-                                count += 1;
-                            }
-                            return Ok(count);
+            b'\r' => loop {
+                match _read_byte() {
+                    Ok(b'\n') => return Ok(count),
+                    Ok(next_byte) => {
+                        if count < buffer.len() {
+                            buffer[count] = next_byte;
+                            count += 1;
                         }
-                        Err(RError::NoData) => {
-                            core::hint::spin_loop();
-                            total_spins += 1;
-                            if total_spins >= max_spins {
-                                return Err(RError::Timeout);
-                            }
-                            continue;
-                        }
-                        Err(e) => return Err(e),
+                        return Ok(count);
                     }
+                    Err(RError::NoData) => {
+                        core::hint::spin_loop();
+                        total_spins += 1;
+                        if total_spins >= max_spins {
+                            return Err(RError::Timeout);
+                        }
+                        continue;
+                    }
+                    Err(e) => return Err(e),
                 }
-            }
+            },
             _ => {
                 buffer[count] = b;
                 count += 1;
