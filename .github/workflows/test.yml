@@ -37,7 +37,7 @@ jobs:
         with:
           packages: libudev-dev
           version: 1.0
-      - run: cargo install ostool
+      - run: cargo install ostool --version "^0.7"
       - name: Test kernel
         run: cargo test --target aarch64-unknown-none-softfloat -p test-some-rt --test test -- --show-output
       - name: Test Hypervisor
