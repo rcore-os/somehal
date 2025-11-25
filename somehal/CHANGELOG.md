@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.5](https://github.com/rcore-os/somehal/compare/somehal-v0.4.4...somehal-v0.4.5) - 2025-11-25
+
+### Added
+
+- implement UART RX handling and add read functions, simplify RAM finding logic ([#53](https://github.com/rcore-os/somehal/pull/53))
+
 ## [0.4.2](https://github.com/rcore-os/somehal/compare/somehal-v0.4.1...somehal-v0.4.2) - 2025-09-22
 
 ### Added
