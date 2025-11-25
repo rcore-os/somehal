@@ -1,8 +1,14 @@
+use crate::lazy_static::LazyStatic;
 use core::fmt::Write;
-
 use spin::Mutex;
 
-use crate::lazy_static::LazyStatic;
+type RxFun = fn() -> Result<u8, RError>;
+
+#[unsafe(link_section = ".data")]
+static RX_FUN: LazyStatic<RxFun> = LazyStatic::with_default(empty_rx);
+
+#[unsafe(link_section = ".data")]
+static RX_MUTEX: Mutex<()> = Mutex::new(());
 
 type TxFun = fn(u8) -> Result<(), TError>;
 
@@ -11,20 +17,86 @@ static TX_FUN: LazyStatic<TxFun> = LazyStatic::with_default(empty_tx);
 #[unsafe(link_section = ".data")]
 static TX_MUTEX: Mutex<()> = Mutex::new(());
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RError {
+    NoData,
+    Timeout,
+    ParityError,
+    FrameError,
+    Overrun,
+    BufferFull,
+    Other,
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum TError {
     ReTry,
     Other,
 }
 
+fn empty_rx() -> Result<u8, RError> {
+    Err(RError::NoData)
+}
+
 fn empty_tx(_: u8) -> Result<(), TError> {
     Ok(())
+}
+
+pub(crate) fn set_rx_fun(rx: RxFun) {
+    RX_FUN.init(rx);
 }
 
 pub(crate) fn set_tx_fun(tx: TxFun) {
     TX_FUN.init(tx);
 }
 
+#[inline]
+fn _read_byte() -> Result<u8, RError> {
+    RX_FUN()
+}
+
+/// 读取一个字节
+pub fn read_byte() -> Result<u8, RError> {
+    let _lock = RX_MUTEX.lock();
+    _read_byte()
+}
+
+/// 带超时的阻塞读取（max_spins 为自旋次数）
+pub fn read_byte_timeout(max_spins: usize) -> Result<u8, RError> {
+    let _lock = RX_MUTEX.lock();
+    for _ in 0..max_spins {
+        match _read_byte() {
+            Ok(b) => return Ok(b),
+            Err(RError::NoData) => {
+                core::hint::spin_loop();
+                continue;
+            }
+            Err(e) => return Err(e),
+        }
+    }
+    Err(RError::Timeout)
+}
+
+/// 非阻塞读取多个字节，遇到 NoData 就停止
+pub fn read_bytes(buffer: &mut [u8]) -> Result<usize, RError> {
+    let _lock = RX_MUTEX.lock();
+    let mut count = 0;
+
+    for slot in buffer.iter_mut() {
+        match _read_byte() {
+            Ok(b) => {
+                *slot = b;
+                count += 1;
+            }
+            Err(RError::NoData) => break,
+            Err(e) => return Err(e),
+        }
+    }
+
+    Ok(count)
+}
+
+#[inline]
 fn _write_byte(b: u8) -> Result<(), TError> {
     TX_FUN(b)
 }
