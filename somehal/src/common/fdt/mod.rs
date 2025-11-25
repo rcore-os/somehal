@@ -111,8 +111,8 @@ pub fn find_rams() -> Option<()> {
         common::mem::with_regions(|regions| regions.push(v).ok())?;
     }
 
-    for node in fdt.reserved_memory() {
-        if let Some(region) = node.reg().and_then(|mut r| r.next())
+    if let Some(reserved_node) = fdt.reserved_memory().next() {
+        if let Some(region) = reserved_node.reg().and_then(|mut r| r.next())
             && let Some(size) = region.size
         {
             let start = region.address as _;
@@ -122,6 +122,31 @@ pub fn find_rams() -> Option<()> {
                 kind: MemoryRegionKind::Reserved,
             };
             common::mem::with_regions(|regions| regions.push(v).ok())?;
+        }
+
+        let parent_level = reserved_node.level;
+        let parent_name = reserved_node.name();
+        
+        for child in reserved_node.fdt().all_nodes()
+            .skip_while(move |n| n.name() != parent_name)
+            .skip(1)
+            .take_while(move |n| n.level > parent_level)
+            .filter(move |n| n.level == parent_level + 1)
+        {
+            if let Some(regs) = child.reg() {
+                for region in regs {
+                    if let Some(size) = region.size {
+                        let start = region.address as _;
+
+                        let v = MemoryRegion {
+                            start,
+                            end: start + size,
+                            kind: MemoryRegionKind::Reserved,
+                        };
+                        common::mem::with_regions(|regions| regions.push(v).ok())?;
+                    }
+                }
+            }
         }
     }
 

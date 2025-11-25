@@ -55,23 +55,10 @@ fn _read_byte() -> Result<u8, RError> {
     RX_FUN()
 }
 
-pub fn try_read_byte() -> Result<u8, RError> {
-    let _lock = RX_MUTEX.lock();
-    _read_byte()
-}
-
+/// 读取一个字节
 pub fn read_byte() -> Result<u8, RError> {
     let _lock = RX_MUTEX.lock();
-    loop {
-        match _read_byte() {
-            Ok(b) => return Ok(b),
-            Err(RError::NoData) => {
-                core::hint::spin_loop();
-                continue;
-            }
-            Err(e) => return Err(e),
-        }
-    }
+    _read_byte()
 }
 
 /// 带超时的阻塞读取（max_spins 为自旋次数）
@@ -107,145 +94,6 @@ pub fn read_bytes(buffer: &mut [u8]) -> Result<usize, RError> {
     }
 
     Ok(count)
-}
-
-/// 阻塞读取多个字节，直到填满缓冲区
-pub fn read_bytes_blocking(buffer: &mut [u8]) -> Result<usize, RError> {
-    let _lock = RX_MUTEX.lock();
-
-    for (_idx, slot) in buffer.iter_mut().enumerate() {
-        loop {
-            match _read_byte() {
-                Ok(b) => {
-                    *slot = b;
-                    break;
-                }
-                Err(RError::NoData) => {
-                    core::hint::spin_loop();
-                    continue;
-                }
-                Err(e) => return Err(e),
-            }
-        }
-    }
-
-    Ok(buffer.len())
-}
-
-/// 阻塞读取一行，遇到 \n 或 \r 结束
-pub fn read_line(buffer: &mut [u8]) -> Result<usize, RError> {
-    let _lock = RX_MUTEX.lock();
-    let mut count = 0;
-
-    loop {
-        if count >= buffer.len() {
-            return Err(RError::BufferFull);
-        }
-
-        let b = loop {
-            match _read_byte() {
-                Ok(b) => break b,
-                Err(RError::NoData) => {
-                    core::hint::spin_loop();
-                    continue;
-                }
-                Err(e) => return Err(e),
-            }
-        };
-
-        match b {
-            b'\n' => {
-                return Ok(count);
-            }
-            b'\r' => loop {
-                match _read_byte() {
-                    Ok(b'\n') => {
-                        return Ok(count);
-                    }
-                    Ok(next_byte) => {
-                        if count < buffer.len() {
-                            buffer[count] = next_byte;
-                            count += 1;
-                        }
-                        return Ok(count);
-                    }
-                    Err(RError::NoData) => {
-                        core::hint::spin_loop();
-                        continue;
-                    }
-                    Err(e) => return Err(e),
-                }
-            },
-            _ => {
-                buffer[count] = b;
-                count += 1;
-            }
-        }
-    }
-}
-
-/// 带超时的读取一行
-pub fn read_line_timeout(buffer: &mut [u8], max_spins: usize) -> Result<usize, RError> {
-    let _lock = RX_MUTEX.lock();
-    let mut count = 0;
-    let mut total_spins = 0;
-
-    loop {
-        if count >= buffer.len() {
-            return Err(RError::BufferFull);
-        }
-
-        if total_spins >= max_spins {
-            return Err(RError::Timeout);
-        }
-
-        let b = loop {
-            match _read_byte() {
-                Ok(b) => {
-                    total_spins = 0;
-                    break b;
-                }
-                Err(RError::NoData) => {
-                    core::hint::spin_loop();
-                    total_spins += 1;
-                    if total_spins >= max_spins {
-                        return Err(RError::Timeout);
-                    }
-                    continue;
-                }
-                Err(e) => return Err(e),
-            }
-        };
-
-        match b {
-            b'\n' => return Ok(count),
-            b'\r' => loop {
-                match _read_byte() {
-                    Ok(b'\n') => return Ok(count),
-                    Ok(next_byte) => {
-                        if count < buffer.len() {
-                            buffer[count] = next_byte;
-                            count += 1;
-                        }
-                        return Ok(count);
-                    }
-                    Err(RError::NoData) => {
-                        core::hint::spin_loop();
-                        total_spins += 1;
-                        if total_spins >= max_spins {
-                            return Err(RError::Timeout);
-                        }
-                        continue;
-                    }
-                    Err(e) => return Err(e),
-                }
-            },
-            _ => {
-                buffer[count] = b;
-                count += 1;
-            }
-        }
-    }
 }
 
 #[inline]
