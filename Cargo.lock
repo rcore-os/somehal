@@ -1910,7 +1910,7 @@ dependencies = [
 
 [[package]]
 name = "somehal"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "aarch64-cpu",
  "aarch64-cpu-ext",
