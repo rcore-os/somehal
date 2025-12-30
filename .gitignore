@@ -1,2 +1,4 @@
 /target
 *.bare-test.toml
+.uboot.toml
+.*-schema.json
