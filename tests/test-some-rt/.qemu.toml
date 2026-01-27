@@ -1,0 +1,13 @@
+args = [
+    "-nographic",
+    "-cpu",
+    "cortex-a53",
+    "-machine",
+    "virt,virtualization=on",
+    "-smp",
+    "2"
+]
+uefi = false
+to_bin = true
+success_regex = []
+fail_regex = []
