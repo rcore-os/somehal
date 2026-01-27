@@ -4,12 +4,6 @@ permissions:
   contents: read
 
 on:
-  push:
-  pull_request:
-    branches:
-      - main  # Triggers on PR creation/update
-  merge_group:
-    types: [checks_requested]  # Triggers during merge queue checks
   workflow_call:  # Allows this workflow to be reused by other workflows
 
 env:
@@ -38,7 +32,7 @@ jobs:
         with:
           packages: libudev-dev
           version: 1.0
-      - run: cargo install ostool
+      - run: cargo +stable install ostool
       - name: Test kernel
         run: cargo test --target aarch64-unknown-none-softfloat -p test-some-rt --test test -- --show-output
       - name: Test Hypervisor

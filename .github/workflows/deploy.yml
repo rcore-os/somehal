@@ -2,9 +2,11 @@ name: Deploy
 
 on:
   push:
-    branches:
-      - '**'
   pull_request:
+    branches:
+      - main  # Triggers on PR creation/update
+  merge_group:
+    types: [checks_requested]  # Triggers during merge queue checks
 
 permissions:
   contents: read
