@@ -10,6 +10,7 @@ on:
       - main  # Triggers on PR creation/update
   merge_group:
     types: [checks_requested]  # Triggers during merge queue checks
+  workflow_call:  # Allows this workflow to be reused by other workflows
 
 env:
   qemu-version: 9.2.4
