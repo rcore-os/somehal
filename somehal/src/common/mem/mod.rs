@@ -71,8 +71,6 @@ pub(crate) fn init_regions(args_regions: &[MemoryRegion]) {
 
     // 全局合并
     merge_regions(&mut regions);
-
-    crate::println!("[MEM] Final memory regions: {:#?}", regions);
 }
 
 fn merge_regions(regions: &mut MemoryRegionVec) {
