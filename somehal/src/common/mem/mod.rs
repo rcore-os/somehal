@@ -52,6 +52,9 @@ pub(crate) fn init_regions(args_regions: &[MemoryRegion]) {
         .extend_from_slice(args_regions)
         .expect("Memory regions overflow");
 
+    // 初步去重合并原始数据
+    merge_regions(&mut regions);
+
     for region in regions.iter_mut() {
         if !region.end.is_aligned_to(page_size()) {
             let is_main = region.end == boot_info().free_memory_start as usize;
@@ -65,6 +68,46 @@ pub(crate) fn init_regions(args_regions: &[MemoryRegion]) {
     }
 
     mainmem_start_rsv(&mut regions);
+
+    // 最终全局合并（处理对齐和新插入区域带来的重叠/连续）
+    merge_regions(&mut regions);
+}
+
+fn merge_regions(regions: &mut MemoryRegionVec) {
+    if regions.is_empty() {
+        return;
+    }
+
+    // 1. 按起始地址排序
+    regions.as_mut_slice().sort_by_key(|r| r.start);
+
+    // 2. 原地合并并检查冲突
+    let mut write_idx = 0;
+    for read_idx in 1..regions.len() {
+        let next = regions[read_idx];
+        let curr = &mut regions[write_idx];
+
+        if next.start < curr.end {
+            // 存在物理重叠
+            if next.kind != curr.kind {
+                crate::println!("FATAL: Memory regions of DIFFERENT kinds overlap!");
+                crate::println!("  Region 1: {:#?}", curr);
+                crate::println!("  Region 2: {:#?}", next);
+                panic!("Memory regions of different kinds overlap");
+            }
+            // 类型相同：合并
+            curr.end = curr.end.max(next.end);
+        } else if next.start == curr.end && next.kind == curr.kind {
+            // 物理相邻且类型相同：合并
+            curr.end = next.end;
+        } else {
+            // 不重叠且不满足同类型相邻合并条件：移动写指针
+            write_idx += 1;
+            regions[write_idx] = next;
+        }
+    }
+
+    regions.truncate(write_idx + 1);
 }
 
 fn find_main(regions: &MemoryRegionVec) -> Option<MemoryRegion> {
@@ -139,6 +182,8 @@ fn mainmem_start_rsv(regions: &mut MemoryRegionVec) -> Option<()> {
         end,
     });
 
+    crate::println!("region: {:#?}", regions);
+
     Some(())
 }
 
@@ -178,80 +223,43 @@ pub struct MapRangeConfig {
 }
 
 fn region_ram_and_rsv() -> alloc::vec::Vec<MemoryRegion> {
-    let src = MEMORY_REGIONS.lock().to_vec();
-    let mut out: alloc::vec::Vec<MemoryRegion> = alloc::vec::Vec::new();
+    let src = MEMORY_REGIONS.lock();
+    let mut out: alloc::vec::Vec<MemoryRegion> = src
+        .iter()
+        .filter(|r| {
+            matches!(
+                r.kind,
+                MemoryRegionKind::Ram | MemoryRegionKind::Reserved
+            )
+        })
+        .copied()
+        .collect();
 
-    for region in src {
-        // 只处理 RAM 和 Reserved 类型的区域
-        if !matches!(
-            region.kind,
-            MemoryRegionKind::Ram | MemoryRegionKind::Reserved
-        ) {
-            continue;
-        }
-
-        let mut merged = false;
-
-        // 尝试与现有区域合并
-        for o in &mut out {
-            // 检查是否有重叠或相邻
-            if (o.start..o.end).contains(&region.start) ||
-                (o.start..o.end).contains(&(region.end.saturating_sub(1))) ||
-                (region.start..region.end).contains(&o.start) ||
-                (region.start..region.end).contains(&(o.end.saturating_sub(1))) ||
-                // 相邻区域
-                o.end == region.start ||
-                region.end == o.start
-            {
-                // 合并区域：扩展边界
-                o.start = o.start.min(region.start);
-                o.end = o.end.max(region.end);
-                merged = true;
-                break;
-            }
-        }
-
-        // 如果没有合并，添加新区域
-        if !merged {
-            out.push(region);
-        }
+    if out.is_empty() {
+        return out;
     }
 
-    // 多轮合并，直到没有更多可合并的区域
-    loop {
-        let mut changed = false;
-        let mut i = 0;
+    // 排序并合并
+    out.sort_by_key(|r| r.start);
 
-        while i < out.len() {
-            let mut j = i + 1;
-            while j < out.len() {
-                if out[i].kind == out[j].kind
-                    && (
-                        // 检查重叠或相邻
-                        (out[i].start..out[i].end).contains(&out[j].start)
-                            || (out[i].start..out[i].end).contains(&(out[j].end.saturating_sub(1)))
-                            || (out[j].start..out[j].end).contains(&out[i].start)
-                            || (out[j].start..out[j].end).contains(&(out[i].end.saturating_sub(1)))
-                            || out[i].end == out[j].start
-                            || out[j].end == out[i].start
-                    )
-                {
-                    // 合并区域
-                    out[i].start = out[i].start.min(out[j].start);
-                    out[i].end = out[i].end.max(out[j].end);
-                    out.swap_remove(j);
-                    changed = true;
-                } else {
-                    j += 1;
-                }
+    let mut write_idx = 0;
+    for read_idx in 1..out.len() {
+        let next = out[read_idx];
+        let curr = &mut out[write_idx];
+
+        if next.start < curr.end {
+            if next.kind != curr.kind {
+                panic!("MMU map range conflict: {:?} overlaps with {:?}", curr, next);
             }
-            i += 1;
-        }
-
-        if !changed {
-            break;
+            curr.end = curr.end.max(next.end);
+        } else if next.start == curr.end && next.kind == curr.kind {
+            curr.end = next.end;
+        } else {
+            write_idx += 1;
+            out[write_idx] = next;
         }
     }
+    out.truncate(write_idx + 1);
 
     out
 }
