@@ -126,8 +126,10 @@ pub fn find_rams() -> Option<()> {
 
         let parent_level = reserved_node.level;
         let parent_name = reserved_node.name();
-        
-        for child in reserved_node.fdt().all_nodes()
+
+        for child in reserved_node
+            .fdt()
+            .all_nodes()
             .skip_while(move |n| n.name() != parent_name)
             .skip(1)
             .take_while(move |n| n.level > parent_level)
