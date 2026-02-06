@@ -10,4 +10,6 @@ args = [
 uefi = false
 to_bin = true
 success_regex = []
-fail_regex = []
+fail_regex = [
+    "Panicked*"
+]
