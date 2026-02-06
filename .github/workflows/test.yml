@@ -4,7 +4,10 @@ permissions:
   contents: read
 
 on:
-  workflow_call:  # Allows this workflow to be reused by other workflows
+  push:
+  pull_request:
+    branches:
+      - main
 
 env:
   qemu-version: 9.2.4

@@ -1,8 +1,10 @@
 name: Quality Checks
 
 on:
-  workflow_call:
-
+  push:
+  pull_request:
+    branches:
+      - main
 jobs:
   check:
     name: Quality Checks
