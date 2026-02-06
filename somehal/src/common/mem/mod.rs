@@ -46,6 +46,12 @@ pub(crate) fn clean_bss() {
     }
 }
 
+pub(crate) fn reprocess_regions() {
+    // 在添加新的 Reserved 区域后，需要重新从 RAM 中减去非 RAM 区域
+    subtract_non_ram_from_ram(&mut MEMORY_REGIONS.lock());
+    merge_regions(&mut MEMORY_REGIONS.lock());
+}
+
 pub(crate) fn init_regions(args_regions: &[MemoryRegion]) {
     let mut regions = MEMORY_REGIONS.lock();
     regions
@@ -129,8 +135,11 @@ fn add_kernel_reserved(regions: &mut MemoryRegionVec) -> Option<()> {
 
     unsafe extern "C" {
         fn _text();
+        fn __kernel_code_end();
     }
-    let rsv_end = _text as usize - boot_info().kcode_offset();
+    // 计算内核代码结束的物理地址
+    let kernel_code_end_phys = __kernel_code_end as usize - boot_info().kcode_offset();
+    let rsv_end = kernel_code_end_phys;
 
     if rsv_start >= rsv_end {
         return Some(());
@@ -138,9 +147,7 @@ fn add_kernel_reserved(regions: &mut MemoryRegionVec) -> Option<()> {
 
     // 检查是否已被现有 Reserved 包含
     for r in regions.iter() {
-        if matches!(r.kind, MemoryRegionKind::Reserved)
-            && r.start <= rsv_start
-            && r.end >= rsv_end
+        if matches!(r.kind, MemoryRegionKind::Reserved) && r.start <= rsv_start && r.end >= rsv_end
         {
             return Some(()); // 已包含，无需添加
         }
@@ -173,7 +180,7 @@ fn subtract_non_ram_from_ram(regions: &mut MemoryRegionVec) {
     non_ram.as_mut_slice().sort_by_key(|(s, _)| *s);
     let mut merged_non_ram: heapless::Vec<(usize, usize), 64> = heapless::Vec::new();
     let mut current = non_ram[0];
-    
+
     for &(start, end) in non_ram.iter().skip(1) {
         if start <= current.1 {
             // 重叠或相邻，合并
@@ -292,12 +299,7 @@ fn region_ram_and_rsv() -> alloc::vec::Vec<MemoryRegion> {
     let src = MEMORY_REGIONS.lock();
     let mut out: alloc::vec::Vec<MemoryRegion> = src
         .iter()
-        .filter(|r| {
-            matches!(
-                r.kind,
-                MemoryRegionKind::Ram | MemoryRegionKind::Reserved
-            )
-        })
+        .filter(|r| matches!(r.kind, MemoryRegionKind::Ram | MemoryRegionKind::Reserved))
         .copied()
         .collect();
 
@@ -315,7 +317,10 @@ fn region_ram_and_rsv() -> alloc::vec::Vec<MemoryRegion> {
 
         if next.start < curr.end {
             if next.kind != curr.kind {
-                panic!("MMU map range conflict: {:?} overlaps with {:?}", curr, next);
+                panic!(
+                    "MMU map range conflict: {:?} overlaps with {:?}",
+                    curr, next
+                );
             }
             curr.end = curr.end.max(next.end);
         } else if next.start == curr.end && next.kind == curr.kind {
