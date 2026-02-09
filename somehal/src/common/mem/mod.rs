@@ -46,25 +46,74 @@ pub(crate) fn clean_bss() {
     }
 }
 
+pub(crate) fn reprocess_regions() {
+    // 在添加新的 Reserved 区域后，需要重新从 RAM 中减去非 RAM 区域
+    subtract_non_ram_from_ram(&mut MEMORY_REGIONS.lock());
+    merge_regions(&mut MEMORY_REGIONS.lock());
+}
+
 pub(crate) fn init_regions(args_regions: &[MemoryRegion]) {
     let mut regions = MEMORY_REGIONS.lock();
     regions
         .extend_from_slice(args_regions)
         .expect("Memory regions overflow");
 
+    // 页对齐
     for region in regions.iter_mut() {
         if !region.end.is_aligned_to(page_size()) {
             let is_main = region.end == boot_info().free_memory_start as usize;
-
             region.end = region.end.align_up(page_size());
-
             if is_main {
                 unsafe { boot_info_edit(|info| info.free_memory_start = region.end as _) };
             }
         }
     }
 
-    mainmem_start_rsv(&mut regions);
+    // 添加内核前段预留
+    add_kernel_reserved(&mut regions);
+
+    // 从 RAM 中减去所有非 RAM 区域
+    subtract_non_ram_from_ram(&mut regions);
+
+    // 全局合并
+    merge_regions(&mut regions);
+}
+
+fn merge_regions(regions: &mut MemoryRegionVec) {
+    if regions.is_empty() {
+        return;
+    }
+
+    // 1. 按起始地址排序
+    regions.as_mut_slice().sort_by_key(|r| r.start);
+
+    // 2. 原地合并并检查冲突
+    let mut write_idx = 0;
+    for read_idx in 1..regions.len() {
+        let next = regions[read_idx];
+        let curr = &mut regions[write_idx];
+
+        if next.start < curr.end {
+            // 存在物理重叠
+            if next.kind != curr.kind {
+                crate::println!("FATAL: Memory regions of DIFFERENT kinds overlap!");
+                crate::println!("  Region 1: {:#?}", curr);
+                crate::println!("  Region 2: {:#?}", next);
+                panic!("Memory regions of different kinds overlap");
+            }
+            // 类型相同：合并
+            curr.end = curr.end.max(next.end);
+        } else if next.start == curr.end && next.kind == curr.kind {
+            // 物理相邻且类型相同：合并
+            curr.end = next.end;
+        } else {
+            // 不重叠且不满足同类型相邻合并条件：移动写指针
+            write_idx += 1;
+            regions[write_idx] = next;
+        }
+    }
+
+    regions.truncate(write_idx + 1);
 }
 
 fn find_main(regions: &MemoryRegionVec) -> Option<MemoryRegion> {
@@ -79,67 +128,152 @@ fn find_main(regions: &MemoryRegionVec) -> Option<MemoryRegion> {
         .copied()
 }
 
-fn mainmem_start_rsv(regions: &mut MemoryRegionVec) -> Option<()> {
+/// 添加内核前段预留区域
+fn add_kernel_reserved(regions: &mut MemoryRegionVec) -> Option<()> {
     let mainmem = find_main(regions)?;
+    let rsv_start = mainmem.start;
 
-    let mut start = mainmem.start;
     unsafe extern "C" {
         fn _text();
+        fn __kernel_code_end();
     }
-    let mut end = _text as usize - boot_info().kcode_offset();
+    // 计算内核代码结束的物理地址
+    let kernel_code_end_phys = __kernel_code_end as usize - boot_info().kcode_offset();
+    let rsv_end = kernel_code_end_phys;
 
-    // 收集需要移除的 reserved 区域的索引
-    let mut indices_to_remove: heapless::Vec<usize, 16> = heapless::Vec::new();
-
-    // 遍历现有的 reserved 区域，调整新区域的范围以排除重叠部分
-    for (i, r) in regions.iter().enumerate() {
-        if !matches!(r.kind, MemoryRegionKind::Reserved) {
-            continue;
-        }
-
-        // 检查是否有重叠
-        if !(end <= r.start || start >= r.end) {
-            // 如果现有 reserved 区域完全包含了新区域，则无需添加
-            if r.start <= start && r.end >= end {
-                return Some(());
-            }
-
-            // 如果现有 reserved 区域完全在新区域中间，标记移除
-            if r.start >= start && r.end <= end {
-                let _ = indices_to_remove.push(i);
-                continue;
-            }
-
-            // 如果现有 reserved 区域与新区域的开始部分重叠
-            if r.start <= start && r.end > start && r.end < end {
-                start = r.end;
-            }
-
-            // 如果现有 reserved 区域与新区域的结束部分重叠
-            if r.start > start && r.start < end && r.end >= end {
-                end = r.start;
-            }
-        }
-    }
-
-    // 从后往前移除标记的区域（避免索引变化问题）
-    for &i in indices_to_remove.iter().rev() {
-        regions.swap_remove(i);
-    }
-
-    // 检查调整后的区域是否仍然有效
-    if start >= end {
+    if rsv_start >= rsv_end {
         return Some(());
     }
 
-    // 添加新的 reserved 区域
-    let _ = regions.push(MemoryRegion {
-        kind: MemoryRegionKind::Reserved,
-        start,
-        end,
-    });
+    // 检查是否已被现有 Reserved 包含
+    for r in regions.iter() {
+        if matches!(r.kind, MemoryRegionKind::Reserved) && r.start <= rsv_start && r.end >= rsv_end
+        {
+            return Some(()); // 已包含，无需添加
+        }
+    }
+
+    // 添加新的预留区域
+    regions
+        .push(MemoryRegion {
+            kind: MemoryRegionKind::Reserved,
+            start: rsv_start,
+            end: rsv_end,
+        })
+        .expect("Memory regions overflow");
 
     Some(())
+}
+
+/// 从所有 RAM 区域中减去非 RAM 区域（Reserved/Bootloader 等）
+fn subtract_non_ram_from_ram(regions: &mut MemoryRegionVec) {
+    // 1. 收集所有非 RAM 区域
+    let mut non_ram: heapless::Vec<(usize, usize), 64> = regions
+        .iter()
+        .filter(|r| !matches!(r.kind, MemoryRegionKind::Ram))
+        .map(|r| (r.start, r.end))
+        .collect();
+
+    if non_ram.is_empty() {
+        return;
+    }
+
+    // 2. 对非 RAM 区域进行排序和合并（关键步骤！）
+    non_ram.as_mut_slice().sort_by_key(|(s, _)| *s);
+    let mut merged_non_ram: heapless::Vec<(usize, usize), 64> = heapless::Vec::new();
+    let mut current = non_ram[0];
+
+    for &(start, end) in non_ram.iter().skip(1) {
+        if start <= current.1 {
+            // 重叠或相邻，合并
+            current.1 = current.1.max(end);
+        } else {
+            // 不连续，保存当前并开始新的
+            merged_non_ram
+                .push(current)
+                .expect("Non-RAM regions overflow");
+            current = (start, end);
+        }
+    }
+    merged_non_ram
+        .push(current)
+        .expect("Non-RAM regions overflow");
+
+    // 3. 收集所有 RAM 区域
+    let ram_list: heapless::Vec<MemoryRegion, 8> = regions
+        .iter()
+        .filter(|r| matches!(r.kind, MemoryRegionKind::Ram))
+        .copied()
+        .collect();
+
+    // 4. 删除所有旧 RAM 区域
+    regions.retain(|r| !matches!(r.kind, MemoryRegionKind::Ram));
+
+    // 5. 对每个 RAM 区域进行切分
+    for ram in ram_list {
+        let fragments = subtract_holes_from_range(ram.start, ram.end, &merged_non_ram);
+        for (start, end) in fragments {
+            regions
+                .push(MemoryRegion {
+                    kind: MemoryRegionKind::Ram,
+                    start,
+                    end,
+                })
+                .expect("Memory regions overflow");
+        }
+    }
+}
+
+/// 从一个连续范围中减去多个洞，返回剩余的碎片
+fn subtract_holes_from_range(
+    range_start: usize,
+    range_end: usize,
+    holes: &heapless::Vec<(usize, usize), 64>,
+) -> heapless::Vec<(usize, usize), 16> {
+    let mut fragments: heapless::Vec<(usize, usize), 16> = heapless::Vec::new();
+
+    // 收集与当前范围重叠的洞
+    let mut relevant_holes: heapless::Vec<(usize, usize), 32> = heapless::Vec::new();
+    for &(hole_start, hole_end) in holes {
+        if hole_start < range_end && hole_end > range_start {
+            let actual_start = hole_start.max(range_start);
+            let actual_end = hole_end.min(range_end);
+            relevant_holes
+                .push((actual_start, actual_end))
+                .expect("Relevant holes overflow");
+        }
+    }
+
+    if relevant_holes.is_empty() {
+        // 没有洞，整个范围都是有效的
+        fragments
+            .push((range_start, range_end))
+            .expect("Memory fragments overflow");
+        return fragments;
+    }
+
+    // 按起始地址排序
+    relevant_holes.as_mut_slice().sort_by_key(|(s, _)| *s);
+
+    // 生成碎片
+    let mut current = range_start;
+    for (hole_start, hole_end) in relevant_holes {
+        if current < hole_start {
+            fragments
+                .push((current, hole_start))
+                .expect("Memory fragments overflow");
+        }
+        current = current.max(hole_end);
+    }
+
+    // 最后一段
+    if current < range_end {
+        fragments
+            .push((current, range_end))
+            .expect("Memory fragments overflow");
+    }
+
+    fragments
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -178,80 +312,41 @@ pub struct MapRangeConfig {
 }
 
 fn region_ram_and_rsv() -> alloc::vec::Vec<MemoryRegion> {
-    let src = MEMORY_REGIONS.lock().to_vec();
-    let mut out: alloc::vec::Vec<MemoryRegion> = alloc::vec::Vec::new();
+    let src = MEMORY_REGIONS.lock();
+    let mut out: alloc::vec::Vec<MemoryRegion> = src
+        .iter()
+        .filter(|r| matches!(r.kind, MemoryRegionKind::Ram | MemoryRegionKind::Reserved))
+        .copied()
+        .collect();
 
-    for region in src {
-        // 只处理 RAM 和 Reserved 类型的区域
-        if !matches!(
-            region.kind,
-            MemoryRegionKind::Ram | MemoryRegionKind::Reserved
-        ) {
-            continue;
-        }
-
-        let mut merged = false;
-
-        // 尝试与现有区域合并
-        for o in &mut out {
-            // 检查是否有重叠或相邻
-            if (o.start..o.end).contains(&region.start) ||
-                (o.start..o.end).contains(&(region.end.saturating_sub(1))) ||
-                (region.start..region.end).contains(&o.start) ||
-                (region.start..region.end).contains(&(o.end.saturating_sub(1))) ||
-                // 相邻区域
-                o.end == region.start ||
-                region.end == o.start
-            {
-                // 合并区域：扩展边界
-                o.start = o.start.min(region.start);
-                o.end = o.end.max(region.end);
-                merged = true;
-                break;
-            }
-        }
-
-        // 如果没有合并，添加新区域
-        if !merged {
-            out.push(region);
-        }
+    if out.is_empty() {
+        return out;
     }
 
-    // 多轮合并，直到没有更多可合并的区域
-    loop {
-        let mut changed = false;
-        let mut i = 0;
+    // 排序并合并
+    out.sort_by_key(|r| r.start);
 
-        while i < out.len() {
-            let mut j = i + 1;
-            while j < out.len() {
-                if out[i].kind == out[j].kind
-                    && (
-                        // 检查重叠或相邻
-                        (out[i].start..out[i].end).contains(&out[j].start)
-                            || (out[i].start..out[i].end).contains(&(out[j].end.saturating_sub(1)))
-                            || (out[j].start..out[j].end).contains(&out[i].start)
-                            || (out[j].start..out[j].end).contains(&(out[i].end.saturating_sub(1)))
-                            || out[i].end == out[j].start
-                            || out[j].end == out[i].start
-                    )
-                {
-                    // 合并区域
-                    out[i].start = out[i].start.min(out[j].start);
-                    out[i].end = out[i].end.max(out[j].end);
-                    out.swap_remove(j);
-                    changed = true;
-                } else {
-                    j += 1;
-                }
+    let mut write_idx = 0;
+    for read_idx in 1..out.len() {
+        let next = out[read_idx];
+        let curr = &mut out[write_idx];
+
+        if next.start < curr.end {
+            if next.kind != curr.kind {
+                panic!(
+                    "MMU map range conflict: {:?} overlaps with {:?}",
+                    curr, next
+                );
             }
-            i += 1;
-        }
-
-        if !changed {
-            break;
+            curr.end = curr.end.max(next.end);
+        } else if next.start == curr.end && next.kind == curr.kind {
+            curr.end = next.end;
+        } else {
+            write_idx += 1;
+            out[write_idx] = next;
         }
     }
+    out.truncate(write_idx + 1);
 
     out
 }
