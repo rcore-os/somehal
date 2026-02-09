@@ -9,43 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.8](https://github.com/rcore-os/somehal/compare/somehal-v0.4.7...somehal-v0.4.8) - 2026-02-09
 
-### Added
-
-- merge overlaps region and delete reserved/bootloader from ram region ([#56](https://github.com/rcore-os/somehal/pull/56))
-- implement UART RX handling and add read functions, simplify RAM finding logic ([#53](https://github.com/rcore-os/somehal/pull/53))
-- 添加 write_bytes 函数以支持批量写入字节
-- add debug
-- 添加 spin 依赖并实现共享数据的互斥锁管理 ([#50](https://github.com/rcore-os/somehal/pull/50))
-- add cpu_on
-- 添加 LazyStatic 的 clean 方法并在 virt_entry 中调用
-
-### Fixed
-
-- support hypervisor mode EL2 boot and refactor CI ([#55](https://github.com/rcore-os/somehal/pull/55))
-- static section
-- 更新版本号至 0.3.15
-- rsv align
-- cpu_on
-- cpu on cache
-- cpu_on
-- 修复内核表地址设置逻辑并更新版本号至 0.3.11
-- update cpu_on return type to use PsciError for consistency
-- use macros adr_l instead of asm macro
-- fix
-- fix log
-- percpu data
-- find memory
-- fix aarch64 cpu on cache
-- fix link before mmu
-- fix riscv cpuid
-- fix pg blk ([#2](https://github.com/rcore-os/somehal/pull/2))
-- fix section
-
 ### Other
 
 - release ([#58](https://github.com/rcore-os/somehal/pull/58))
-- *(somehal)* release v0.4.6 ([#57](https://github.com/rcore-os/somehal/pull/57))
-- *(somehal)* release v0.4.5 ([#54](https://github.com/rcore-os/somehal/pull/54))
 - release ([#51](https://github.com/rcore-os/somehal/pull/51))
 - aarch64 bootloader stack use kernel stack
 - release ([#46](https://github.com/rcore-os/somehal/pull/46))
