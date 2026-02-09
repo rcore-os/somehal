@@ -1283,7 +1283,7 @@ dependencies = [
 
 [[package]]
 name = "page-table-generic"
-version = "0.6.2"
+version = "0.6.3"
 dependencies = [
  "bitflags 2.9.4",
  "env_logger",
@@ -1331,7 +1331,7 @@ dependencies = [
 
 [[package]]
 name = "pie-boot-loader-aarch64"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "aarch64-cpu",
  "aarch64-cpu-ext",
@@ -1910,7 +1910,7 @@ dependencies = [
 
 [[package]]
 name = "somehal"
-version = "0.4.7"
+version = "0.4.8"
 dependencies = [
  "aarch64-cpu",
  "aarch64-cpu-ext",
