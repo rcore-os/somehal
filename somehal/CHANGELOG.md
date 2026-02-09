@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - support hypervisor mode EL2 boot and refactor CI ([#55](https://github.com/rcore-os/somehal/pull/55))
 - static section
 - 更新版本号至 0.3.15
-- rsv aligin
+- rsv align
 - cpu_on
 - cpu on cache
 - cpu_on
