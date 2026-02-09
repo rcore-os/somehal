@@ -1283,7 +1283,7 @@ dependencies = [
 
 [[package]]
 name = "page-table-generic"
-version = "0.6.3"
+version = "0.6.4"
 dependencies = [
  "bitflags 2.9.4",
  "env_logger",
@@ -1910,7 +1910,7 @@ dependencies = [
 
 [[package]]
 name = "somehal"
-version = "0.4.8"
+version = "0.4.9"
 dependencies = [
  "aarch64-cpu",
  "aarch64-cpu-ext",
