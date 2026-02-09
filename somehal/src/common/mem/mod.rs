@@ -154,11 +154,13 @@ fn add_kernel_reserved(regions: &mut MemoryRegionVec) -> Option<()> {
     }
 
     // 添加新的预留区域
-    let _ = regions.push(MemoryRegion {
-        kind: MemoryRegionKind::Reserved,
-        start: rsv_start,
-        end: rsv_end,
-    });
+    regions
+        .push(MemoryRegion {
+            kind: MemoryRegionKind::Reserved,
+            start: rsv_start,
+            end: rsv_end,
+        })
+        .expect("Memory regions overflow");
 
     Some(())
 }
@@ -187,11 +189,15 @@ fn subtract_non_ram_from_ram(regions: &mut MemoryRegionVec) {
             current.1 = current.1.max(end);
         } else {
             // 不连续，保存当前并开始新的
-            let _ = merged_non_ram.push(current);
+            merged_non_ram
+                .push(current)
+                .expect("Non-RAM regions overflow");
             current = (start, end);
         }
     }
-    let _ = merged_non_ram.push(current);
+    merged_non_ram
+        .push(current)
+        .expect("Non-RAM regions overflow");
 
     // 3. 收集所有 RAM 区域
     let ram_list: heapless::Vec<MemoryRegion, 8> = regions
@@ -207,11 +213,13 @@ fn subtract_non_ram_from_ram(regions: &mut MemoryRegionVec) {
     for ram in ram_list {
         let fragments = subtract_holes_from_range(ram.start, ram.end, &merged_non_ram);
         for (start, end) in fragments {
-            let _ = regions.push(MemoryRegion {
-                kind: MemoryRegionKind::Ram,
-                start,
-                end,
-            });
+            regions
+                .push(MemoryRegion {
+                    kind: MemoryRegionKind::Ram,
+                    start,
+                    end,
+                })
+                .expect("Memory regions overflow");
         }
     }
 }
@@ -230,13 +238,17 @@ fn subtract_holes_from_range(
         if hole_start < range_end && hole_end > range_start {
             let actual_start = hole_start.max(range_start);
             let actual_end = hole_end.min(range_end);
-            let _ = relevant_holes.push((actual_start, actual_end));
+            relevant_holes
+                .push((actual_start, actual_end))
+                .expect("Relevant holes overflow");
         }
     }
 
     if relevant_holes.is_empty() {
         // 没有洞，整个范围都是有效的
-        let _ = fragments.push((range_start, range_end));
+        fragments
+            .push((range_start, range_end))
+            .expect("Memory fragments overflow");
         return fragments;
     }
 
@@ -247,14 +259,18 @@ fn subtract_holes_from_range(
     let mut current = range_start;
     for (hole_start, hole_end) in relevant_holes {
         if current < hole_start {
-            let _ = fragments.push((current, hole_start));
+            fragments
+                .push((current, hole_start))
+                .expect("Memory fragments overflow");
         }
         current = current.max(hole_end);
     }
 
     // 最后一段
     if current < range_end {
-        let _ = fragments.push((current, range_end));
+        fragments
+            .push((current, range_end))
+            .expect("Memory fragments overflow");
     }
 
     fragments
