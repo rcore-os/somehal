@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.6](https://github.com/rcore-os/somehal/compare/somehal-v0.4.5...somehal-v0.4.6) - 2026-02-09
+
+### Added
+
+- merge overlaps region and delete reserved/bootloader from ram region ([#56](https://github.com/rcore-os/somehal/pull/56))
+
+### Fixed
+
+- support hypervisor mode EL2 boot and refactor CI ([#55](https://github.com/rcore-os/somehal/pull/55))
+
 ## [0.4.5](https://github.com/rcore-os/somehal/compare/somehal-v0.4.4...somehal-v0.4.5) - 2025-11-25
 
 ### Added
