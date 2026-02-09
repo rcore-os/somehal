@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.4](https://github.com/rcore-os/somehal/compare/page-table-generic-v0.6.3...page-table-generic-v0.6.4) - 2026-02-09
+
+### Fixed
+
+- cpu_on
+- fix pg blk ([#2](https://github.com/rcore-os/somehal/pull/2))
+
+### Other
+
+- release ([#59](https://github.com/rcore-os/somehal/pull/59))
+- release ([#58](https://github.com/rcore-os/somehal/pull/58))
+- release ([#46](https://github.com/rcore-os/somehal/pull/46))
+- Implement a generic page table structure and associated traits
+- V03 ([#29](https://github.com/rcore-os/somehal/pull/29))
+- add rdrive
+- 11 项目结构优化 ([#12](https://github.com/rcore-os/somehal/pull/12))
+- 增加主存保留信息分配器及优化代码 ([#10](https://github.com/rcore-os/somehal/pull/10))
+- Move mmu relocate to pie-boot ([#8](https://github.com/rcore-os/somehal/pull/8))
+- fmt
+- 增加Riscv支持 ([#3](https://github.com/rcore-os/somehal/pull/3))
+- update
+- update
+- add riscv
+- update
+- update
+- fmt
+- update
+- update
+- page table
+- page table ok
+- update
+- update
+- update
+
 ## [0.6.3](https://github.com/rcore-os/somehal/compare/page-table-generic-v0.6.2...page-table-generic-v0.6.3) - 2026-02-09
 
 ### Fixed
