@@ -26,8 +26,8 @@ pub fn virt_entry(args: &BootInfo) {
     unsafe {
         BOOT_INFO.edit(|info| info.free_memory_start = common::mem::init_percpu_stack());
 
-        // 重新处理内存区域：将新添加的 Reserved 区域从 RAM 中减去
-        common::mem::reprocess_regions();
+        // 合并和去重内存区域（按类型单独处理）
+        common::mem::merge_and_dedup_regions();
 
         let (region_ptr, region_len) =
             common::mem::with_regions(|regions| (regions.as_mut_ptr(), regions.len()));
