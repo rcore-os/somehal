@@ -77,7 +77,10 @@ where
 
         let code_start_phys = args.kimage_addr_lma.align_down(align) as usize;
 
-        let code_start = args.kimage_addr_vma as usize;
+        // Keep the physical/virtual offset constant even when the image is not aligned to a
+        // block boundary. Otherwise the first virtual instruction fetch after the jump can land
+        // on the wrong physical bytes.
+        let code_start = code_start_phys + kcode_offset;
         let mut code_end: usize = (table_start as usize + kcode_offset).align_up(align);
         code_end = code_end.align_up(512 * MB);
 
