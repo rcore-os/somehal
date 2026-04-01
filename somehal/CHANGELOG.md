@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.11](https://github.com/rcore-os/somehal/compare/somehal-v0.4.10...somehal-v0.4.11) - 2026-04-01
+
+### Fixed
+
+- *(aarch64)* 修正异常寄存器读取与内核映射偏移 ([#65](https://github.com/rcore-os/somehal/pull/65))
+
 ## [0.4.10](https://github.com/rcore-os/somehal/compare/somehal-v0.4.9...somehal-v0.4.10) - 2026-03-11
 
 ### Added
