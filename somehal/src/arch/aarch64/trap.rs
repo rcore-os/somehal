@@ -23,31 +23,24 @@ fn handle_fiq(_ctx: &Context) {}
 
 #[aarch64_trap_handler(kind = "sync")]
 fn handle_sync(ctx: &Context) -> usize {
-    let esr = ESR_EL1.extract();
-    let iss = esr.read(ESR_EL1::ISS);
-    let elr = ctx.pc;
+    let (esr, elr, far, current_el) = current_exception_state();
+    let iss = esr & 0x01ff_ffff;
+    let ec = (esr >> 26) & 0x3f;
 
-    if let Some(code) = esr.read_as_enum(ESR_EL1::EC) {
-        match code {
-            ESR_EL1::EC::Value::SVC64 => {
-                warn!("No syscall is supported currently!");
-            }
-            ESR_EL1::EC::Value::DataAbortLowerEL => handle_data_abort(iss, true),
-            ESR_EL1::EC::Value::DataAbortCurrentEL => handle_data_abort(iss, false),
-            ESR_EL1::EC::Value::Brk64 => {
-                // debug!("BRK #{:#x} @ {:#x} ", iss, tf.elr);
-                // tf.elr += 4;
-            }
-            _ => {
-                panic!(
-                    "\r\n{:?}\r\nUnhandled synchronous exception @ {:p}: ESR={:#x} (EC {:#08b}, ISS {:#x})",
-                    ctx,
-                    elr,
-                    esr.get(),
-                    esr.read(ESR_EL1::EC),
-                    esr.read(ESR_EL1::ISS),
-                );
-            }
+    match ec {
+        0b01_0101 => {
+            warn!("No syscall is supported currently!");
+        }
+        0b10_0100 => handle_data_abort(iss, true, far),
+        0b10_0101 => handle_data_abort(iss, false, far),
+        0b11_1100 => {
+            // BRK instruction.
+        }
+        _ => {
+            panic!(
+                "\r\n{:?}\r\nUnhandled synchronous exception @ {:#x}: EL={} ESR={:#x} (EC {:#08b}, ISS {:#x}) FAR={:#x}",
+                ctx, elr, current_el, esr, ec, iss, far,
+            );
         }
     }
 }
@@ -55,20 +48,17 @@ fn handle_sync(ctx: &Context) -> usize {
 #[aarch64_trap_handler(kind = "serror")]
 fn handle_serror(ctx: &Context) -> usize {
     error!("SError exception:");
-    let esr = ESR_EL1.extract();
-    let _iss = esr.read(ESR_EL1::ISS);
-    let elr = ELR_EL1.get();
+    let (esr, elr, _far, current_el) = current_exception_state();
+    let iss = esr & 0x01ff_ffff;
+    let ec = (esr >> 26) & 0x3f;
     error!("{:?}", ctx);
     panic!(
-        "Unhandled serror @ {:#x}: ESR={:#x} (EC {:#08b}, ISS {:#x})",
-        elr,
-        esr.get(),
-        esr.read(ESR_EL1::EC),
-        esr.read(ESR_EL1::ISS),
+        "Unhandled serror @ {:#x}: EL={} ESR={:#x} (EC {:#08b}, ISS {:#x})",
+        elr, current_el, esr, ec, iss,
     );
 }
 
-fn handle_data_abort(iss: u64, _is_user: bool) {
+fn handle_data_abort(iss: u64, _is_user: bool, far: usize) {
     let wnr = (iss & (1 << 6)) != 0; // WnR: Write not Read
     let cm = (iss & (1 << 8)) != 0; // CM: Cache maintenance
     let reason = if wnr & !cm {
@@ -76,9 +66,33 @@ fn handle_data_abort(iss: u64, _is_user: bool) {
     } else {
         PageFaultReason::Read
     };
-    let vaddr = FAR_EL1.get() as usize;
+    let vaddr = far;
 
     handle_page_fault(vaddr, reason);
+}
+
+fn current_exception_state() -> (u64, usize, usize, usize) {
+    match CurrentEL.read(CurrentEL::EL) {
+        1 => (
+            ESR_EL1.get(),
+            ELR_EL1.get() as usize,
+            FAR_EL1.get() as usize,
+            1,
+        ),
+        2 => (
+            ESR_EL2.get(),
+            ELR_EL2.get() as usize,
+            FAR_EL2.get() as usize,
+            2,
+        ),
+        3 => (
+            ESR_EL3.get(),
+            ELR_EL3.get() as usize,
+            FAR_EL3.get() as usize,
+            3,
+        ),
+        el => (0, 0, 0, el as usize),
+    }
 }
 
 #[derive(Debug)]
