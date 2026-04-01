@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.8](https://github.com/rcore-os/somehal/compare/page-table-generic-v0.6.7...page-table-generic-v0.6.8) - 2026-04-01
+
+### Other
+
+- update Cargo.toml dependencies
+
 ## [0.6.7](https://github.com/rcore-os/somehal/compare/page-table-generic-v0.6.6...page-table-generic-v0.6.7) - 2026-04-01
 
 ### Fixed

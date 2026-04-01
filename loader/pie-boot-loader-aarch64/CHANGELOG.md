@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.7](https://github.com/rcore-os/somehal/compare/pie-boot-loader-aarch64-v0.3.6...pie-boot-loader-aarch64-v0.3.7) - 2026-04-01
+
+### Other
+
+- update Cargo.lock dependencies
+
 ## [0.3.6](https://github.com/rcore-os/somehal/compare/pie-boot-loader-aarch64-v0.3.5...pie-boot-loader-aarch64-v0.3.6) - 2026-04-01
 
 ### Fixed
