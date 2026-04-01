@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.6](https://github.com/rcore-os/somehal/compare/pie-boot-loader-aarch64-v0.3.5...pie-boot-loader-aarch64-v0.3.6) - 2026-04-01
+
+### Fixed
+
+- *(aarch64)* 修正异常寄存器读取与内核映射偏移 ([#65](https://github.com/rcore-os/somehal/pull/65))
+
 ## [0.3.5](https://github.com/rcore-os/somehal/compare/pie-boot-loader-aarch64-v0.3.4...pie-boot-loader-aarch64-v0.3.5) - 2026-03-11
 
 ### Other
