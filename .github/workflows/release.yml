@@ -41,32 +41,73 @@ jobs:
         id: check-release
         env:
           RELEASES_JSON: ${{ steps.release-plz.outputs.releases }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
-          echo "Release-plz output: $RELEASES_JSON"
+          releases_json="${RELEASES_JSON:-[]}"
+          echo "Release-plz output: $releases_json"
 
-          if [ -z "${RELEASES_JSON:-}" ]; then
-            echo "pie-boot-loader-aarch64-released=false" >> "$GITHUB_OUTPUT"
-            echo "ℹ️ release-plz did not report any released packages"
-            exit 0
-          fi
-
-          if ! jq -e . >/dev/null <<<"$RELEASES_JSON"; then
+          if ! jq -e . >/dev/null <<<"$releases_json"; then
             echo "::error::release-plz returned invalid JSON in steps.release-plz.outputs.releases"
             exit 1
           fi
 
-          pie_boot_tag="$(jq -r 'first(.[] | select(.package_name == "pie-boot-loader-aarch64") | .tag) // empty' <<<"$RELEASES_JSON")"
+          pie_boot_tag="$(jq -r 'first(.[] | select(.package_name == "pie-boot-loader-aarch64") | .tag) // empty' <<<"$releases_json")"
 
           if [ -n "$pie_boot_tag" ]; then
-            echo "pie-boot-loader-aarch64-released=true" >> $GITHUB_OUTPUT
-            echo "pie-boot-loader-aarch64-tag=$pie_boot_tag" >> $GITHUB_OUTPUT
+            echo "pie-boot-loader-aarch64-released=true" >> "$GITHUB_OUTPUT"
+            echo "pie-boot-loader-aarch64-tag=$pie_boot_tag" >> "$GITHUB_OUTPUT"
             echo "✅ pie-boot-loader-aarch64 was released with tag: $pie_boot_tag"
-          else
-            echo "pie-boot-loader-aarch64-released=false" >> "$GITHUB_OUTPUT"
-            echo "ℹ️ pie-boot-loader-aarch64 was not released in this run"
+            exit 0
           fi
+
+          expected_version="$(
+            awk '
+              /^\[package\]/ { in_package = 1; next }
+              /^\[/ && in_package { in_package = 0 }
+              in_package && /^version = / {
+                gsub(/"/, "", $3)
+                print $3
+                exit
+              }
+            ' loader/pie-boot-loader-aarch64/Cargo.toml
+          )"
+          if [ -z "$expected_version" ]; then
+            echo "::error::Failed to read pie-boot-loader-aarch64 version from Cargo.toml"
+            exit 1
+          fi
+
+          expected_tag="pie-boot-loader-aarch64-v$expected_version"
+          echo "Expected pie-boot-loader-aarch64 tag from Cargo.toml: $expected_tag"
+
+          release_err="$(mktemp)"
+          if release_json="$(gh release view "$expected_tag" --json assets,tagName,url 2>"$release_err")"; then
+            echo "Existing release metadata: $release_json"
+          else
+            if grep -qi "release not found" "$release_err"; then
+              echo "pie-boot-loader-aarch64-released=false" >> "$GITHUB_OUTPUT"
+              echo "ℹ️ No GitHub release found for $expected_tag"
+              rm -f "$release_err"
+              exit 0
+            fi
+
+            cat "$release_err" >&2
+            rm -f "$release_err"
+            exit 1
+          fi
+          rm -f "$release_err"
+
+          asset_present="$(jq -r 'any(.assets[]?; .name == "pie-boot-loader-aarch64.bin")' <<<"$release_json")"
+          if [ "$asset_present" = "true" ]; then
+            echo "pie-boot-loader-aarch64-released=false" >> "$GITHUB_OUTPUT"
+            echo "ℹ️ Release $expected_tag already contains pie-boot-loader-aarch64.bin"
+            exit 0
+          fi
+
+          echo "pie-boot-loader-aarch64-released=true" >> "$GITHUB_OUTPUT"
+          echo "pie-boot-loader-aarch64-tag=$expected_tag" >> "$GITHUB_OUTPUT"
+          echo "✅ Release $expected_tag exists without pie-boot-loader-aarch64.bin, scheduling binary upload"
 
   release-plz-pr:
     name: Release-plz PR
